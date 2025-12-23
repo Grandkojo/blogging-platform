@@ -19,6 +19,7 @@ CREATE TABLE `comments` (
   `user_id` uuid,
   `post_id` uuid,
   `comment` varchar(255),
+  `metadata` json,
   `datetime` datetime
 );
 
@@ -40,11 +41,15 @@ CREATE UNIQUE INDEX `posts_index_1` ON `posts` (`title`);
 
 CREATE INDEX `posts_index_2` ON `posts` (`user_id`);
 
-CREATE INDEX `comments_index_3` ON `comments` (`user_id`);
+CREATE INDEX `posts_index_3` ON `posts` (`published_datetime`);
 
-CREATE INDEX `comments_index_4` ON `comments` (`post_id`);
+CREATE INDEX `comments_index_4` ON `comments` (`user_id`);
 
-CREATE UNIQUE INDEX `tags_index_5` ON `tags` (`tag`);
+CREATE INDEX `comments_index_5` ON `comments` (`post_id`);
+
+CREATE INDEX `comments_index_6` ON `comments` (`datetime`);
+
+CREATE UNIQUE INDEX `tags_index_7` ON `tags` (`tag`);
 
 ALTER TABLE `posts` ADD FOREIGN KEY (`user_id`) REFERENCES `users` (`id`);
 

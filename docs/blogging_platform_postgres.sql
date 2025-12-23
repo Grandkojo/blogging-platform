@@ -30,6 +30,7 @@ CREATE TABLE "comments" (
   "user_id" uuid,
   "post_id" uuid,
   "comment" varchar,
+  "metadata" json,
   "datetime" datetime
 );
 
@@ -51,9 +52,13 @@ CREATE UNIQUE INDEX ON "posts" ("title");
 
 CREATE INDEX ON "posts" ("user_id");
 
+CREATE INDEX ON "posts" ("published_datetime");
+
 CREATE INDEX ON "comments" ("user_id");
 
 CREATE INDEX ON "comments" ("post_id");
+
+CREATE INDEX ON "comments" ("datetime");
 
 CREATE UNIQUE INDEX ON "tags" ("tag");
 
