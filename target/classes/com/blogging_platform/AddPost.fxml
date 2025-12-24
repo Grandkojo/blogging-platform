@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.TitledPane?>
+<?import javafx.scene.layout.AnchorPane?>
+
+
+<TitledPane animated="false" text="Add Post" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.blogging_platform.AddPostController">
+    <content>
+        <GridPane hgap="10" vgap="10" padding="20">
+            <columnConstraints>
+                <ColumnConstraints hgrow="NEVER" /> 
+                <ColumnConstraints hgrow="ALWAYS" />
+            </columnConstraints>
+
+            <!-- Row 1: Post Title -->
+            <Label text="Post Title" GridPane.rowIndex="0" GridPane.columnIndex="0" />
+            <TextField fx:id="postTitle" promptText="Enter post title" GridPane.rowIndex="0" GridPane.columnIndex="1" />
+
+            <!-- Row 2: Content -->
+            <Label text="Content" GridPane.rowIndex="1" GridPane.columnIndex="0" />
+            <TextArea fx:id="postContent" promptText="Enter your post content" GridPane.rowIndex="1" GridPane.columnIndex="1" prefHeight="150.0" />
+
+            <!-- Row 3: Status -->
+            <Label text="Status" GridPane.rowIndex="2" GridPane.columnIndex="0" />
+            <ComboBox fx:id="postStatus" GridPane.rowIndex="2" GridPane.columnIndex="1" />
+
+            <!-- Row 4: Submit Button -->
+            <Button text="Submit" onAction="#submitPost" GridPane.rowIndex="3" GridPane.columnIndex="0" GridPane.columnSpan="2" alignment="CENTER" />
+        </GridPane>
+    </content>
+</TitledPane>
