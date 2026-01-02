@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.blogging_platform.PostListController">
+
+    <top>
+        <VBox spacing="15" alignment="CENTER_LEFT" style="-fx-padding: 20;">
+            <Label text="My Blog Posts" style="-fx-font-size: 28px; -fx-font-weight: bold;" />
+            
+            <HBox spacing="10" alignment="CENTER_LEFT">
+                <TextField fx:id="searchField" promptText="Search by title or author..." prefWidth="350" />
+                <Button text="Search" onAction="#searchPosts" />
+                <Region HBox.hgrow="ALWAYS" />
+                <Button text="Add New Post" onAction="#openAddPost"
+                        style="-fx-background-color: #28a745; -fx-text-fill: white; -fx-font-size: 14px;" />
+            </HBox>
+        </VBox>
+    </top>
+
+    <center>
+        <TableView fx:id="postsTable">
+            <columns>
+                <TableColumn fx:id="idColumn" text="ID" prefWidth="220" />
+                <TableColumn fx:id="titleColumn" text="Title" prefWidth="300" />
+                <TableColumn fx:id="authorColumn" text="Author" prefWidth="150" />
+                <TableColumn fx:id="statusColumn" text="Status" prefWidth="100" />
+                <TableColumn fx:id="dateColumn" text="Published" prefWidth="150" />
+            </columns>
+        </TableView>
+    </center>
+
+    <bottom>
+        <HBox spacing="15" alignment="CENTER_RIGHT" style="-fx-padding: 20;">
+            <Button fx:id="editButton" text="Edit Selected" onAction="#editPost"
+                    style="-fx-background-color: #ffc107; -fx-text-fill: black;" />
+            <Button fx:id="deleteButton" text="Delete Selected" onAction="#deletePost"
+                    style="-fx-background-color: #dc3545; -fx-text-fill: white;" />
+        </HBox>
+    </bottom>
+
+    <padding>
+        <Insets top="10" right="30" bottom="10" left="30" />
+    </padding>
+</BorderPane>
