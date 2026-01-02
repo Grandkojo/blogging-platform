@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.Text?>
+
+<AnchorPane xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.blogging_platform.RegisterUserController"
+            prefHeight="600.0" prefWidth="650.0">
+
+    <VBox alignment="CENTER" spacing="20" style="-fx-padding: 50;">
+        <children>
+
+            <!-- Title -->
+            <Label text="Register User"
+                   style="-fx-font-size: 32px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;" />
+
+            <!-- Name Field -->
+            <VBox spacing="5">
+                <Label text="Name" style="-fx-font-size: 14px;" />
+                <TextField fx:id="userName"
+                           promptText="Enter your name"
+                           prefWidth="400" />
+                <Label fx:id="nameError"
+                       text="Name is required"
+                       style="-fx-text-fill: red; -fx-font-size: 12px;"
+                       visible="false" />
+            </VBox>
+
+            <!-- Email Field -->
+            <VBox spacing="5">
+                <Label text="Email" style="-fx-font-size: 14px;" />
+                <TextField fx:id="userEmail"
+                           promptText="Enter email - e.g. user@example.com"
+                           prefWidth="400" />
+                <Label fx:id="emailError"
+                       text="Valid email is required"
+                       style="-fx-text-fill: red; -fx-font-size: 12px;"
+                       visible="false" />
+            </VBox>
+
+            <!-- Password Field -->
+            <VBox spacing="5">
+                <Label text="Password" style="-fx-font-size: 14px;" />
+                <PasswordField fx:id="userPassword"
+                               promptText="Enter password"
+                               prefWidth="400" />
+                <Label fx:id="passwordError"
+                       text="Password is required"
+                       style="-fx-text-fill: red; -fx-font-size: 12px;"
+                       visible="false" />
+            </VBox>
+
+            <!-- Role Field -->
+            <VBox spacing="5">
+                <Label text="Role" style="-fx-font-size: 14px;" />
+                <ComboBox fx:id="userRole"
+                          promptText="Select role"
+                          prefWidth="400" />
+                <Label fx:id="roleError"
+                       text="Please select a role"
+                       style="-fx-text-fill: red; -fx-font-size: 12px;"
+                       visible="false" />
+            </VBox>
+
+            <!-- Submit Button -->
+            <Button text="Register"
+                    onAction="#submitUser"
+                    prefWidth="400"
+                    prefHeight="50"
+                    style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-size: 16px; -fx-background-radius: 10; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 10, 0, 0, 3);" />
+
+            <!-- Login Link -->
+            <HBox alignment="CENTER" spacing="8">
+                <Text text="Already have an account?" style="-fx-font-size: 14px;" />
+                <Hyperlink text="Login"
+                           onAction="#switchToLogin"
+                           style="-fx-font-size: 14px; -fx-text-fill: #2980b9;" />
+            </HBox>
+
+        </children>
+    </VBox>
+
+    <!-- Optional background gradient -->
+    <style>
+        -fx-background-color: linear-gradient(to bottom, #f0f8ff, #e0f2fe);
+        -fx-font-family: "Segoe UI", sans-serif;
+    </style>
+
+</AnchorPane>

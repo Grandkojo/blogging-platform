@@ -1,7 +1,13 @@
 {
     "version": "0.2.0",
     "configurations": [
-        
+        {
+            "type": "java",
+            "name": "App",
+            "request": "launch",
+            "mainClass": "com.blogging_platform/com.blogging_platform.App",
+            "projectName": "blogging_platform"
+        },
         {
             "type": "java",
             "name": "Launch Blogging Platform",

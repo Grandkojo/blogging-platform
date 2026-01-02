@@ -50,3 +50,23 @@ ALTER TABLE `comments` ADD FOREIGN KEY (`user_id`) REFERENCES `users` (`id`);
 ALTER TABLE `comments` ADD FOREIGN KEY (`post_id`) REFERENCES `posts` (`id`);
 ALTER TABLE `post_tags` ADD FOREIGN KEY (`post_id`) REFERENCES `posts` (`id`);
 ALTER TABLE `post_tags` ADD FOREIGN KEY (`tag_id`) REFERENCES `tags` (`id`);
+
+-- uuid aut generation
+-- For users table
+ALTER TABLE users 
+MODIFY COLUMN id BINARY(16) DEFAULT (UUID_TO_BIN(UUID()));
+
+-- For posts table
+ALTER TABLE posts 
+MODIFY COLUMN id BINARY(16) DEFAULT (UUID_TO_BIN(UUID()));
+
+-- For comments table
+ALTER TABLE comments 
+MODIFY COLUMN id BINARY(16) DEFAULT (UUID_TO_BIN(UUID()));
+
+-- For tags table
+ALTER TABLE tags 
+MODIFY COLUMN id BINARY(16) DEFAULT (UUID_TO_BIN(UUID()));
+
+ALTER TABLE users 
+ADD COLUMN password VARCHAR(255) NOT NULL;

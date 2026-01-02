@@ -13,13 +13,21 @@ import java.io.IOException;
  */
 public class App extends Application {
 
+    private static App instance;
     private static Scene scene;
 
+    public App() {
+        instance = this;
+    }
+
+    public static App getInstance() {
+        return instance;
+    }
     @Override
     public void start(Stage stage) throws IOException {
-        scene = new Scene(loadFXML("RegisterUser"), 550, 550);
+        scene = new Scene(loadFXML("Login"), 750, 750);
         stage.setResizable(false);
-        stage.setTitle("Add Post");
+        stage.setTitle("Blogging Platform");
         stage.setScene(scene);
         stage.show();
     }
@@ -29,9 +37,17 @@ public class App extends Application {
     }
 
     private static Parent loadFXML(String fxml) throws IOException {
-        FXMLLoader fxmlLoader = new FXMLLoader(App.class.getResource(fxml + ".fxml"));
-        return fxmlLoader.load();
+    FXMLLoader fxmlLoader = new FXMLLoader(App.class.getResource(fxml + ".fxml"));
+    Parent parent = fxmlLoader.load();
+
+    // Inject the App instance into the controller if it extends BaseController
+    Object controller = fxmlLoader.getController();
+    if (controller instanceof BaseController baseController) {
+        baseController.setApp(App.getInstance()); 
     }
+
+    return parent;
+}
 
     public static void main(String[] args) {
         launch();
