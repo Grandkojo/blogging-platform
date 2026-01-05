@@ -94,7 +94,7 @@ public class RegisterUserController extends BaseController implements Initializa
             boolean addUser =sqlDriver.createUser(userName.getText().trim(), userEmail.getText().trim(), userRole.getValue(), userPassword.getText().trim());
             if (addUser){
                 showInfo("User Registered Successfully");
-                switchTo("Login");
+                switchTo("Login", null);
             } else {
                 showError("Failed to register user, try again");
             }
@@ -105,7 +105,7 @@ public class RegisterUserController extends BaseController implements Initializa
 
     @FXML
     void switchToLogin(ActionEvent event) {
-        switchTo("Login");
+        switchTo("Login", null);
     }
 
 

@@ -8,6 +8,8 @@ import javafx.stage.Stage;
 
 import java.io.IOException;
 
+import com.blogging_platform.classes.ParameterReceiver;
+
 /**
  * JavaFX App
  */
@@ -32,8 +34,25 @@ public class App extends Application {
         stage.show();
     }
 
+    static void setRoot(String fxml, Object parameter) throws IOException {
+        FXMLLoader loader = new FXMLLoader(App.class.getResource(fxml + ".fxml"));
+        Parent root = loader.load();
+
+        // Inject App instance into controller
+        Object controller = loader.getController();
+        if (controller instanceof BaseController baseController) {
+            baseController.setApp(App.getInstance());
+        }
+
+        if (controller instanceof ParameterReceiver receiver){
+            receiver.receiveParameter(parameter);
+        }
+        
+        scene.setRoot(root);
+    }
+
     static void setRoot(String fxml) throws IOException {
-        scene.setRoot(loadFXML(fxml));
+        setRoot(fxml, null);
     }
 
     private static Parent loadFXML(String fxml) throws IOException {

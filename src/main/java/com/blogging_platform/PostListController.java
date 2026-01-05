@@ -2,10 +2,13 @@ package com.blogging_platform;
 
 import java.net.URL;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Optional;
 import java.util.ResourceBundle;
 
 import com.blogging_platform.classes.PostRecord;
+import com.blogging_platform.classes.SessionManager;
 
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -14,6 +17,8 @@ import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
@@ -60,6 +65,21 @@ public class PostListController extends BaseController implements Initializable 
         
         dateColumn.setCellValueFactory(cellData -> 
             new SimpleObjectProperty<LocalDateTime>(cellData.getValue().publishedDate()));
+
+        dateColumn.setCellFactory(column -> new TableCell<PostRecord, LocalDateTime>() {
+        private final DateTimeFormatter formatter = 
+            DateTimeFormatter.ofPattern("MMM dd, yyyy HH:mm");
+
+        @Override
+        protected void updateItem(LocalDateTime item, boolean empty) {
+            super.updateItem(item, empty);
+            if (empty || item == null) {
+                setText(null);
+            } else {
+                setText(item.format(formatter));
+            }
+        }
+    });
     
 
         postsTable.setItems(postData);
@@ -70,7 +90,7 @@ public class PostListController extends BaseController implements Initializable 
     private void loadPosts(){
         postData.clear();
         MySQLDriver sqlDriver = new MySQLDriver();
-        List<PostRecord> posts = sqlDriver.listPosts();
+        List<PostRecord> posts = sqlDriver.listPosts(SessionManager.getInstance().getUserId());
         postData.addAll(posts);
 
     }
@@ -92,17 +112,31 @@ public class PostListController extends BaseController implements Initializable 
     @FXML
     void deletePost(ActionEvent event) {
         PostRecord selected = postsTable.getSelectionModel().getSelectedItem();
-        if (selected != null) {
-            System.out.println("Delete: " + selected.title());
+        String postId = selected.id();
+        Optional<ButtonType> result =  confirmDialog("Delete post \"" + selected.title() + "\"?");
+        
+        if (result.isPresent() && result.get() == ButtonType.OK) {
+            MySQLDriver sqlDriver = new MySQLDriver();
+            sqlDriver.deletePost(postId);
+            showInfo("Post deleted succesfully");
+            loadPosts();
+        } else {
+            System.out.println("Delete cancelled");
         }
     }
 
     @FXML
     void editPost(ActionEvent event) {
         PostRecord selected = postsTable.getSelectionModel().getSelectedItem();
-        if (selected != null) {
-            System.out.println("Edit: " + selected.title());
-        }
+        String postId = selected.id();
+        switchTo("EditPost", postId);
+        setCurrentId(postId);
+    }
+
+
+    @FXML
+    void gotHome(ActionEvent event) {
+        switchTo("PostHome");
     }
 
     @FXML

@@ -63,7 +63,8 @@ public class LoginUserController extends BaseController {
                 if (user != null) {
                     SessionManager.getInstance().login(user);
                 }
-                switchTo("PostList");
+                // switchTo("PostList");
+                switchTo("PostHome");
             } else {
                 showError("Invalid email or password, try again");
             }

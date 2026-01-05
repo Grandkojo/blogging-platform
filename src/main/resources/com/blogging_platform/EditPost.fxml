@@ -8,18 +8,18 @@
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.VBox?>
 
-<AnchorPane prefHeight="700.0" prefWidth="700.0" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.blogging_platform.AddPostController">
+<AnchorPane prefHeight="700.0" prefWidth="700.0" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.blogging_platform.EditPostController">
 
     <VBox alignment="CENTER" spacing="25" style="-fx-padding: 50;">
         <children>
 
             <!-- Title -->
-            <Label style="-fx-font-size: 32px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;" text="Add New Post" />
+            <Label style="-fx-font-size: 32px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;" text="Edit Post" />
 
             <!-- Title Field -->
             <VBox spacing="5">
                 <Label style="-fx-font-size: 14px;" text="Title" />
-                <TextField fx:id="postTile" prefWidth="450" promptText="Enter post title" />
+                <TextField fx:id="postTitle" prefWidth="450" promptText="Enter post title" />
                 <Label fx:id="postTitleError" style="-fx-text-fill: red; -fx-font-size: 12px;" text="Title is required" visible="false" />
             </VBox>
 
@@ -38,7 +38,7 @@
             </VBox>
 
             <!-- Submit Button -->
-            <Button onAction="#submitPost" prefHeight="50" prefWidth="450" style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-size: 16px; -fx-background-radius: 10; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 10, 0, 0, 3);" text="Submit Post" />
+            <Button onAction="#submitPost" prefHeight="50" prefWidth="450" style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-size: 16px; -fx-background-radius: 10; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 10, 0, 0, 3);" text="Submit" />
 
         </children>
     </VBox>

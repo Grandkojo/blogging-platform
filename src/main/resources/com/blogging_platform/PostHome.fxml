@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<ScrollPane fitToWidth="true" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.blogging_platform.PostHomeController">
+
+    <VBox spacing="30" style="-fx-padding: 40 60 60 60; -fx-background-color: #f8f9fa;">
+
+        <!-- Header: Title, Links, Search -->
+        <VBox spacing="20">
+
+            <!-- Top Bar: Title + Links -->
+            <HBox alignment="CENTER_LEFT" spacing="20">
+                <Label text="All Blog Posts"
+                       style="-fx-font-size: 36px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;" />
+
+                <Region HBox.hgrow="ALWAYS" />
+
+                <Hyperlink fx:id="blogLink"
+                           text="Your Blogs"
+                           onAction="#goToPostList"
+                           visible="false"
+                           style="-fx-font-size: 15px; -fx-text-fill: #3498db;" />
+
+                <Hyperlink text="Logout"
+                           onAction="#logout"
+                           style="-fx-font-size: 15px; -fx-text-fill: #e74c3c;" />
+            </HBox>
+
+            <!-- Search Bar -->
+            <HBox alignment="CENTER_LEFT" spacing="12">
+                <TextField fx:id="searchField"
+                           promptText="Search by title or author..."
+                           prefWidth="500"
+                           style="-fx-font-size: 16px; -fx-padding: 12; -fx-background-radius: 10;" />
+
+                <Button text="Search"
+                        onAction="#searchPosts"
+                        style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-size: 15px; -fx-padding: 12 20; -fx-background-radius: 10;" />
+            </HBox>
+
+        </VBox>
+
+        <!-- Cards Grid -->
+        <FlowPane fx:id="postsFlowPane"
+                  hgap="30"
+                  vgap="30"
+                  alignment="CENTER"
+                  style="-fx-padding: 20;" />
+
+    </VBox>
+
+</ScrollPane>

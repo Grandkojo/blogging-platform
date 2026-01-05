@@ -2,9 +2,12 @@ package com.blogging_platform;
 
 
 import java.io.IOException;
-import javafx.fxml.FXML;
-import javafx.fxml.Initializable;
+import java.util.Optional;
+
+
 import javafx.scene.control.Alert;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.Alert.AlertType;
 
 /**
  * Base controller that all other controllers should extend.
@@ -14,6 +17,9 @@ public abstract class BaseController {
 
     // Reference to the main application
     private App app;
+
+    // id for controller
+    private String currentId;
 
     /**
      * Called by the App class after loading the FXML.
@@ -27,13 +33,26 @@ public abstract class BaseController {
      * Helper to switch to another FXML scene.
      * Usage: switchTo("Login") → loads Login.fxml
      */
+    protected void switchTo(String fxmlName, String id) {
+        if (app == null) {
+            System.err.println("App reference is null! Cannot switch scene.");
+            return;
+        }
+        try {
+            App.setRoot(fxmlName, id);
+        } catch (IOException e) {
+            e.printStackTrace();
+            showError("Could not load " + fxmlName + ".fxml");
+        }
+    }
+
     protected void switchTo(String fxmlName) {
         if (app == null) {
             System.err.println("App reference is null! Cannot switch scene.");
             return;
         }
         try {
-            app.setRoot(fxmlName);
+            App.setRoot(fxmlName, null);
         } catch (IOException e) {
             e.printStackTrace();
             showError("Could not load " + fxmlName + ".fxml");
@@ -65,6 +84,24 @@ public abstract class BaseController {
         alert.setContentText(message);
         alert.showAndWait();
     }
+
+    protected Optional<ButtonType> confirmDialog(String message) {
+        Alert alert = new Alert(AlertType.CONFIRMATION);
+        alert.setTitle("Confirm");
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        return alert.showAndWait();
+    }
+
+    protected  void setCurrentId(String id){
+        this.currentId = id;
+    }
+
+    protected String getCurrentId(){
+        return this.currentId;
+    }
+
+   
 
     // You can add more common methods here (e.g., logout, getCurrentUser, etc.)
 }

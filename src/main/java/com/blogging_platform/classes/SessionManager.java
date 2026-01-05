@@ -43,4 +43,8 @@ public class SessionManager {
     public boolean isLoggedIn() {
         return currentUser.id() != null;
     }
+
+    public User getCurrentUser(){
+        return this.currentUser;
+    }
 }
