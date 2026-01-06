@@ -60,8 +60,8 @@ public class PostHomeController extends BaseController {
         postsFlowPane.getChildren().clear();
 
         // Process the flat list 5 items at a time
-        for (int i = 0; i < rawPosts.size(); i += 6) {
-            if (i + 5 >= rawPosts.size()) break; // safety check
+        for (int i = 0; i < rawPosts.size(); i += 7) {
+            if (i + 6 >= rawPosts.size()) break; // safety check
 
             String id = rawPosts.get(i + 5);
             String title = rawPosts.get(i);
@@ -69,10 +69,11 @@ public class PostHomeController extends BaseController {
             String status = rawPosts.get(i + 2);
             String author = rawPosts.get(i + 3);
             String dateStr = rawPosts.get(i + 4); // "2026-01-05 09:28:26.072499"
+            int commentCount = Integer.parseInt(rawPosts.get(i + 6));
 
             LocalDateTime publishedDate = LocalDateTime.parse(dateStr.replace(" ", "T")); // quick fix for space
 
-            Node card = createPostCard(title, content, status, author, publishedDate, id);
+            Node card = createPostCard(title, content, status, author, publishedDate, id, commentCount);
             postsFlowPane.getChildren().add(card);
         }
     }
@@ -84,25 +85,25 @@ public class PostHomeController extends BaseController {
         postsFlowPane.getChildren().clear();
 
         // Process the flat list 5 items at a time
-        for (int i = 0; i < rawPosts.size(); i += 6) {
-            if (i + 5 >= rawPosts.size()) break; // safety check
-
+        for (int i = 0; i < rawPosts.size(); i += 7) {
+            if (i + 6 >= rawPosts.size()) break; // safety check
             String id = rawPosts.get(i + 5);
             String title = rawPosts.get(i);
             String content = rawPosts.get(i + 1);
             String status = rawPosts.get(i + 2);
             String author = rawPosts.get(i + 3);
             String dateStr = rawPosts.get(i + 4); // "2026-01-05 09:28:26.072499"
+            int commentCount = Integer.parseInt(rawPosts.get(i + 6));
 
             LocalDateTime publishedDate = LocalDateTime.parse(dateStr.replace(" ", "T")); // quick fix for space
 
-            Node card = createPostCard(title, content, status, author, publishedDate, id);
+            Node card = createPostCard(title, content, status, author, publishedDate, id, commentCount);
             postsFlowPane.getChildren().add(card);
         }
     }
 
     private Node createPostCard(String title, String content, String status,
-                                String author, LocalDateTime publishedDate, String id) {
+                                String author, LocalDateTime publishedDate, String id, int commentCount) {
 
         VBox card = new VBox(15);
         card.setPadding(new Insets(20));
@@ -124,6 +125,9 @@ public class PostHomeController extends BaseController {
         Label metaLabel = new Label(metaText);
         metaLabel.setStyle("-fx-text-fill: #7f8c8d; -fx-font-size: 14px;");
 
+        Label commentLabel = new Label(commentCount + (commentCount == 1 ? " comment" : " comments"));
+        commentLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #3498db;");
+
         // Short excerpt
         String excerpt = content.length() > 150
                 ? content.substring(0, 150) + "..."
@@ -132,7 +136,7 @@ public class PostHomeController extends BaseController {
         preview.setStyle("-fx-font-size: 15px; -fx-text-fill: #555;");
         preview.setWrappingWidth(310);
 
-        card.getChildren().addAll(titleLabel, metaLabel, preview);
+        card.getChildren().addAll(titleLabel, metaLabel, commentLabel, preview);
 
         // Click anywhere on the card → open full post
         card.setOnMouseClicked(e -> openSinglePost(id));

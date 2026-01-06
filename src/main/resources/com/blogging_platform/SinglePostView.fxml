@@ -37,9 +37,16 @@
 
                     <!-- Divider -->
                     <Separator prefWidth="600" style="-fx-background-color: #ecf0f1;" />
-                      <Label fx:id="postContentText" alignment="TOP_LEFT" graphicTextGap="2.0" maxWidth="974.0" minHeight="400.0" prefHeight="400.0" prefWidth="974.0" style="-fx-font-size: 19px; -fx-line-spacing: 12; -fx-text-fill: #34495e; -fx-padding: 10;" text="If you feel you want to utilize your brain, learning a new language is the way to go. It's going to make you better" textOverrun="LEADING_ELLIPSIS" wrapText="true" />
+                    <Label fx:id="postContentText" alignment="TOP_LEFT" graphicTextGap="2.0" maxWidth="974.0" minHeight="400.0" prefHeight="400.0" prefWidth="974.0" style="-fx-font-size: 19px; -fx-line-spacing: 12; -fx-text-fill: #34495e; " text="If you feel you want to utilize your brain, learning a new language is the way to go. It's going to make you better" textOverrun="LEADING_ELLIPSIS" wrapText="true" />
 
+                    
                 </children>
+            </VBox>
+
+            <VBox spacing="20" style="-fx-padding: 40 0 0 0;">
+                <Label text="Comments" style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;" />
+
+                <VBox fx:id="commentsContainer" spacing="15" />
             </VBox>
 
         </children>

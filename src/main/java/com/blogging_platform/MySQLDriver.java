@@ -8,6 +8,8 @@ import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+
+import com.blogging_platform.classes.CommentRecord;
 import com.blogging_platform.classes.PostRecord;
 import com.blogging_platform.classes.User;
 
@@ -100,18 +102,21 @@ public class MySQLDriver {
             DELETE FROM posts WHERE id = UUID_TO_BIN(?);
             """;
     private static String get_posts = """
-            SELECT 
-                BIN_TO_UUID(p.id) AS id,
-                p.title AS title,
-                p.content AS content,
-                p.status AS status,
-                p.published_datetime AS published_datetime,
-                COALESCE(u.name, 'Unknown') AS author
-            FROM posts p
-            LEFT JOIN users u ON p.user_id = u.id
-            WHERE p.status = 'PUBLISHED'
-            ORDER BY p.published_datetime DESC
-            """;
+        SELECT 
+            BIN_TO_UUID(p.id) AS id,
+            p.title,
+            p.content,
+            p.status,
+            p.published_datetime,
+            COALESCE(u.name, 'Unknown') AS author,
+            (SELECT COUNT(*) 
+            FROM comments c 
+            WHERE c.post_id = p.id) AS comment_count
+        FROM posts p
+        LEFT JOIN users u ON p.user_id = u.id
+        WHERE p.status = 'PUBLISHED'
+        ORDER BY p.published_datetime DESC
+        """;
 
     private static String get_posts_by_search = """
         SELECT 
@@ -128,6 +133,24 @@ public class MySQLDriver {
            OR LOWER(u.name) LIKE ?) OR ? IS NULL
         ORDER BY p.published_datetime DESC
         """;
+
+    private static String load_comments_by_post_id = """
+            SELECT 
+                BIN_TO_UUID(c.id) AS id,
+                BIN_TO_UUID(c.post_id) AS postId,
+                BIN_TO_UUID(c.user_id) AS userId,
+                COALESCE(u.name, 'Unknown') AS authorName
+                c.comment
+                c.datetime AS date
+                FROM comments c
+                LEFT JOIN users u ON p.user_id = u.id
+                ORDER BY c.datetime DESC
+            """;
+
+    private static String post_comment = """
+            INSERT INTO comments (user_id, post_id, comment, datetime)
+            VALUES (UUID_TO_BIN(?), UUID_TO_BIN(?), ?, NOW());
+            """;
 
     public boolean createUser(String name, String email, String role, String ppassword) {
         String hPassword = BCrypt.hashpw(ppassword,BCrypt.gensalt());
@@ -378,6 +401,7 @@ public class MySQLDriver {
                 post.add(rs.getString("author"));
                 post.add(rs.getString("published_datetime"));
                 post.add(rs.getString("id"));
+                post.add(String.valueOf(rs.getInt("comment_count")));
 
             }
             return post;
@@ -414,5 +438,48 @@ public class MySQLDriver {
             System.out.println("Failed to get posts: " + e.getMessage());
         }
         return post;
+    }
+
+    public List<CommentRecord> getCommentsByPostId(String postId) {
+        List<CommentRecord> comments = new ArrayList<CommentRecord>();
+        try (
+            Connection connection = DriverManager.getConnection(databaseUrl, username, password);
+            PreparedStatement preparedStatement = connection.prepareStatement(load_comments_by_post_id);
+        ) {
+            preparedStatement.setString(1, postId);
+
+            ResultSet rs = preparedStatement.executeQuery()   ;
+            while (rs.next()) {
+                comments.add(new CommentRecord(
+                    rs.getString("id"),
+                    rs.getString("postId"),
+                    rs.getString("userId"),
+                    rs.getString("authorName"),
+                    rs.getString("comment"),
+                    rs.getObject("date", LocalDateTime.class)
+                ));
+            }
+            return comments;
+
+        } catch (SQLException e) {
+            System.out.println("Failed to load comments: " + e.getMessage());
+        }
+        return comments;   
+    }
+
+    public boolean addComment(String postId, String userId, String content) {
+        try (Connection conn = DriverManager.getConnection(databaseUrl, username, password);
+         PreparedStatement preparedStatement = conn.prepareStatement(post_comment)) {
+
+        preparedStatement.setString(1, userId);
+        preparedStatement.setString(2, postId);
+        preparedStatement.setString(3, content);
+
+        return preparedStatement.executeUpdate() == 1;
+
+    } catch (SQLException e) {
+        System.out.println("Failed to add comment: " + e.getMessage());
+        return false;
+    }
     }
 }
