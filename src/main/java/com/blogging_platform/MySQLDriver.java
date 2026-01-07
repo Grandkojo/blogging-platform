@@ -78,6 +78,7 @@ public class MySQLDriver {
     private static String get_full_post_by_id = """
         SELECT 
             BIN_TO_UUID(p.id) AS id,
+            BIN_TO_UUID(p.user_id) AS user_id,
             p.title AS title,
             p.content AS content,
             p.status AS status,
@@ -101,6 +102,11 @@ public class MySQLDriver {
     private static String delete_post = """
             DELETE FROM posts WHERE id = UUID_TO_BIN(?);
             """;
+
+    private static String delete_comment = """
+            DELETE FROM comments WHERE id = UUID_TO_BIN(?);
+            """;
+
     private static String get_posts = """
         SELECT 
             BIN_TO_UUID(p.id) AS id,
@@ -118,6 +124,24 @@ public class MySQLDriver {
         ORDER BY p.published_datetime DESC
         """;
 
+        
+
+    // private static String get_posts_by_search = """
+    //     SELECT 
+    //         BIN_TO_UUID(p.id) AS id,
+    //         p.title,
+    //         p.content,
+    //         p.status,
+    //         p.published_datetime,
+    //         COALESCE(u.name, 'Unknown') AS author
+    //     FROM posts p
+    //     LEFT JOIN users u ON p.user_id = u.id
+    //     WHERE p.status = 'PUBLISHED'
+    //     AND (LOWER(p.title) LIKE ?
+    //        OR LOWER(u.name) LIKE ?) OR ? IS NULL
+    //     ORDER BY p.published_datetime DESC;
+    //     """;
+
     private static String get_posts_by_search = """
         SELECT 
             BIN_TO_UUID(p.id) AS id,
@@ -125,13 +149,15 @@ public class MySQLDriver {
             p.content,
             p.status,
             p.published_datetime,
-            COALESCE(u.name, 'Unknown') AS author
+            COALESCE(u.name, 'Unknown') AS author,
+            MATCH(p.title) AGAINST (? IN NATURAL LANGUAGE MODE) AS title_score,
+            MATCH(u.name) AGAINST (? IN NATURAL LANGUAGE MODE) AS author_score
         FROM posts p
         LEFT JOIN users u ON p.user_id = u.id
         WHERE p.status = 'PUBLISHED'
-        AND (LOWER(p.title) LIKE ?
-           OR LOWER(u.name) LIKE ?) OR ? IS NULL
-        ORDER BY p.published_datetime DESC
+        AND (MATCH(p.title) AGAINST (? IN NATURAL LANGUAGE MODE)  > 0 
+            OR MATCH(u.name) AGAINST (? IN NATURAL LANGUAGE MODE) > 0)
+        ORDER BY (title_score + author_acore) DESC
         """;
 
     private static String load_comments_by_post_id = """
@@ -139,17 +165,37 @@ public class MySQLDriver {
                 BIN_TO_UUID(c.id) AS id,
                 BIN_TO_UUID(c.post_id) AS postId,
                 BIN_TO_UUID(c.user_id) AS userId,
-                COALESCE(u.name, 'Unknown') AS authorName
-                c.comment
+                COALESCE(u.name, 'Unknown') AS authorName,
+                c.comment,
                 c.datetime AS date
                 FROM comments c
-                LEFT JOIN users u ON p.user_id = u.id
+                LEFT JOIN users u ON c.user_id = u.id
+                WHERE c.post_id = UUID_TO_BIN(?)
                 ORDER BY c.datetime DESC
             """;
 
     private static String post_comment = """
             INSERT INTO comments (user_id, post_id, comment, datetime)
             VALUES (UUID_TO_BIN(?), UUID_TO_BIN(?), ?, NOW());
+            """;
+
+    private static String update_comment = """
+            UPDATE comments 
+            SET comment = ?,
+                datetime = NOW()
+            WHERE id = UUID_TO_BIN(?)
+            """;
+    
+    private static String get_comment_by_id = """
+            SELECT 
+                BIN_TO_UUID(c.id) AS id,
+                c.comment,
+                c.datetime,
+                COALESCE(u.name, 'Unknown') AS author_name,
+                BIN_TO_UUID(u.id) AS user_id
+            FROM comments c
+            LEFT JOIN users u ON c.user_id = u.id
+            WHERE c.id = UUID_TO_BIN(?)
             """;
 
     public boolean createUser(String name, String email, String role, String ppassword) {
@@ -379,6 +425,7 @@ public class MySQLDriver {
                 post.add(rs.getString("status"));
                 post.add(rs.getString("published_datetime"));
                 post.add(rs.getString("author"));
+                post.add(rs.getString("user_id"));
             }
             return post;
         } catch (SQLException e) {
@@ -482,4 +529,64 @@ public class MySQLDriver {
         return false;
     }
     }
+
+    public boolean deleteComment(String commentId) {
+       try (
+            Connection connection = DriverManager.getConnection(databaseUrl, username, password);
+            PreparedStatement preparedStatement = connection.prepareStatement(delete_comment);
+        ) {
+            preparedStatement.setString(1, commentId);
+            int deleteed = preparedStatement.executeUpdate();
+            if (deleteed == 1) {
+                return true;
+            }
+            return false;
+            
+        } catch (SQLException e) {
+            System.out.println("Failed to update post: " + e.getMessage());
+        }
+        return false;
+    }
+
+    public boolean updateComment(String commentId, String newContent) {
+
+        try (Connection conn = DriverManager.getConnection(databaseUrl, username, password);
+            PreparedStatement pstmt = conn.prepareStatement(update_comment)) {
+
+            pstmt.setString(1, newContent);
+            pstmt.setString(2, commentId);
+
+            return pstmt.executeUpdate() == 1;
+
+        } catch (SQLException e) {
+            System.out.println("Failed to update comment: " + e.getMessage());
+            return false;
+        }
+    }
+
+
+    public CommentRecord getCommentById(String commentId, String currentPostId) {
+
+        try (Connection conn = DriverManager.getConnection(databaseUrl, username, password);
+            PreparedStatement pstmt = conn.prepareStatement(get_comment_by_id)) {
+
+            pstmt.setString(1, commentId);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return new CommentRecord(
+                        rs.getString("id"),
+                        currentPostId, 
+                        rs.getString("user_id"),
+                        rs.getString("author_name"),
+                        rs.getString("comment"),
+                        rs.getObject("datetime", LocalDateTime.class)
+                    );
+                }
+            }
+        } catch (SQLException e) {
+            System.out.println("Failed to get comment: " + e.getMessage());
+        }
+        return null;
+    }
+
 }

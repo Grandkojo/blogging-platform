@@ -23,7 +23,7 @@
             </HBox>
 
             <!-- Main Content -->
-            <VBox alignment="TOP_CENTER" spacing="40" style="-fx-padding: 60 100 100 100;">
+            <VBox alignment="TOP_CENTER" prefHeight="824.0" prefWidth="1309.0" spacing="40" style="-fx-padding: 60 100 100 100;">
                 <children>
 
                     <Label fx:id="postTitleLabel" maxWidth="900" style="-fx-font-size: 42px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;" textAlignment="CENTER" wrapText="true" />
@@ -44,7 +44,7 @@
                         <!-- Comments List -->
                         <VBox fx:id="commentsContainer" spacing="20" />
 
-                        <!-- Add Comment Form (only if logged in) -->
+                              <!-- Add Comment Form (only if logged in) -->
                         <VBox fx:id="addCommentForm" spacing="12" visible="false">
                             <Label style="-fx-font-size: 18px; -fx-font-weight: bold;" text="Add a Comment" />
                             <TextArea fx:id="commentInput" prefHeight="120" promptText="Write your comment..." style="-fx-font-size: 15px;" wrapText="true" />

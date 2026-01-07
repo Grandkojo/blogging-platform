@@ -3,6 +3,7 @@
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.TextArea?>
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
@@ -10,52 +11,61 @@
 
 <AnchorPane prefHeight="900.0" prefWidth="1100.0" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.blogging_platform.SinglePostController">
 
-    <!-- Main Container -->
-    <VBox nodeOrientation="LEFT_TO_RIGHT" pickOnBounds="false" style="-fx-background-color: #ffffff;">
+    <VBox style="-fx-background-color: #ffffff;">
         <children>
-      
-            <!-- Header with Back Button -->
-            <HBox alignment="CENTER_LEFT" prefHeight="83.0" prefWidth="1117.0" style="-fx-padding: 30 60 20 60; -fx-background-color: #f8f9fa; -fx-border-color: #e9ecef; -fx-border-width: 0 0 1 0;">
+
+            <!-- Header -->
+            <HBox alignment="CENTER_LEFT" style="-fx-padding: 30 60 20 60; -fx-background-color: #f8f9fa; -fx-border-color: #e9ecef; -fx-border-width: 0 0 1 0;">
                 <children>
-                    <Button onAction="#goBack" style="-fx-font-size: 16px; -fx-text-fill: #3498db; -fx-background-color: transparent; -fx-cursor: hand;" text="← Back to Posts" HBox.hgrow="NEVER" />
+                    <Button onAction="#goBack" style="-fx-font-size: 16px; -fx-text-fill: #3498db; -fx-background-color: transparent;" text="← Back to Posts" />
                     <Region HBox.hgrow="ALWAYS" />
                 </children>
             </HBox>
 
-            <!-- Article Content -->
-            <VBox alignment="CENTER_LEFT" prefHeight="693.0" prefWidth="1117.0" spacing="40" style="-fx-padding: 60 100 100 100;">
+            <!-- Main Content -->
+            <VBox alignment="TOP_CENTER" prefHeight="824.0" prefWidth="1309.0" spacing="40" style="-fx-padding: 60 100 100 100;">
                 <children>
 
-                    <!-- Title -->
-                    <Label fx:id="postTitleLabel" alignment="TOP_LEFT" contentDisplay="TOP" maxWidth="900" style="-fx-font-size: 42px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;" text="Learn a new language" wrapText="true" />
+                    <Label fx:id="postTitleLabel" maxWidth="900" style="-fx-font-size: 42px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;" textAlignment="CENTER" wrapText="true" />
 
-                    <!-- Meta: Author + Date -->
                     <VBox alignment="CENTER" spacing="12">
-                        <Label fx:id="authorLabel" style="-fx-font-size: 20px; -fx-text-fill: #34495e; -fx-font-weight: semibold;" text="by Ernest Essien" />
-                        <Label fx:id="dateLabel" style="-fx-font-size: 18px; -fx-text-fill: #95a5a6;" text="2026-01-05 09:35:42" />
+                        <Label fx:id="authorLabel" style="-fx-font-size: 20px; -fx-text-fill: #34495e;" />
+                        <Label fx:id="dateLabel" style="-fx-font-size: 18px; -fx-text-fill: #95a5a6;" />
                     </VBox>
 
-                    <!-- Divider -->
-                    <Separator prefWidth="600" style="-fx-background-color: #ecf0f1;" />
-                    <Label fx:id="postContentText" alignment="TOP_LEFT" graphicTextGap="2.0" maxWidth="974.0" minHeight="400.0" prefHeight="400.0" prefWidth="974.0" style="-fx-font-size: 19px; -fx-line-spacing: 12; -fx-text-fill: #34495e; " text="If you feel you want to utilize your brain, learning a new language is the way to go. It's going to make you better" textOverrun="LEADING_ELLIPSIS" wrapText="true" />
+                    <Separator prefWidth="600" />
 
-                    
+                    <Label fx:id="postContentText" maxWidth="900" style="-fx-font-size: 20px; -fx-line-spacing: 16; -fx-text-fill: #2d3436;" textAlignment="JUSTIFY" wrapText="true" />
+
+                    <!-- Comments Section -->
+                    <VBox spacing="25">
+                        <Label style="-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;" text="Comments" />
+
+                        <!-- Comments List -->
+                        <VBox fx:id="commentsContainer" spacing="20" />
+
+                              <!-- Add Comment Form (only if logged in) -->
+                        <VBox fx:id="addCommentForm" spacing="12" visible="false">
+                            <Label style="-fx-font-size: 18px; -fx-font-weight: bold;" text="Add a Comment" />
+                            <TextArea fx:id="commentInput" prefHeight="120" promptText="Write your comment..." style="-fx-font-size: 15px;" wrapText="true" />
+                            <HBox alignment="CENTER_RIGHT">
+                                <Button onAction="#postComment" style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-size: 14px; -fx-padding: 10 20; -fx-background-radius: 8;" text="Post Comment" />
+                            </HBox>
+                        </VBox>
+
+                        <!-- No Comments Message -->
+                        <Label fx:id="noCommentsLabel" style="-fx-font-size: 16px; -fx-text-fill: #7f8c8d;" text="No comments yet. Be the first to comment!" visible="false" />
+                    </VBox>
+
                 </children>
-            </VBox>
-
-            <VBox spacing="20" style="-fx-padding: 40 0 0 0;">
-                <Label text="Comments" style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;" />
-
-                <VBox fx:id="commentsContainer" spacing="15" />
             </VBox>
 
         </children>
     </VBox>
 
-    <!-- Global Styles -->
     <style>
-        -fx-background-color: #ffffff;
-        -fx-font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+        -fx-background-color: #fdfdfd;
+        -fx-font-family: "Helvetica Neue", Arial, sans-serif;
     </style>
 
 </AnchorPane>

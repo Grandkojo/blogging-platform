@@ -70,3 +70,8 @@ MODIFY COLUMN id BINARY(16) DEFAULT (UUID_TO_BIN(UUID()));
 
 ALTER TABLE users 
 ADD COLUMN password VARCHAR(255) NOT NULL;
+
+
+-- for faster title search and author names search, case-insensitive
+CREATE FULLTEXT INDEX idx_title_fulltext ON posts(title);
+CREATE FULLTEXT INDEX idx_author_fulltext ON users(name);
