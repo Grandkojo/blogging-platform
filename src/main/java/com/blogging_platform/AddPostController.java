@@ -67,6 +67,7 @@ public class AddPostController extends BaseController implements Initializable {
         return valid;
     }
 
+
     @FXML
     void submitPost(ActionEvent event) {
         String status = postStatus.getValue().trim();
