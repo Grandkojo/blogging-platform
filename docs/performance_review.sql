@@ -36,7 +36,7 @@ EXPLAIN ANALYZE SELECT
    WHERE p.status = 'PUBLISHED'
    AND (MATCH(p.title) AGAINST ('Greatness is not gotten by' IN NATURAL LANGUAGE MODE)  > 0 
       OR MATCH(u.name) AGAINST ('Greatness is not gotten by' IN NATURAL LANGUAGE MODE) > 0)
-   ORDER BY (title_score + author_acore) DESC;
+   ORDER BY (title_score + author_score) DESC;
 
 
    -> Sort: `(title_score + author_score)` DESC  (actual time=0.0654..0.0655 rows=1 loops=1)

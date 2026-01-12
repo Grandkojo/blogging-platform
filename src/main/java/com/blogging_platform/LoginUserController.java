@@ -2,6 +2,9 @@ package com.blogging_platform;
 
 import com.blogging_platform.classes.SessionManager;
 import com.blogging_platform.classes.User;
+import com.blogging_platform.exceptions.AuthenticationException;
+import com.blogging_platform.exceptions.DatabaseException;
+import com.blogging_platform.exceptions.UserNotFoundException;
 
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -56,17 +59,22 @@ public class LoginUserController extends BaseController {
     @FXML
     void loginUser(ActionEvent event) {
         if(validateForm()){
-            MySQLDriver sqlDriver = new MySQLDriver();
-            boolean userExists = sqlDriver.validateLogin(userEmail.getText().trim(), userPassword.getText().trim());
-            if (userExists){
-                User user = sqlDriver.getCurrentUser(userEmail.getText().trim());
-                if (user != null) {
+            try {
+                MySQLDriver sqlDriver = new MySQLDriver();
+                boolean userExists = sqlDriver.validateLogin(userEmail.getText().trim(), userPassword.getText().trim());
+                if (userExists){
+                    User user = sqlDriver.getCurrentUser(userEmail.getText().trim());
                     SessionManager.getInstance().login(user);
+                    switchTo("PostHome");
+                } else {
+                    throw new AuthenticationException("Invalid email or password");
                 }
-                // switchTo("PostList");
-                switchTo("PostHome");
-            } else {
-                showError("Invalid email or password, try again");
+            } catch (AuthenticationException e) {
+                showError(e.getUserMessage());
+            } catch (UserNotFoundException e) {
+                showError(e.getUserMessage());
+            } catch (DatabaseException e) {
+                showError("Database error. Please try again later.");
             }
         }
     }

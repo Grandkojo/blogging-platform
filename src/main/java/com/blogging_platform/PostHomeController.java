@@ -57,27 +57,30 @@ public class PostHomeController extends BaseController {
     }
 
     private void loadAllPosts(String query) {
-        MySQLDriver driver = new MySQLDriver();
-        ArrayList<String> rawPosts = driver.getAllPosts(query);  // flat list of strings
+        try {
+            MySQLDriver driver = new MySQLDriver();
+            ArrayList<String> rawPosts = driver.getAllPosts(query);  // flat list of strings
 
-        postsFlowPane.getChildren().clear();
+            postsFlowPane.getChildren().clear();
 
-        // Process the flat list 6 items at a time
-        for (int i = 0; i < rawPosts.size(); i += 7) {
-            if (i + 6 >= rawPosts.size()) break; // safety check
+            // Process the flat list 6 items at a time
+            for (int i = 0; i < rawPosts.size(); i += 7) {
+                if (i + 6 >= rawPosts.size()) break; // safety check
+                String id = rawPosts.get(i + 5);
+                String title = rawPosts.get(i);
+                String content = rawPosts.get(i + 1);
+                String status = rawPosts.get(i + 2);
+                String author = rawPosts.get(i + 3);
+                String dateStr = rawPosts.get(i + 4); // "2026-01-05 09:28:26.072499"
+                int commentCount = Integer.parseInt(rawPosts.get(i + 6));
 
-            String id = rawPosts.get(i + 5);
-            String title = rawPosts.get(i);
-            String content = rawPosts.get(i + 1);
-            String status = rawPosts.get(i + 2);
-            String author = rawPosts.get(i + 3);
-            String dateStr = rawPosts.get(i + 4); // "2026-01-05 09:28:26.072499"
-            int commentCount = Integer.parseInt(rawPosts.get(i + 6));
+                LocalDateTime publishedDate = LocalDateTime.parse(dateStr.replace(" ", "T")); // quick fix for space
 
-            LocalDateTime publishedDate = LocalDateTime.parse(dateStr.replace(" ", "T")); // quick fix for space
-
-            Node card = createPostCard(title, content, status, author, publishedDate, id, commentCount);
-            postsFlowPane.getChildren().add(card);
+                Node card = createPostCard(title, content, status, author, publishedDate, id, commentCount);
+                postsFlowPane.getChildren().add(card);
+            }
+        } catch (com.blogging_platform.exceptions.DatabaseException e) {
+            showError("Failed to load posts. Please try again.");
         }
     }
 

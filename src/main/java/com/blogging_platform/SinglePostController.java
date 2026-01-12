@@ -20,7 +20,9 @@ import java.util.Optional;
 import com.blogging_platform.classes.CommentRecord;
 import com.blogging_platform.classes.ParameterReceiver;
 import com.blogging_platform.classes.SessionManager;
-import com.blogging_platform.classes.User;
+import com.blogging_platform.exceptions.DatabaseException;
+import com.blogging_platform.exceptions.PostNotFoundException;
+import com.blogging_platform.exceptions.CommentNotFoundException;
 
 public class SinglePostController extends BaseController implements ParameterReceiver {
 
@@ -41,15 +43,22 @@ public class SinglePostController extends BaseController implements ParameterRec
     private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMMM d, yyyy");
 
     public void displayPost(String id) {
-        MySQLDriver sqlDriver = new MySQLDriver();
-        ArrayList<String> post = sqlDriver.getFullPostById(id);
-        this.postUserId = post.get(6);
-        postTitleLabel.setText(post.get(1));
-        postContentText.setText(post.get(2));
-        authorLabel.setText("by " + post.get(5));
-        dateLabel.setText(post.get(4).formatted(formatter));
+        try {
+            MySQLDriver sqlDriver = new MySQLDriver();
+            ArrayList<String> post = sqlDriver.getFullPostById(id);
+            this.postUserId = post.get(6);
+            postTitleLabel.setText(post.get(1));
+            postContentText.setText(post.get(2));
+            authorLabel.setText("by " + post.get(5));
+            dateLabel.setText(post.get(4).formatted(formatter));
 
-        loadComments(id);
+            loadComments(id);
+        } catch (PostNotFoundException e) {
+            showError(e.getUserMessage());
+            switchTo("PostHome");
+        } catch (DatabaseException e) {
+            showError("Failed to load post. Please try again.");
+        }
     }
 
     @Override
@@ -62,97 +71,85 @@ public class SinglePostController extends BaseController implements ParameterRec
     private void loadComments(String postId) {
         commentsContainer.getChildren().clear();
 
-        MySQLDriver sqlDriver = new MySQLDriver();
-        List<CommentRecord> comments = sqlDriver.getCommentsByPostId(postId);
+        try {
+            MySQLDriver sqlDriver = new MySQLDriver();
+            List<CommentRecord> comments = sqlDriver.getCommentsByPostId(postId);
 
-        if (comments.isEmpty()) {
-            noCommentsLabel.setVisible(true);
-            addCommentForm.setVisible(SessionManager.getInstance().isLoggedIn());
-        } else {
-            noCommentsLabel.setVisible(false);
-            addCommentForm.setVisible(SessionManager.getInstance().isLoggedIn());
+            if (comments.isEmpty()) {
+                noCommentsLabel.setVisible(true);
+                addCommentForm.setVisible(SessionManager.getInstance().isLoggedIn());
+            } else {
+                noCommentsLabel.setVisible(false);
+                addCommentForm.setVisible(SessionManager.getInstance().isLoggedIn());
 
-            for (CommentRecord comment : comments) {
-                VBox commentBox = new VBox(10);
-                commentBox.setStyle("-fx-background-color: #f8f9fa; -fx-padding: 20; -fx-background-radius: 12;");
+                for (CommentRecord comment : comments) {
+                    VBox commentBox = new VBox(10);
+                    commentBox.setStyle("-fx-background-color: #f8f9fa; -fx-padding: 20; -fx-background-radius: 12;");
 
-                // Label author = new Label(comment.authorName());
-                // author.setStyle("-fx-font-weight: bold; -fx-font-size: 16px; -fx-text-fill: #2c3e50;");
+                    HBox headerBox = new HBox(10); // HBox with spacing of 10
+                    headerBox.setAlignment(Pos.CENTER_LEFT); // Align items vertically in the center
 
-                // Hyperlink editButton = new Hyperlink("Edit");
-                // editButton.setStyle("-fx-font-weight: bold; -fx-font-size: 16px; -fx-text-fill: #2c3e50;");
+                    Label author = new Label(comment.authorName());
+                    author.setStyle("-fx-font-weight: bold; -fx-font-size: 16px; -fx-text-fill: #2c3e50;");
 
-                // Hyperlink deleteButton = new Hyperlink("Delete");
-                // deleteButton.setStyle("-fx-font-weight: bold; -fx-font-size: 16px; -fx-text-fill: #2c3e50;");
+                    Hyperlink editButton = new Hyperlink();
+                    Hyperlink deleteButton = new Hyperlink();
 
+                    //if comment belongs to logged in user
+                    if (comment.userId().equals(SessionManager.getInstance().getUserId())){
+                        editButton = new Hyperlink("Edit");
+                        editButton.setStyle("-fx-font-weight: bold; -fx-font-size: 14px; -fx-text-fill: #3498db;"); // Adjusted font size slightly
+                        editButton.setOnAction(event -> handleEdit(comment.id())); // Add your event handler method
+                    }
+                    //if comment belongs to the logged in user or logged in user is the owner of the post
+                    if (comment.userId().equals(SessionManager.getInstance().getUserId()) || SessionManager.getInstance().getUserId().equals(this.postUserId)){
+                        deleteButton = new Hyperlink("Delete");
+                        deleteButton.setStyle("-fx-font-weight: bold; -fx-font-size: 14px; -fx-text-fill: #e74c3c;"); // Add a delete color
+                        deleteButton.setOnAction(event -> handleDelete(comment.id())); // Add your event handler method
+                    }
 
-                // Label date = new Label(comment.date().format(DateTimeFormatter.ofPattern("MMM d, yyyy 'at' HH:mm")));
-                // date.setStyle("-fx-text-fill: #95a5a6; -fx-font-size: 14px;");
+                    // Use Region as a spacer that grows to push buttons to the right
+                    javafx.scene.layout.Region spacer = new javafx.scene.layout.Region();
+                    javafx.scene.layout.HBox.setHgrow(spacer, javafx.scene.layout.Priority.ALWAYS);
 
-                // Text content = new Text(comment.content());
-                // content.setStyle("-fx-font-size: 16px; -fx-text-fill: #34495e;");
-                // content.setWrappingWidth(800);
+                    // Add elements to the HBox: Author, then a growing spacer, then buttons
+                    headerBox.getChildren().addAll(author, spacer, editButton, deleteButton);
+                    // --- End of new HBox structure ---
 
-                // commentBox.getChildren().addAll(author, date, content, editButton, deleteButton);
-                // commentsContainer.getChildren().add(commentBox);
+                    // The rest of your existing elements
+                    Label date = new Label(comment.date().format(DateTimeFormatter.ofPattern("MMM d, yyyy 'at' HH:mm")));
+                    date.setStyle("-fx-text-fill: #95a5a6; -fx-font-size: 14px;");
 
-                HBox headerBox = new HBox(10); // HBox with spacing of 10
-                headerBox.setAlignment(Pos.CENTER_LEFT); // Align items vertically in the center
+                    Text content = new Text(comment.content());
+                    content.setStyle("-fx-font-size: 16px; -fx-text-fill: #34495e;");
+                    content.setWrappingWidth(800);
 
-                Label author = new Label(comment.authorName());
-                author.setStyle("-fx-font-weight: bold; -fx-font-size: 16px; -fx-text-fill: #2c3e50;");
+                    commentBox.setUserData(comment.id());
 
-                Hyperlink editButton = new Hyperlink();
-                Hyperlink deleteButton = new Hyperlink();
-
-                //if comment belongs to logged in user
-                if (comment.userId().equals(SessionManager.getInstance().getUserId())){
-                    editButton = new Hyperlink("Edit");
-                    editButton.setStyle("-fx-font-weight: bold; -fx-font-size: 14px; -fx-text-fill: #3498db;"); // Adjusted font size slightly
-                    editButton.setOnAction(event -> handleEdit(comment.id())); // Add your event handler method
+                    // Add the new headerBox to the main VBox instead of the 'author' label alone
+                    commentBox.getChildren().addAll(headerBox, date, content);
+                    commentsContainer.getChildren().add(commentBox);
                 }
-                //if comment belongs to the logged in user or logged in user is the owner of the post
-                if (comment.userId().equals(SessionManager.getInstance().getUserId()) || SessionManager.getInstance().getUserId().equals(this.postUserId)){
-                    deleteButton = new Hyperlink("Delete");
-                    deleteButton.setStyle("-fx-font-weight: bold; -fx-font-size: 14px; -fx-text-fill: #e74c3c;"); // Add a delete color
-                    deleteButton.setOnAction(event -> handleDelete(comment.id())); // Add your event handler method
-                }
-
-                // Use Region as a spacer that grows to push buttons to the right
-                javafx.scene.layout.Region spacer = new javafx.scene.layout.Region();
-                javafx.scene.layout.HBox.setHgrow(spacer, javafx.scene.layout.Priority.ALWAYS);
-
-                // Add elements to the HBox: Author, then a growing spacer, then buttons
-                headerBox.getChildren().addAll(author, spacer, editButton, deleteButton);
-                // --- End of new HBox structure ---
-
-                // The rest of your existing elements
-                Label date = new Label(comment.date().format(DateTimeFormatter.ofPattern("MMM d, yyyy 'at' HH:mm")));
-                date.setStyle("-fx-text-fill: #95a5a6; -fx-font-size: 14px;");
-
-                Text content = new Text(comment.content());
-                content.setStyle("-fx-font-size: 16px; -fx-text-fill: #34495e;");
-                content.setWrappingWidth(800);
-
-                commentBox.setUserData(comment.id());
-
-                // Add the new headerBox to the main VBox instead of the 'author' label alone
-                commentBox.getChildren().addAll(headerBox, date, content);
-                commentsContainer.getChildren().add(commentBox);
             }
+        } catch (DatabaseException e) {
+            showError("Failed to load comments. Please try again.");
         }
     }
 
     private void handleDelete(String commentId) {
         Optional<ButtonType> result = confirmDialog("Do you want to delete this comment?");
         if (result.isPresent() && result.get() == ButtonType.OK) {
-            MySQLDriver sqlDriver = new MySQLDriver();
-            sqlDriver.deleteComment(commentId);
-            loadComments(currentPostId);
-        } else {
-            System.out.println("Delete cancelled");
+            try {
+                MySQLDriver sqlDriver = new MySQLDriver();
+                sqlDriver.deleteComment(commentId);
+                loadComments(currentPostId);
+            } catch (CommentNotFoundException e) {
+                showError(e.getUserMessage());
+                loadComments(currentPostId);
+            } catch (DatabaseException e) {
+                showError("Failed to delete comment. Please try again.");
+            }
         }
-
     }
 
     private void handleEdit(String commentId) {
@@ -167,9 +164,17 @@ public class SinglePostController extends BaseController implements ParameterRec
             // Get current comment data (we'll reuse the existing CommentRecord if possible)
             // But for simplicity, fetch fresh from DB
             MySQLDriver sqlDriver = new MySQLDriver();
-            CommentRecord comment = sqlDriver.getCommentById(commentId, this.currentPostId);
-
-            if (comment == null) return;
+            CommentRecord comment;
+            try {
+                comment = sqlDriver.getCommentById(commentId, this.currentPostId);
+            } catch (CommentNotFoundException e) {
+                showError(e.getUserMessage());
+                loadComments(currentPostId);
+                return;
+            } catch (DatabaseException e) {
+                showError("Failed to load comment. Please try again.");
+                return;
+            }
 
             // Author + Date (unchanged)
             Label author = new Label(comment.authorName());
@@ -202,12 +207,15 @@ public class SinglePostController extends BaseController implements ParameterRec
                     return;
                 }
 
-                boolean updated = sqlDriver.updateComment(commentId, newContent);
-                if (updated) {
+                try {
+                    sqlDriver.updateComment(commentId, newContent);
                     showInfo("Comment updated!");
                     loadComments(currentPostId); // refresh all comments
-                } else {
-                    showError("Failed to update comment");
+                } catch (CommentNotFoundException ex) {
+                    showError(ex.getUserMessage());
+                    loadComments(currentPostId);
+                } catch (DatabaseException ex) {
+                    showError("Failed to update comment. Please try again.");
                 }
             });
 
@@ -231,17 +239,15 @@ public class SinglePostController extends BaseController implements ParameterRec
             return;
         }
 
-        MySQLDriver sqlDriver = new MySQLDriver();
-        String currentUserId = SessionManager.getInstance().getUserId();
-
-        boolean success = sqlDriver.addComment(currentPostId, currentUserId, content);
-
-        if (success) {
+        try {
+            MySQLDriver sqlDriver = new MySQLDriver();
+            String currentUserId = SessionManager.getInstance().getUserId();
+            sqlDriver.addComment(currentPostId, currentUserId, content);
             commentInput.clear();
             loadComments(currentPostId);  // refresh
             showInfo("Comment added!");
-        } else {
-            showError("Failed to add comment");
+        } catch (DatabaseException e) {
+            showError("Failed to add comment. Please try again.");
         }
     }
 

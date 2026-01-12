@@ -3,6 +3,9 @@ package com.blogging_platform;
 import java.net.URL;
 import java.util.ResourceBundle;
 
+import com.blogging_platform.exceptions.DatabaseException;
+import com.blogging_platform.exceptions.DuplicateEmailException;
+
 import javafx.collections.FXCollections;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -89,17 +92,17 @@ public class RegisterUserController extends BaseController implements Initializa
     @FXML
     void submitUser(ActionEvent event) {
         if(validateForm()){
-            System.out.println("Submitted");
-            MySQLDriver sqlDriver = new MySQLDriver();
-            boolean addUser =sqlDriver.createUser(userName.getText().trim(), userEmail.getText().trim(), userRole.getValue(), userPassword.getText().trim());
-            if (addUser){
+            try {
+                MySQLDriver sqlDriver = new MySQLDriver();
+                sqlDriver.createUser(userName.getText().trim(), userEmail.getText().trim(), userRole.getValue(), userPassword.getText().trim());
                 showInfo("User Registered Successfully");
                 switchTo("Login", null);
-            } else {
-                showError("Failed to register user, try again");
+            } catch (DuplicateEmailException e) {
+                emailError.setText(e.getUserMessage());
+                emailError.setVisible(true);
+            } catch (DatabaseException e) {
+                showError("Database error. Please try again later.");
             }
-        } else{
-            System.out.println("Error in form");
         }
     }
 

@@ -6,6 +6,8 @@ import java.util.ResourceBundle;
 
 import com.blogging_platform.classes.ParameterReceiver;
 import com.blogging_platform.classes.SessionManager;
+import com.blogging_platform.exceptions.DatabaseException;
+import com.blogging_platform.exceptions.PostNotFoundException;
 
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -38,10 +40,10 @@ public class EditPostController extends BaseController implements ParameterRecei
     private String currentPostId;
 
      private void loadPostForEditing(String id) {
-        MySQLDriver sqlDriver = new MySQLDriver();
-        ArrayList<String> post = sqlDriver.getPostById(id);
+        try {
+            MySQLDriver sqlDriver = new MySQLDriver();
+            ArrayList<String> post = sqlDriver.getPostById(id);
 
-        if (post != null){
             postTitle.setText(post.get(0)); 
             postContent.setText(post.get(1));
 
@@ -56,7 +58,12 @@ public class EditPostController extends BaseController implements ParameterRecei
             default:
                 postStatus.setValue("Draft");
                 break;
-        }   
+            }
+        } catch (PostNotFoundException e) {
+            showError(e.getUserMessage());
+            switchTo("PostList");
+        } catch (DatabaseException e) {
+            showError("Failed to load post. Please try again.");
         }
     }
 
@@ -116,15 +123,17 @@ public class EditPostController extends BaseController implements ParameterRecei
         }   
 
         if (validateForm()){
-            MySQLDriver sqlDriver = new MySQLDriver();
-            boolean created = sqlDriver.updatePost(currentPostId, postTitle.getText().trim(), postContent.getText().trim(), status.toUpperCase());
-            if (created){
+            try {
+                MySQLDriver sqlDriver = new MySQLDriver();
+                sqlDriver.updatePost(currentPostId, postTitle.getText().trim(), postContent.getText().trim(), status.toUpperCase());
                 showInfo("Post Updated Successfully");
                 switchTo("PostList");
-            } else {
-                showError("Failed to update post, try again");
+            } catch (PostNotFoundException e) {
+                showError(e.getUserMessage());
+                switchTo("PostList");
+            } catch (DatabaseException e) {
+                showError("Failed to update post. Please try again.");
             }
-
         }
     }
 

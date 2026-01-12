@@ -6,6 +6,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
 
+import com.blogging_platform.exceptions.ConfigurationException;
+
 public class Config {
     private static final Map<String, String> envVars = loadEnvFile();
 
@@ -44,13 +46,17 @@ public class Config {
         return vars;
     }
 
-    public static String get(String key) {
+    public static String get(String key) throws ConfigurationException {
         // First check .env file, then fall back to system environment variables
         String value = envVars.get(key);
         if (value != null) {
             return value;
         }
         // Fall back to system environment variables
-        return System.getenv(key);
+        String envValue = System.getenv(key);
+        if (envValue == null) {
+            throw new ConfigurationException(key, "Configuration key '" + key + "' not found in .env file or environment variables");
+        }
+        return envValue;
     }
 }

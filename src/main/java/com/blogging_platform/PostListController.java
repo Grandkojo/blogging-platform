@@ -9,6 +9,8 @@ import java.util.ResourceBundle;
 
 import com.blogging_platform.classes.PostRecord;
 import com.blogging_platform.classes.SessionManager;
+import com.blogging_platform.exceptions.DatabaseException;
+import com.blogging_platform.exceptions.PostNotFoundException;
 
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -88,11 +90,14 @@ public class PostListController extends BaseController implements Initializable 
     }
 
     private void loadPosts(){
-        postData.clear();
-        MySQLDriver sqlDriver = new MySQLDriver();
-        List<PostRecord> posts = sqlDriver.listPosts(SessionManager.getInstance().getUserId());
-        postData.addAll(posts);
-
+        try {
+            postData.clear();
+            MySQLDriver sqlDriver = new MySQLDriver();
+            List<PostRecord> posts = sqlDriver.listPosts(SessionManager.getInstance().getUserId());
+            postData.addAll(posts);
+        } catch (DatabaseException e) {
+            showError("Failed to load posts. Please try again.");
+        }
     }
 
     @FXML
@@ -102,26 +107,37 @@ public class PostListController extends BaseController implements Initializable 
             loadPosts();
             return;
         }
-        postData.clear();
-        MySQLDriver sqlDriver = new MySQLDriver();
-        List<PostRecord> f_posts = sqlDriver.listPostsBySearch(query);
-        postData.addAll(f_posts);
-
+        try {
+            postData.clear();
+            MySQLDriver sqlDriver = new MySQLDriver();
+            List<PostRecord> f_posts = sqlDriver.listPostsBySearch(query);
+            postData.addAll(f_posts);
+        } catch (DatabaseException e) {
+            showError("Failed to search posts. Please try again.");
+        }
     }
 
     @FXML
     void deletePost(ActionEvent event) {
         PostRecord selected = postsTable.getSelectionModel().getSelectedItem();
+        if (selected == null) {
+            return;
+        }
         String postId = selected.id();
         Optional<ButtonType> result =  confirmDialog("Delete post \"" + selected.title() + "\"?");
         
         if (result.isPresent() && result.get() == ButtonType.OK) {
-            MySQLDriver sqlDriver = new MySQLDriver();
-            sqlDriver.deletePost(postId);
-            showInfo("Post deleted succesfully");
-            loadPosts();
-        } else {
-            System.out.println("Delete cancelled");
+            try {
+                MySQLDriver sqlDriver = new MySQLDriver();
+                sqlDriver.deletePost(postId);
+                showInfo("Post deleted successfully");
+                loadPosts();
+            } catch (PostNotFoundException e) {
+                showError(e.getUserMessage());
+                loadPosts();
+            } catch (DatabaseException e) {
+                showError("Failed to delete post. Please try again.");
+            }
         }
     }
 
