@@ -10,7 +10,6 @@ import javafx.collections.FXCollections;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.scene.control.Alert;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
@@ -42,8 +41,6 @@ public class RegisterUserController extends BaseController implements Initializa
 
     @FXML
     private Label roleError;
-
-    Alert alert = new Alert(null);
 
     @Override
     public void initialize(URL arg0, ResourceBundle arg1) {
