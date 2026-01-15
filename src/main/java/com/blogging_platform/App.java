@@ -29,7 +29,7 @@ public class App extends Application {
     public void start(Stage stage) throws IOException {
         scene = new Scene(loadFXML("Login"));
         stage.setResizable(true);
-        stage.setFullScreen(true);
+        stage.setFullScreen(true);  
         stage.setTitle("Blogging Platform");
         stage.setScene(scene);
         stage.show();

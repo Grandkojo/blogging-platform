@@ -53,10 +53,15 @@ public class PostHomeController extends BaseController {
     @FXML
     private void searchPosts() {
         String query = searchField.getText().trim();
-        loadAllPosts(query);  // you'll update this method
+        if (!query.equals("")){
+            loadAllPosts(query);
+        } else{
+            loadAllPosts();
+        }
     }
 
     private void loadAllPosts(String query) {
+        
         try {
             MySQLDriver driver = new MySQLDriver();
             ArrayList<String> rawPosts = driver.getAllPosts(query);  // flat list of strings
