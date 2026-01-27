@@ -9,6 +9,9 @@ import javafx.stage.Stage;
 import java.io.IOException;
 
 import com.blogging_platform.classes.ParameterReceiver;
+import com.blogging_platform.dao.interfaces.UserDAO;
+import com.blogging_platform.dao.interfaces.implementation.JdbcUserDAO;
+import com.blogging_platform.service.UserService;
 
 /**
  * JavaFX App
@@ -18,15 +21,27 @@ public class App extends Application {
     private static App instance;
     private static Scene scene;
 
-    public App() {
-        instance = this;
-    }
+    //services
+    private UserService userService;
 
-    public static App getInstance() {
-        return instance;
-    }
+
+    public UserService getUserService() { return userService; }
+
+    public App() { instance = this; }
+
+    public static App getInstance() { return instance; }
+
+    
+    
     @Override
     public void start(Stage stage) throws IOException {
+
+        //initialize the daos
+        UserDAO userDAO = new JdbcUserDAO();
+
+        //initialize services
+        this.userService = new UserService(userDAO);
+
         scene = new Scene(loadFXML("Login"));
         stage.setResizable(true);
         stage.setFullScreen(true);  
@@ -43,6 +58,8 @@ public class App extends Application {
         Object controller = loader.getController();
         if (controller instanceof BaseController baseController) {
             baseController.setApp(App.getInstance());
+            baseController.setUserService(getInstance().getUserService()); 
+
         }
 
         if (controller instanceof ParameterReceiver receiver){
@@ -63,7 +80,10 @@ public class App extends Application {
     // Inject the App instance into the controller if it extends BaseController
     Object controller = fxmlLoader.getController();
     if (controller instanceof BaseController baseController) {
-        baseController.setApp(App.getInstance()); 
+        baseController.setApp(getInstance()); 
+
+        // Pass the services from the App instance to the Controller
+        baseController.setUserService(getInstance().getUserService());
     }
 
     return parent;

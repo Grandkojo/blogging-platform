@@ -4,6 +4,7 @@ package com.blogging_platform;
 import java.io.IOException;
 import java.util.Optional;
 
+import com.blogging_platform.service.UserService;
 
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
@@ -21,6 +22,7 @@ public abstract class BaseController {
     // id for controller
     private String currentId;
 
+    protected UserService userService;
     /**
      * Called by the App class after loading the FXML.
      * Do not call this manually.
@@ -28,6 +30,9 @@ public abstract class BaseController {
     public void setApp(App app) {
         this.app = app;
     }
+
+    public void setUserService(UserService userService) { this.userService = userService; }
+
 
     /**
      * Helper to switch to another FXML scene.

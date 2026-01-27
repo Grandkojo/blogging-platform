@@ -12,6 +12,7 @@ import java.util.List;
 import com.blogging_platform.classes.CommentRecord;
 import com.blogging_platform.classes.PostRecord;
 import com.blogging_platform.classes.User;
+import com.blogging_platform.config.Config;
 import com.blogging_platform.exceptions.DatabaseException;
 import com.blogging_platform.exceptions.DatabaseConnectionException;
 import com.blogging_platform.exceptions.DatabaseQueryException;

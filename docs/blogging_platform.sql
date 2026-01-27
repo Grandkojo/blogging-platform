@@ -2,7 +2,7 @@ CREATE TABLE `users` (
   `id` BINARY(16) PRIMARY KEY,
   `name` VARCHAR(255),
   `email` VARCHAR(255) UNIQUE,
-  `role` ENUM('Admin', 'Regular')
+  `role` ENUM('Admin', 'Regular') NOT NULL
 );
 
 CREATE TABLE `posts` (
@@ -11,6 +11,7 @@ CREATE TABLE `posts` (
   `title` VARCHAR(255) UNIQUE,
   `content` TEXT,
   `status` ENUM('DRAFT', 'PUBLISHED', 'DELETED'),
+  `published_datetime` DATETIME,
   `published_datetime` DATETIME
 );
 

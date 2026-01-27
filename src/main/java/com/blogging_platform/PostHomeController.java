@@ -26,6 +26,7 @@ import com.blogging_platform.classes.CacheManager;
 import com.blogging_platform.classes.PostRecordF;
 import com.blogging_platform.classes.SessionManager;
 import com.blogging_platform.classes.User;
+import com.blogging_platform.classes.UserRecord;
 
 public class PostHomeController extends BaseController {
 
@@ -181,8 +182,7 @@ public class PostHomeController extends BaseController {
     void logout(ActionEvent event) {
         Optional<ButtonType> result = confirmDialog("Do you want to logout?");
         if (result.isPresent() && result.get() == ButtonType.OK) {
-            User user = SessionManager.getInstance().getCurrentUser();
-            SessionManager.getInstance().login(user);
+            userService.logout();
             switchTo("Login");
         } else {
             System.out.println("Logout cancelled");
