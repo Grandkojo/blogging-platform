@@ -418,7 +418,7 @@ public class MySQLDriver {
             }
             throw new DatabaseQueryException("Failed to update post", update_post, e);
         } catch (PostNotFoundException e) {
-            throw e; // Re-throw PostNotFoundException
+            throw e; 
         }
     }
 
@@ -443,7 +443,7 @@ public class MySQLDriver {
             }
             throw new DatabaseQueryException("Failed to delete post", delete_post, e);
         } catch (PostNotFoundException e) {
-            throw e; // Re-throw PostNotFoundException
+            throw e; 
         }
     }
 
@@ -472,7 +472,7 @@ public class MySQLDriver {
             }
             throw new DatabaseQueryException("Failed to get post", get_post_by_id, e);
         } catch (PostNotFoundException e) {
-            throw e; // Re-throw PostNotFoundException
+            throw e; 
         }
     }
 
@@ -505,7 +505,7 @@ public class MySQLDriver {
             }
             throw new DatabaseQueryException("Failed to get post", get_full_post_by_id, e);
         } catch (PostNotFoundException e) {
-            throw e; // Re-throw PostNotFoundException
+            throw e; 
         }
     }
 

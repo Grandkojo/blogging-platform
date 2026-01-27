@@ -39,7 +39,6 @@ public class PostHomeController extends BaseController {
 
 
     private final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("MMMM d, yyyy");
-
     @FXML
     private void initialize() {
         loadAllPosts();
@@ -157,7 +156,7 @@ public class PostHomeController extends BaseController {
 
         card.getChildren().addAll(titleLabel, metaLabel, commentLabel, preview);
 
-        // Click anywhere on the card → open full post
+        // Click anywhere on the card → open full postz
         card.setOnMouseClicked(e -> openSinglePost(id));
 
         // Hover effect

@@ -34,6 +34,17 @@ CREATE TABLE `post_tags` (
   PRIMARY KEY (`post_id`, `tag_id`)
 );
 
+CREATE TABLE `reviews` (
+  `id` BINARY(16) PRIMARY KEY,
+  `post_id` BINARY(16) NOT NULL,
+  `user_id` BINARY(16) NOT NULL,
+  `rating` TINYINT NOT NULL,
+  `message` VARCHAR(255),
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY `unique_user_review` (`post_id`, `user_id`)
+);
+
+
 -- Indexes
 CREATE UNIQUE INDEX `users_index_0` ON `users` (`name`);
 CREATE UNIQUE INDEX `posts_index_1` ON `posts` (`title`);
@@ -50,6 +61,8 @@ ALTER TABLE `comments` ADD FOREIGN KEY (`user_id`) REFERENCES `users` (`id`);
 ALTER TABLE `comments` ADD FOREIGN KEY (`post_id`) REFERENCES `posts` (`id`);
 ALTER TABLE `post_tags` ADD FOREIGN KEY (`post_id`) REFERENCES `posts` (`id`);
 ALTER TABLE `post_tags` ADD FOREIGN KEY (`tag_id`) REFERENCES `tags` (`id`);
+ALTER TABLE `reviews` ADD FOREIGN KEY (`post_id`) REFERENCES `posts` (`id`);
+ALTER TABLE `reviews` ADD FOREIGN KEY (`user_id`) REFERENCES `users` (`id`);
 
 -- uuid aut generation
 -- For users table
@@ -67,6 +80,13 @@ MODIFY COLUMN id BINARY(16) DEFAULT (UUID_TO_BIN(UUID()));
 -- For tags table
 ALTER TABLE tags 
 MODIFY COLUMN id BINARY(16) DEFAULT (UUID_TO_BIN(UUID()));
+
+-- For reviews table
+ALTER TABLE reviews 
+MODIFY COLUMN id BINARY(16) DEFAULT (UUID_TO_BIN(UUID()));
+-- add checks for rating 
+ALTER TABLE `reviews` ADD CONSTRAINT chk_rating CHECK (rating >= 1 AND rating <= 5);
+
 
 ALTER TABLE users 
 ADD COLUMN password VARCHAR(255) NOT NULL;
