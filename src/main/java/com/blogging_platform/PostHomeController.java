@@ -5,6 +5,7 @@ import javafx.fxml.FXML;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.control.ButtonType;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.Hyperlink;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
@@ -35,22 +36,38 @@ public class PostHomeController extends BaseController {
     @FXML
     private TextField searchField;
 
+    @FXML
+    private ComboBox<String> sortComboBox;
+
+    private static final String SORT_DATE_DESC = "Newest first";
+    private static final String SORT_DATE_ASC = "Oldest first";
+    private static final String SORT_TITLE_ASC = "Title A–Z";
+    private static final String SORT_TITLE_DESC = "Title Z–A";
+    private static final String SORT_AUTHOR_ASC = "Author A–Z";
+    private static final String SORT_AUTHOR_DESC = "Author Z–A";
 
     private final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("MMMM d, yyyy");
 
     @FXML
     private void initialize() {
-        // Don't load posts here - wait for service injection
         String userRole = SessionManager.getInstance().getUserRole();
         if (userRole != null && userRole.equals("Admin")){
             blogLink.setDisable(false);
             blogLink.setVisible(true);
+        }
+        if (sortComboBox != null) {
+            sortComboBox.getItems().setAll(SORT_DATE_DESC, SORT_DATE_ASC, SORT_TITLE_ASC, SORT_TITLE_DESC, SORT_AUTHOR_ASC, SORT_AUTHOR_DESC);
+            sortComboBox.setValue(SORT_DATE_DESC);
+            sortComboBox.valueProperty().addListener((o, oldVal, newVal) -> {
+                if (reviewService != null && tagService != null) loadAllPosts();
+            });
         }
     }
 
     @Override
     public void setTagService(com.blogging_platform.service.TagService tagService) {
         super.setTagService(tagService);
+        com.blogging_platform.classes.CacheManager.getInstance().setTagService(tagService);
     }
 
     @Override
@@ -64,59 +81,33 @@ public class PostHomeController extends BaseController {
 
     @FXML
     private void searchPosts() {
-        String query = searchField.getText().trim();
-        if (!query.equals("")){
-            loadAllPosts(query);
-        } else{
-            loadAllPosts();
-        }
+        loadAllPosts();
     }
 
-    private void loadAllPosts(String query) {
-        
-        try {
-            MySQLDriver driver = new MySQLDriver();
-            ArrayList<String> rawPosts = driver.getAllPosts(query);  // flat list of strings
-
-            postsFlowPane.getChildren().clear();
-
-            // Process the flat list 6 items at a time
-            for (int i = 0; i < rawPosts.size(); i += 7) {
-                if (i + 6 >= rawPosts.size()) break; // safety check
-                String id = rawPosts.get(i + 5);
-                String title = rawPosts.get(i);
-                String content = rawPosts.get(i + 1);
-                String status = rawPosts.get(i + 2);
-                String author = rawPosts.get(i + 3);
-                String dateStr = rawPosts.get(i + 4); // "2026-01-05 09:28:26.072499"
-                int commentCount = Integer.parseInt(rawPosts.get(i + 6));
-
-                LocalDateTime publishedDate = LocalDateTime.parse(dateStr.replace(" ", "T")); // quick fix for space
-
-                // Fetch tags for this post
-                List<TagRecord> tags = getTagsForPost(id);
-                double avgRating = getAverageRating(id);
-                Node card = createPostCard(title, content, status, author, publishedDate, id, commentCount, tags, avgRating);
-                postsFlowPane.getChildren().add(card);
-            }
-        } catch (com.blogging_platform.exceptions.DatabaseException e) {
-            showError("Failed to load posts. Please try again.");
-        }
+    /** Map UI sort label to CacheManager sortBy key. */
+    private String getSortByKey() {
+        String v = sortComboBox != null ? sortComboBox.getValue() : null;
+        if (SORT_DATE_ASC.equals(v)) return "date_asc";
+        if (SORT_TITLE_ASC.equals(v)) return "title_asc";
+        if (SORT_TITLE_DESC.equals(v)) return "title_desc";
+        if (SORT_AUTHOR_ASC.equals(v)) return "author_asc";
+        if (SORT_AUTHOR_DESC.equals(v)) return "author_desc";
+        return "date_desc";
     }
 
     private void loadAllPosts() {
         CacheManager cache = CacheManager.getInstance();
-        List<PostRecord> posts = cache.getPublishedPosts();
+        String query = searchField != null ? searchField.getText().trim() : "";
+        String sortBy = getSortByKey();
+        List<PostRecord> posts = cache.getPublishedPostsSearchAndSort(query, sortBy);
         postsFlowPane.getChildren().clear();
 
-        for (PostRecord post : posts){
-            // Fetch tags for this post
+        for (PostRecord post : posts) {
             List<TagRecord> tags = getTagsForPost(post.id());
             double avgRating = getAverageRating(post.id());
             Node card = createPostCard(post.title(), post.content(), post.status(), post.author(), post.publishedDate(), post.id(), post.commentCount() != null ? post.commentCount() : 0, tags, avgRating);
             postsFlowPane.getChildren().add(card);
         }
-
     }
 
     private List<TagRecord> getTagsForPost(String postId) {
@@ -171,7 +162,6 @@ public class PostHomeController extends BaseController {
         
         // Add tags beside the title (on the same row)
         if (tags != null && !tags.isEmpty()) {
-            System.out.println("Adding " + tags.size() + " tags to card for post: " + id);
             HBox tagsBox = new HBox(5);
             tagsBox.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
             for (TagRecord tag : tags) {

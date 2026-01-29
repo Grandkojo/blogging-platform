@@ -3,11 +3,16 @@ package com.blogging_platform;
 import java.net.URL;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.ResourceBundle;
+import java.util.concurrent.ConcurrentHashMap;
 
+import com.blogging_platform.classes.CacheManager;
 import com.blogging_platform.classes.PostRecord;
+import com.blogging_platform.classes.TagRecord;
 import com.blogging_platform.classes.SessionManager;
 import com.blogging_platform.exceptions.DatabaseException;
 import com.blogging_platform.exceptions.DatabaseQueryException;
@@ -26,6 +31,7 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
@@ -60,9 +66,23 @@ public class PostListController extends BaseController implements Initializable 
     private TextField searchField;
 
     @FXML
+    private ComboBox<String> sortComboBox;
+
+    @FXML
     private Button createTagButton;
 
     private ObservableList<PostRecord> postData = FXCollections.observableArrayList();
+    /** Full list from DB for in-memory filter/sort (no DB on search). */
+    private List<PostRecord> fullPostList = new ArrayList<>();
+    /** Post id -> tag names for search by tag. */
+    private Map<String, List<String>> postIdToTagNames = new ConcurrentHashMap<>();
+
+    private static final String SORT_DATE_DESC = "Newest first";
+    private static final String SORT_DATE_ASC = "Oldest first";
+    private static final String SORT_TITLE_ASC = "Title A–Z";
+    private static final String SORT_TITLE_DESC = "Title Z–A";
+    private static final String SORT_AUTHOR_ASC = "Author A–Z";
+    private static final String SORT_AUTHOR_DESC = "Author Z–A";
 
     public static <S> Callback<TableColumn<S, LocalDateTime>, TableCell<S, LocalDateTime>> getDateCellFactory() {
         return column -> { 
@@ -109,8 +129,13 @@ public class PostListController extends BaseController implements Initializable 
         dateColumn.setCellFactory(getDateCellFactory());
     
         postsTable.setItems(postData);
+
+        if (sortComboBox != null) {
+            sortComboBox.getItems().setAll(SORT_DATE_DESC, SORT_DATE_ASC, SORT_TITLE_ASC, SORT_TITLE_DESC, SORT_AUTHOR_ASC, SORT_AUTHOR_DESC);
+            sortComboBox.setValue(SORT_DATE_DESC);
+            sortComboBox.valueProperty().addListener((o, oldVal, newVal) -> applyFilterAndSort());
+        }
         
-        // Show create tag button only for admin users
         String userRole = SessionManager.getInstance().getUserRole();
         if (userRole != null && userRole.equals("Admin")) {
             createTagButton.setVisible(true);
@@ -128,34 +153,66 @@ public class PostListController extends BaseController implements Initializable 
     @Override
     public void setTagService(TagService tagService) {
         super.setTagService(tagService);
-        // Tag service is now available
+        if (postService != null) loadPosts();
     }
 
-    private void loadPosts(){
+    private void loadPosts() {
         try {
-
-            postData.clear();
-            postData.addAll(postService.getUserPosts(SessionManager.getInstance().getUserId()));
+            fullPostList = postService.getUserPosts(SessionManager.getInstance().getUserId());
+            postIdToTagNames.clear();
+            if (tagService != null) {
+                for (PostRecord p : fullPostList) {
+                    try {
+                        List<TagRecord> tags = tagService.getTagsByPostId(p.id());
+                        List<String> names = new ArrayList<>();
+                        if (tags != null) for (TagRecord t : tags) names.add(t.tag());
+                        postIdToTagNames.put(p.id(), names);
+                    } catch (DatabaseQueryException e) {
+                        postIdToTagNames.put(p.id(), List.of());
+                    }
+                }
+            }
+            applyFilterAndSort();
         } catch (DatabaseException e) {
             showError("Failed to load posts. Please try again.");
         }
     }
 
+    /** In-memory filter by title/author/tag then QuickSort via CacheManager. */
+    private void applyFilterAndSort() {
+        String query = searchField != null ? searchField.getText().trim() : "";
+        String q = query.isEmpty() ? null : query.toLowerCase();
+        List<PostRecord> filtered = new ArrayList<>();
+        for (PostRecord p : fullPostList) {
+            if (q == null || matchesSearch(p, q)) filtered.add(p);
+        }
+        String sortBy = getSortByKey();
+        CacheManager.getInstance().sortPosts(filtered, sortBy);
+        postData.clear();
+        postData.addAll(filtered);
+    }
+
+    private boolean matchesSearch(PostRecord p, String q) {
+        if (p.title() != null && p.title().toLowerCase().contains(q)) return true;
+        if (p.author() != null && p.author().toLowerCase().contains(q)) return true;
+        List<String> tags = postIdToTagNames.get(p.id());
+        if (tags != null) for (String t : tags) if (t != null && t.toLowerCase().contains(q)) return true;
+        return false;
+    }
+
+    private String getSortByKey() {
+        String v = sortComboBox != null ? sortComboBox.getValue() : null;
+        if (SORT_DATE_ASC.equals(v)) return "date_asc";
+        if (SORT_TITLE_ASC.equals(v)) return "title_asc";
+        if (SORT_TITLE_DESC.equals(v)) return "title_desc";
+        if (SORT_AUTHOR_ASC.equals(v)) return "author_asc";
+        if (SORT_AUTHOR_DESC.equals(v)) return "author_desc";
+        return "date_desc";
+    }
+
     @FXML
     void searchPosts(ActionEvent event) {
-        String query = searchField.getText().trim().toLowerCase();
-        if (query.isEmpty()){
-            loadPosts();
-            return;
-        }
-        try {
-            postData.clear();
-            MySQLDriver sqlDriver = new MySQLDriver();
-            List<PostRecord> f_posts = sqlDriver.listPostsBySearch(query);
-            postData.addAll(f_posts);
-        } catch (DatabaseException e) {
-            showError("Failed to search posts. Please try again.");
-        }
+        applyFilterAndSort();
     }
 
     @FXML
