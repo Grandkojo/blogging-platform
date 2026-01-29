@@ -11,7 +11,7 @@ CREATE TABLE `posts` (
   `title` VARCHAR(255) UNIQUE,
   `content` TEXT,
   `status` ENUM('DRAFT', 'PUBLISHED', 'DELETED'),
-  `published_datetime` DATETIME,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
   `published_datetime` DATETIME
 );
 

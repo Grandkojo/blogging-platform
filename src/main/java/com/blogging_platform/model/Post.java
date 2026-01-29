@@ -1,31 +1,46 @@
 package com.blogging_platform.model;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 public class Post {
-    private UUID id;
-    private UUID userId;
+    private String id;
+    private String userId;
     private String title;
     private String content;
     private String status;
     private String createdAt;
 
     private LocalDateTime publishedDatetime;
+    private boolean isPublish;
 
-    public UUID getId() {
+    public Post(String userId, String title, String content, String status) {
+        this.userId = userId;
+        this.title = title;
+        this.content = content;
+        this.status = status;
+    }
+
+    public Post(String postId, String userId, String title, String content, String status) {
+        this.id = postId;
+        this.userId = userId;
+        this.title = title;
+        this.content = content;
+        this.status = status;
+    }
+
+    public String getId() {
         return id;
     }
 
-    public void setId(UUID id) {
+    public void setId(String id) {
         this.id = id;
     }
 
-    public UUID getUserId() {
+    public String getUserId() {
         return userId;
     }
 
-    public void setUserId(UUID userId) {
+    public void setUserId(String userId) {
         this.userId = userId;
     }
 
@@ -67,5 +82,13 @@ public class Post {
 
     public void setCreatedAt(String createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public void setIsPublish(boolean b) {
+        this.isPublish = b;
+    }
+
+    public boolean getIsPublish(){
+        return this.isPublish;
     }
 }

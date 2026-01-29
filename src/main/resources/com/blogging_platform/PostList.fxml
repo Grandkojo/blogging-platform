@@ -34,6 +34,7 @@
                 <TableColumn fx:id="titleColumn" prefWidth="300" text="Title" />
                 <TableColumn fx:id="authorColumn" prefWidth="150" text="Author" />
                 <TableColumn fx:id="statusColumn" prefWidth="100" text="Status" />
+            <TableColumn fx:id="createdAtColumn" prefWidth="100" text="Created At" />
                 <TableColumn fx:id="dateColumn" prefWidth="150" text="Published" />
             </columns>
         </TableView>

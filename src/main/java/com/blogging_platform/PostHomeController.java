@@ -2,11 +2,8 @@ package com.blogging_platform;
 
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Hyperlink;
 import javafx.scene.control.Label;
@@ -15,7 +12,6 @@ import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
 
-import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -23,10 +19,8 @@ import java.util.List;
 import java.util.Optional;
 
 import com.blogging_platform.classes.CacheManager;
-import com.blogging_platform.classes.PostRecordF;
+import com.blogging_platform.classes.PostRecord;
 import com.blogging_platform.classes.SessionManager;
-import com.blogging_platform.classes.User;
-import com.blogging_platform.classes.UserRecord;
 
 public class PostHomeController extends BaseController {
 
@@ -40,6 +34,7 @@ public class PostHomeController extends BaseController {
 
 
     private final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("MMMM d, yyyy");
+
     @FXML
     private void initialize() {
         loadAllPosts();
@@ -49,6 +44,12 @@ public class PostHomeController extends BaseController {
             blogLink.setVisible(true);
         }
     }
+
+    // @Override
+    // public void setPostService(PostService postService) {
+    //     super.setPostService(postService);
+    //     loadPosts();
+    // }
 
     @FXML
     private void searchPosts() {
@@ -91,34 +92,14 @@ public class PostHomeController extends BaseController {
 
     private void loadAllPosts() {
         CacheManager cache = new CacheManager();
-        List<PostRecordF> posts = cache.getPublishedPosts();
-        // MySQLDriver driver = new MySQLDriver();
-        // ArrayList<String> rawPosts = driver.getAllPosts(query);  // flat list of strings
-
+        List<PostRecord> posts = cache.getPublishedPosts();
         postsFlowPane.getChildren().clear();
 
-        for (PostRecordF post : posts){
-            Node card = createPostCard(post.title(), post.content(), post.status(), post.author(), post.publishedDate(), post.id(), post.commentCount());
+        for (PostRecord post : posts){
+            Node card = createPostCard(post.title(), post.content(), post.status(), post.author(), post.publishedDate(), post.id(), post.commentCount() != null ? post.commentCount() : 0);
             postsFlowPane.getChildren().add(card);
         }
 
-        // Process the flat list 6 items at a time
-        // for (int i = 0; i < rawPosts.size(); i += 7) {
-        //     if (i + 6 >= rawPosts.size()) break; // safety check
-
-        //     String id = rawPosts.get(i + 5);
-        //     String title = rawPosts.get(i);
-        //     String content = rawPosts.get(i + 1);
-        //     String status = rawPosts.get(i + 2);
-        //     String author = rawPosts.get(i + 3);
-        //     String dateStr = rawPosts.get(i + 4); // "2026-01-05 09:28:26.072499"
-        //     int commentCount = Integer.parseInt(rawPosts.get(i + 6));
-
-        //     LocalDateTime publishedDate = LocalDateTime.parse(dateStr.replace(" ", "T")); // quick fix for space
-
-        //     Node card = createPostCard(title, content, status, author, publishedDate, id, commentCount);
-        //     postsFlowPane.getChildren().add(card);
-        // }
     }
 
     private Node createPostCard(String title, String content, String status,

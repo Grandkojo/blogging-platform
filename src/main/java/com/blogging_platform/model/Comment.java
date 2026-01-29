@@ -1,31 +1,50 @@
 package com.blogging_platform.model;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 public class Comment {
-    private UUID id;
-    private UUID userId;
-    private UUID postId;
+    private String id;
+    private String userId;
+    private String postId;
     private String comment;
     private String metadata;
     private LocalDateTime datetime;
-    public UUID getId() {
+
+    
+    private Comment() {
+    }
+    
+    public static Comment forEdit(String id, String userId, String comment) {
+        Comment c = new Comment();
+        c.id = id;
+        c.userId = userId;
+        c.comment = comment;
+        return c;
+    }
+    
+    public static Comment forCreate(String comment, String userId, String postId) {
+        Comment c = new Comment();
+        c.comment = comment;
+        c.userId = userId;
+        c.postId = postId;
+        return c;
+    }
+    public String getId() {
         return id;
     }
-    public void setId(UUID id) {
+    public void setId(String id) {
         this.id = id;
     }
-    public UUID getUserId() {
+    public String getUserId() {
         return userId;
     }
-    public void setUserId(UUID userId) {
+    public void setUserId(String userId) {
         this.userId = userId;
     }
-    public UUID getPostId() {
+    public String getPostId() {
         return postId;
     }
-    public void setPostId(UUID postId) {
+    public void setPostId(String postId) {
         this.postId = postId;
     }
     public String getComment() {

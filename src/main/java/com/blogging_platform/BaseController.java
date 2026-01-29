@@ -4,6 +4,8 @@ package com.blogging_platform;
 import java.io.IOException;
 import java.util.Optional;
 
+import com.blogging_platform.service.CommentService;
+import com.blogging_platform.service.PostService;
 import com.blogging_platform.service.UserService;
 
 import javafx.scene.control.Alert;
@@ -23,16 +25,26 @@ public abstract class BaseController {
     private String currentId;
 
     protected UserService userService;
+    protected PostService postService;
+    protected CommentService commentService;
+    
     /**
      * Called by the App class after loading the FXML.
      * Do not call this manually.
-     */
+    */
     public void setApp(App app) {
         this.app = app;
     }
 
     public void setUserService(UserService userService) { this.userService = userService; }
+    
+    public void setPostService(PostService postService) {
+        this.postService = postService;
+    }
 
+    public void setCommentSerivce(CommentService commentService) {
+        this.commentService = commentService;
+    }
 
     /**
      * Helper to switch to another FXML scene.

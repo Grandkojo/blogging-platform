@@ -1,21 +1,27 @@
 package com.blogging_platform.dao.interfaces;
 
 import java.util.List;
-import java.util.UUID;
 
+import com.blogging_platform.classes.PostRecord;
+import com.blogging_platform.exceptions.DatabaseQueryException;
+import com.blogging_platform.exceptions.PostNotFoundException;
 import com.blogging_platform.model.Post;
 
 public interface PostDAO {
 
-    void create(Post post);
+    void create(Post post) throws DatabaseQueryException;
 
-    void getByID(UUID id);
+    PostRecord getByID(String postId, String userId) throws DatabaseQueryException, PostNotFoundException;
 
-    List<Post> getAll();
+    List<PostRecord> getAll() throws DatabaseQueryException;
 
-    List<Post> search(String keyword);
+    List<Post> search(String userId);
 
-    void edit(UUID id);
+    void edit(Post post) throws DatabaseQueryException, PostNotFoundException;
 
-    void delete(UUID id);
+    void delete(String postId, String userId) throws DatabaseQueryException, PostNotFoundException;
+
+    List<PostRecord> getAll(String userId) throws DatabaseQueryException;
+
+    PostRecord getByID(String postId) throws DatabaseQueryException, PostNotFoundException;
 }

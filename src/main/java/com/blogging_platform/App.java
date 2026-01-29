@@ -9,8 +9,14 @@ import javafx.stage.Stage;
 import java.io.IOException;
 
 import com.blogging_platform.classes.ParameterReceiver;
+import com.blogging_platform.dao.interfaces.CommentDAO;
+import com.blogging_platform.dao.interfaces.PostDAO;
 import com.blogging_platform.dao.interfaces.UserDAO;
+import com.blogging_platform.dao.interfaces.implementation.JdbcCommentDAO;
+import com.blogging_platform.dao.interfaces.implementation.JdbcPostDAO;
 import com.blogging_platform.dao.interfaces.implementation.JdbcUserDAO;
+import com.blogging_platform.service.CommentService;
+import com.blogging_platform.service.PostService;
 import com.blogging_platform.service.UserService;
 
 /**
@@ -23,9 +29,14 @@ public class App extends Application {
 
     //services
     private UserService userService;
+    private PostService postService;
+    private CommentService commentService;
 
 
     public UserService getUserService() { return userService; }
+    public PostService getPostService() { return postService; }
+    public CommentService getCommentService() { return commentService; }
+    
 
     public App() { instance = this; }
 
@@ -38,9 +49,13 @@ public class App extends Application {
 
         //initialize the daos
         UserDAO userDAO = new JdbcUserDAO();
+        PostDAO postDAO = new JdbcPostDAO();
+        CommentDAO commentDAO = new JdbcCommentDAO();
 
         //initialize services
         this.userService = new UserService(userDAO);
+        this.postService = new PostService(postDAO);
+        this.commentService = new CommentService(commentDAO);
 
         scene = new Scene(loadFXML("Login"));
         stage.setResizable(true);
@@ -59,6 +74,8 @@ public class App extends Application {
         if (controller instanceof BaseController baseController) {
             baseController.setApp(App.getInstance());
             baseController.setUserService(getInstance().getUserService()); 
+            baseController.setPostService(getInstance().getPostService());
+            baseController.setCommentSerivce(getInstance().getCommentService());
 
         }
 
@@ -84,6 +101,8 @@ public class App extends Application {
 
         // Pass the services from the App instance to the Controller
         baseController.setUserService(getInstance().getUserService());
+        baseController.setPostService(getInstance().getPostService());
+        baseController.setCommentSerivce(getInstance().getCommentService());
     }
 
     return parent;

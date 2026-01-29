@@ -11,6 +11,7 @@ import com.blogging_platform.classes.PostRecord;
 import com.blogging_platform.classes.SessionManager;
 import com.blogging_platform.exceptions.DatabaseException;
 import com.blogging_platform.exceptions.PostNotFoundException;
+import com.blogging_platform.service.PostService;
 
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -24,6 +25,7 @@ import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
+import javafx.util.Callback;
 
 public class PostListController extends BaseController implements Initializable {
 
@@ -39,6 +41,8 @@ public class PostListController extends BaseController implements Initializable 
     @FXML
     private TableColumn<PostRecord, String> authorColumn;
 
+    @FXML
+    private TableColumn<PostRecord, LocalDateTime> createdAtColumn;
 
     @FXML
     private TableColumn<PostRecord, LocalDateTime> dateColumn;
@@ -50,6 +54,27 @@ public class PostListController extends BaseController implements Initializable 
     private TextField searchField;
 
     private ObservableList<PostRecord> postData = FXCollections.observableArrayList();
+
+    public static <S> Callback<TableColumn<S, LocalDateTime>, TableCell<S, LocalDateTime>> getDateCellFactory() {
+        return column -> { 
+            return new TableCell<S, LocalDateTime>() { 
+                private final DateTimeFormatter formatter = 
+                    DateTimeFormatter.ofPattern("MMM dd, yyyy HH:mm");
+
+                @Override
+                protected void updateItem(LocalDateTime item, boolean empty) {
+                    super.updateItem(item, empty);
+                    if (empty || item == null) {
+                        setText(null);
+                    } else {
+                        setText(formatter.format(item));
+                    }
+                }
+            };
+        }; 
+    }
+
+
 
     @Override
     public void initialize(URL arg0, ResourceBundle arg1) {
@@ -64,37 +89,31 @@ public class PostListController extends BaseController implements Initializable 
         
         statusColumn.setCellValueFactory(cellData -> 
             new SimpleStringProperty(cellData.getValue().status()));
-        
+
+        createdAtColumn.setCellValueFactory(cellData -> 
+            new SimpleObjectProperty<>(cellData.getValue().createdAt()));
+        createdAtColumn.setCellFactory(getDateCellFactory());
+
+
         dateColumn.setCellValueFactory(cellData -> 
-            new SimpleObjectProperty<LocalDateTime>(cellData.getValue().publishedDate()));
-
-        dateColumn.setCellFactory(column -> new TableCell<PostRecord, LocalDateTime>() {
-        private final DateTimeFormatter formatter = 
-            DateTimeFormatter.ofPattern("MMM dd, yyyy HH:mm");
-
-        @Override
-        protected void updateItem(LocalDateTime item, boolean empty) {
-            super.updateItem(item, empty);
-            if (empty || item == null) {
-                setText(null);
-            } else {
-                setText(item.format(formatter));
-            }
-        }
-    });
+            new SimpleObjectProperty<>(cellData.getValue().publishedDate()));
+        dateColumn.setCellFactory(getDateCellFactory());
     
-
         postsTable.setItems(postData);
+    
+    }
 
+    @Override
+    public void setPostService(PostService postService) {
+        super.setPostService(postService);
         loadPosts();
     }
 
     private void loadPosts(){
         try {
+
             postData.clear();
-            MySQLDriver sqlDriver = new MySQLDriver();
-            List<PostRecord> posts = sqlDriver.listPosts(SessionManager.getInstance().getUserId());
-            postData.addAll(posts);
+            postData.addAll(postService.getUserPosts(SessionManager.getInstance().getUserId()));
         } catch (DatabaseException e) {
             showError("Failed to load posts. Please try again.");
         }
@@ -128,8 +147,7 @@ public class PostListController extends BaseController implements Initializable 
         
         if (result.isPresent() && result.get() == ButtonType.OK) {
             try {
-                MySQLDriver sqlDriver = new MySQLDriver();
-                sqlDriver.deletePost(postId);
+                postService.deletePost(postId, SessionManager.getInstance().getUserId());
                 showInfo("Post deleted successfully");
                 loadPosts();
             } catch (PostNotFoundException e) {

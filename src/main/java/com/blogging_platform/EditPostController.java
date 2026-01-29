@@ -1,13 +1,14 @@
 package com.blogging_platform;
 
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.ResourceBundle;
 
 import com.blogging_platform.classes.ParameterReceiver;
+import com.blogging_platform.classes.PostRecord;
 import com.blogging_platform.classes.SessionManager;
 import com.blogging_platform.exceptions.DatabaseException;
 import com.blogging_platform.exceptions.PostNotFoundException;
+import com.blogging_platform.model.Post;
 
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -39,15 +40,14 @@ public class EditPostController extends BaseController implements ParameterRecei
 
     private String currentPostId;
 
-     private void loadPostForEditing(String id) {
+     private void loadPostForEditing(String postId, String userId) {
         try {
-            MySQLDriver sqlDriver = new MySQLDriver();
-            ArrayList<String> post = sqlDriver.getPostById(id);
+            PostRecord post = postService.getPost(postId, userId);
+    
+            postTitle.setText(post.title()); 
+            postContent.setText(post.content());
 
-            postTitle.setText(post.get(0)); 
-            postContent.setText(post.get(1));
-
-            String status = post.get(2);
+            String status = post.status();
             switch (status) {
             case "DRAFT":
                 postStatus.setValue("Draft");
@@ -71,7 +71,7 @@ public class EditPostController extends BaseController implements ParameterRecei
     public void receiveParameter(Object parameter) {
          if (parameter instanceof String) {
             this.currentPostId = (String) parameter;
-            loadPostForEditing(currentPostId);
+            loadPostForEditing(currentPostId, SessionManager.getInstance().getUserId());
         }
     }
 
@@ -124,8 +124,8 @@ public class EditPostController extends BaseController implements ParameterRecei
 
         if (validateForm()){
             try {
-                MySQLDriver sqlDriver = new MySQLDriver();
-                sqlDriver.updatePost(currentPostId, postTitle.getText().trim(), postContent.getText().trim(), status.toUpperCase());
+                Post post = new Post(currentPostId, SessionManager.getInstance().getUserId(), postTitle.getText().trim(), postContent.getText().trim(), status.toUpperCase());
+                postService.updatePost(post);
                 showInfo("Post Updated Successfully");
                 switchTo("PostList");
             } catch (PostNotFoundException e) {
