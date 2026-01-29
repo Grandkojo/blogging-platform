@@ -2,7 +2,7 @@ package com.blogging_platform.classes;
 
 public class SessionManager {
     private static SessionManager instance;
-    private User currentUser;
+    private UserRecord currentUser;
 
     private SessionManager() {}  
 
@@ -14,7 +14,7 @@ public class SessionManager {
     }
 
     // Login: set user data
-    public void login(User user) {
+    public void login(UserRecord user) {
         this.currentUser = user;
     }
 
@@ -44,7 +44,7 @@ public class SessionManager {
         return currentUser.id() != null;
     }
 
-    public User getCurrentUser(){
+    public UserRecord getCurrentUser(){
         return this.currentUser;
     }
 }

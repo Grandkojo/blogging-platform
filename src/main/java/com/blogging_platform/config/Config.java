@@ -1,4 +1,4 @@
-package com.blogging_platform;
+package com.blogging_platform.config;
 
 import java.io.File;
 import java.io.FileNotFoundException;

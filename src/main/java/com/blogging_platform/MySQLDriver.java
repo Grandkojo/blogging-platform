@@ -12,6 +12,7 @@ import java.util.List;
 import com.blogging_platform.classes.CommentRecord;
 import com.blogging_platform.classes.PostRecord;
 import com.blogging_platform.classes.User;
+import com.blogging_platform.config.Config;
 import com.blogging_platform.exceptions.DatabaseException;
 import com.blogging_platform.exceptions.DatabaseConnectionException;
 import com.blogging_platform.exceptions.DatabaseQueryException;
@@ -60,6 +61,7 @@ public class MySQLDriver {
         SELECT 
             BIN_TO_UUID(p.id) AS id,
             title,
+            content
             status,
             published_datetime,
             COALESCE(u.name, 'Unknown') AS author
@@ -73,6 +75,7 @@ public class MySQLDriver {
         SELECT 
             BIN_TO_UUID(p.id) AS id,
             p.title,
+            p.content,
             p.status,
             p.published_datetime,
             COALESCE(u.name, 'Unknown') AS author
@@ -316,8 +319,10 @@ public class MySQLDriver {
                     posts.add(new PostRecord(
                         rs.getString("id"),
                         rs.getString("title"),
+                        rs.getString("content"),
                         rs.getString("status"),
                         rs.getString("author"),
+                        rs.getObject("created_at", LocalDateTime.class),
                         rs.getObject("published_datetime", LocalDateTime.class)
                     ));
                 }
@@ -348,8 +353,10 @@ public class MySQLDriver {
                     posts.add(new PostRecord(
                         rs.getString("id"),
                         rs.getString("title"),
+                        rs.getString("content"),
                         rs.getString("status"),
                         rs.getString("author"),
+                        rs.getObject("created_at", LocalDateTime.class),
                         rs.getObject("published_datetime", LocalDateTime.class)
                     ));
                 }

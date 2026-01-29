@@ -1,22 +1,25 @@
 package com.blogging_platform.classes;
 
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import com.blogging_platform.MySQLDriver;
+import com.blogging_platform.dao.interfaces.PostDAO;
+import com.blogging_platform.dao.interfaces.implementation.JdbcPostDAO;
 import com.blogging_platform.exceptions.DatabaseException;
+import com.blogging_platform.service.PostService;
 
 
 
 
 public class CacheManager {
+    private PostDAO postDAO = new JdbcPostDAO();
+    private PostService postService = new PostService(postDAO);
+
     private static final CacheManager instance = new CacheManager();
 
-    private List<PostRecordF> publishedPostsCache = new ArrayList<>();
-    private Map<String, PostRecordF> postByIdCache = new ConcurrentHashMap<>();
+    private List<PostRecord> publishedPostsCache = new ArrayList<>();
+    private Map<String, PostRecord> postByIdCache = new ConcurrentHashMap<>();
 
     private static CacheManager getInstance() {
         return instance;
@@ -24,55 +27,43 @@ public class CacheManager {
 
     //load all published posts into cache
     public void refreshCache() throws DatabaseException {
-        MySQLDriver sqlDriver = new MySQLDriver();
-        ArrayList<String> posts = sqlDriver.getAllPosts();
-        List<PostRecordF> postss = new ArrayList<>();
-
-        for (int i = 0; i < posts.size(); i += 7) {
-            if (i + 6 >= posts.size()) break;
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-            PostRecordF postRecord = new PostRecordF(posts.get(i + 5), posts.get(i), posts.get(i + 1), posts.get(i + 2), posts.get(i + 3 ), LocalDateTime.parse(posts.get(i + 4), formatter), Integer.parseInt(posts.get(i + 6)));
-            publishedPostsCache.add(postRecord);
-            postss.add(postRecord);
+        List<PostRecord> posts = postService.getPosts();
+        for (PostRecord post: posts){
+            publishedPostsCache.add(post);
         }
 
         postByIdCache.clear();
 
-        for (PostRecordF post: postss){
+        for (PostRecord post: posts){
             postByIdCache.put(post.id(), post);
         }
     }
 
     public void refreshCache(String query) throws DatabaseException {
-        MySQLDriver sqlDriver = new MySQLDriver();
-        ArrayList<String> posts = sqlDriver.getAllPosts(query);
-        List<PostRecordF> postss = new ArrayList<>();
+        List<PostRecord> posts = postService.getPosts();
 
-        for (int i = 0; i < posts.size(); i += 7) {
-            if (i + 6 >= posts.size()) break;
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-            PostRecordF postRecord = new PostRecordF(posts.get(i + 5), posts.get(i), posts.get(i + 1), posts.get(i + 2), posts.get(i + 3 ), LocalDateTime.parse(posts.get(i + 4), formatter), Integer.parseInt(posts.get(i + 6)));
-            publishedPostsCache.add(postRecord);
-            postss.add(postRecord);
+        for (PostRecord post: posts){
+            publishedPostsCache.add(post);
         }
+        
         postByIdCache.clear();
 
-        for (PostRecordF post: postss){
+        for (PostRecord post: posts){
             postByIdCache.put(post.id(), post);
         }
     }
 
     // Fast lookup by ID
-    public PostRecordF getPostById(String id) {
+    public PostRecord getPostById(String id) {
         return postByIdCache.get(id);
     }
 
     // Get cached list (for home page)
-    public List<PostRecordF> getPublishedPosts() {
+    public List<PostRecord> getPublishedPosts() {
         try {
             refreshCache();
         } catch (DatabaseException e) {
-            // Return existing cache if refresh fails
+            return publishedPostsCache;
         }
         return new ArrayList<>(publishedPostsCache); 
     }
@@ -82,7 +73,7 @@ public class CacheManager {
         try {
             refreshCache();
         } catch (DatabaseException e) {
-            // Log error but don't throw - cache invalidation failure shouldn't break the app
+           System.out.println("Cache invalidation failed");
         }
     }
 } 

@@ -3,8 +3,8 @@ package com.blogging_platform;
 import java.net.URL;
 import java.util.ResourceBundle;
 
-import com.blogging_platform.exceptions.DatabaseException;
 import com.blogging_platform.exceptions.DuplicateEmailException;
+import com.blogging_platform.model.User;
 
 import javafx.collections.FXCollections;
 import javafx.event.ActionEvent;
@@ -17,9 +17,10 @@ import javafx.scene.control.TextField;
 
 public class RegisterUserController extends BaseController implements Initializable {
 
+    
     @FXML
     private TextField userEmail;
-
+    
     @FXML
     private TextField userName;
 
@@ -31,16 +32,16 @@ public class RegisterUserController extends BaseController implements Initializa
 
     @FXML
     private Label emailError;
-
+    
     @FXML
     private Label passwordError;
-
-
+    
     @FXML
     private Label nameError;
-
+    
     @FXML
     private Label roleError;
+    
 
     @Override
     public void initialize(URL arg0, ResourceBundle arg1) {
@@ -48,7 +49,7 @@ public class RegisterUserController extends BaseController implements Initializa
         userRole.setPromptText("Select Role");
     }
 
-        private boolean validateForm() {
+    private boolean validateForm() {
         boolean valid = true;
 
         if (userName.getText().trim().isEmpty()) {
@@ -61,11 +62,11 @@ public class RegisterUserController extends BaseController implements Initializa
         if (userEmail.getText().trim().isEmpty()) {
             emailError.setVisible(true);
             valid = false;
-        } else if (!userEmail.getText().trim().contains("@") || !userEmail.getText().trim().contains(".")){
+        } else if (!userEmail.getText().trim().contains("@") || !userEmail.getText().trim().contains(".")) {
             emailError.setText("Valid email is required");
             emailError.setVisible(true);
             valid = false;
-        }else {
+        } else {
             emailError.setVisible(false);
         }
 
@@ -88,17 +89,17 @@ public class RegisterUserController extends BaseController implements Initializa
 
     @FXML
     void submitUser(ActionEvent event) {
-        if(validateForm()){
+        if (validateForm()) {
             try {
-                MySQLDriver sqlDriver = new MySQLDriver();
-                sqlDriver.createUser(userName.getText().trim(), userEmail.getText().trim(), userRole.getValue(), userPassword.getText().trim());
+                System.out.println(userRole.getValue());
+                User user = new User(userName.getText().trim(), userEmail.getText().trim(), userPassword.getText().trim(), userRole.getValue().trim());
+                userService.registerUser(user);
                 showInfo("User Registered Successfully");
                 switchTo("Login", null);
+
             } catch (DuplicateEmailException e) {
                 emailError.setText(e.getUserMessage());
                 emailError.setVisible(true);
-            } catch (DatabaseException e) {
-                showError("Database error. Please try again later.");
             }
         }
     }
@@ -108,6 +109,4 @@ public class RegisterUserController extends BaseController implements Initializa
         switchTo("Login", null);
     }
 
-
-    
 }

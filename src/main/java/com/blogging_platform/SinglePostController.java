@@ -19,9 +19,11 @@ import java.util.Optional;
 
 import com.blogging_platform.classes.CommentRecord;
 import com.blogging_platform.classes.ParameterReceiver;
+import com.blogging_platform.classes.PostRecord;
 import com.blogging_platform.classes.SessionManager;
 import com.blogging_platform.exceptions.DatabaseException;
 import com.blogging_platform.exceptions.PostNotFoundException;
+import com.blogging_platform.model.Comment;
 import com.blogging_platform.exceptions.CommentNotFoundException;
 
 public class SinglePostController extends BaseController implements ParameterReceiver {
@@ -44,13 +46,12 @@ public class SinglePostController extends BaseController implements ParameterRec
 
     public void displayPost(String id) {
         try {
-            MySQLDriver sqlDriver = new MySQLDriver();
-            ArrayList<String> post = sqlDriver.getFullPostById(id);
-            this.postUserId = post.get(6);
-            postTitleLabel.setText(post.get(1));
-            postContentText.setText(post.get(2));
-            authorLabel.setText("by " + post.get(5));
-            dateLabel.setText(post.get(4).formatted(formatter));
+            PostRecord post = postService.getPost(id);
+            this.postUserId = post.userId();
+            postTitleLabel.setText(post.title());
+            postContentText.setText(post.content());
+            authorLabel.setText("by " + post.author());
+            dateLabel.setText(post.publishedDate().format(formatter));
 
             loadComments(id);
         } catch (PostNotFoundException e) {
@@ -72,8 +73,7 @@ public class SinglePostController extends BaseController implements ParameterRec
         commentsContainer.getChildren().clear();
 
         try {
-            MySQLDriver sqlDriver = new MySQLDriver();
-            List<CommentRecord> comments = sqlDriver.getCommentsByPostId(postId);
+            List<CommentRecord> comments = commentService.getComments(postId);
 
             if (comments.isEmpty()) {
                 noCommentsLabel.setVisible(true);
@@ -140,8 +140,8 @@ public class SinglePostController extends BaseController implements ParameterRec
         Optional<ButtonType> result = confirmDialog("Do you want to delete this comment?");
         if (result.isPresent() && result.get() == ButtonType.OK) {
             try {
-                MySQLDriver sqlDriver = new MySQLDriver();
-                sqlDriver.deleteComment(commentId);
+                commentService.deleteComment(commentId, SessionManager.getInstance().getUserId());
+                showInfo("Comment deleted successfully");
                 loadComments(currentPostId);
             } catch (CommentNotFoundException e) {
                 showError(e.getUserMessage());
@@ -161,12 +161,9 @@ public class SinglePostController extends BaseController implements ParameterRec
             // Clear current content
             commentBox.getChildren().clear();
 
-            // Get current comment data (we'll reuse the existing CommentRecord if possible)
-            // But for simplicity, fetch fresh from DB
-            MySQLDriver sqlDriver = new MySQLDriver();
             CommentRecord comment;
             try {
-                comment = sqlDriver.getCommentById(commentId, this.currentPostId);
+                comment = commentService.getComment(commentId);
             } catch (CommentNotFoundException e) {
                 showError(e.getUserMessage());
                 loadComments(currentPostId);
@@ -208,7 +205,7 @@ public class SinglePostController extends BaseController implements ParameterRec
                 }
 
                 try {
-                    sqlDriver.updateComment(commentId, newContent);
+                    commentService.editComment(Comment.forEdit(commentId, SessionManager.getInstance().getUserId(), newContent));
                     showInfo("Comment updated!");
                     loadComments(currentPostId); // refresh all comments
                 } catch (CommentNotFoundException ex) {
@@ -240,9 +237,7 @@ public class SinglePostController extends BaseController implements ParameterRec
         }
 
         try {
-            MySQLDriver sqlDriver = new MySQLDriver();
-            String currentUserId = SessionManager.getInstance().getUserId();
-            sqlDriver.addComment(currentPostId, currentUserId, content);
+            commentService.addComment(Comment.forCreate(content, SessionManager.getInstance().getUserId(), currentPostId));
             commentInput.clear();
             loadComments(currentPostId);  // refresh
             showInfo("Comment added!");

@@ -9,6 +9,15 @@ import javafx.stage.Stage;
 import java.io.IOException;
 
 import com.blogging_platform.classes.ParameterReceiver;
+import com.blogging_platform.dao.interfaces.CommentDAO;
+import com.blogging_platform.dao.interfaces.PostDAO;
+import com.blogging_platform.dao.interfaces.UserDAO;
+import com.blogging_platform.dao.interfaces.implementation.JdbcCommentDAO;
+import com.blogging_platform.dao.interfaces.implementation.JdbcPostDAO;
+import com.blogging_platform.dao.interfaces.implementation.JdbcUserDAO;
+import com.blogging_platform.service.CommentService;
+import com.blogging_platform.service.PostService;
+import com.blogging_platform.service.UserService;
 
 /**
  * JavaFX App
@@ -18,15 +27,36 @@ public class App extends Application {
     private static App instance;
     private static Scene scene;
 
-    public App() {
-        instance = this;
-    }
+    //services
+    private UserService userService;
+    private PostService postService;
+    private CommentService commentService;
 
-    public static App getInstance() {
-        return instance;
-    }
+
+    public UserService getUserService() { return userService; }
+    public PostService getPostService() { return postService; }
+    public CommentService getCommentService() { return commentService; }
+    
+
+    public App() { instance = this; }
+
+    public static App getInstance() { return instance; }
+
+    
+    
     @Override
     public void start(Stage stage) throws IOException {
+
+        //initialize the daos
+        UserDAO userDAO = new JdbcUserDAO();
+        PostDAO postDAO = new JdbcPostDAO();
+        CommentDAO commentDAO = new JdbcCommentDAO();
+
+        //initialize services
+        this.userService = new UserService(userDAO);
+        this.postService = new PostService(postDAO);
+        this.commentService = new CommentService(commentDAO);
+
         scene = new Scene(loadFXML("Login"));
         stage.setResizable(true);
         stage.setFullScreen(true);  
@@ -43,6 +73,10 @@ public class App extends Application {
         Object controller = loader.getController();
         if (controller instanceof BaseController baseController) {
             baseController.setApp(App.getInstance());
+            baseController.setUserService(getInstance().getUserService()); 
+            baseController.setPostService(getInstance().getPostService());
+            baseController.setCommentSerivce(getInstance().getCommentService());
+
         }
 
         if (controller instanceof ParameterReceiver receiver){
@@ -63,7 +97,12 @@ public class App extends Application {
     // Inject the App instance into the controller if it extends BaseController
     Object controller = fxmlLoader.getController();
     if (controller instanceof BaseController baseController) {
-        baseController.setApp(App.getInstance()); 
+        baseController.setApp(getInstance()); 
+
+        // Pass the services from the App instance to the Controller
+        baseController.setUserService(getInstance().getUserService());
+        baseController.setPostService(getInstance().getPostService());
+        baseController.setCommentSerivce(getInstance().getCommentService());
     }
 
     return parent;

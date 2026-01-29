@@ -1,10 +1,13 @@
 package com.blogging_platform;
 
 import java.net.URL;
+import java.sql.SQLException;
 import java.util.ResourceBundle;
 
 import com.blogging_platform.classes.SessionManager;
 import com.blogging_platform.exceptions.DatabaseException;
+import com.blogging_platform.exceptions.DatabaseQueryException;
+import com.blogging_platform.model.Post;
 
 import javafx.collections.FXCollections;
 import javafx.event.ActionEvent;
@@ -16,7 +19,6 @@ import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 
 public class AddPostController extends BaseController implements Initializable {
-
     
     @FXML
     private TextArea postContent;
@@ -85,11 +87,11 @@ public class AddPostController extends BaseController implements Initializable {
         }   
         if (validateForm()){
             try {
-                MySQLDriver sqlDriver = new MySQLDriver();
-                sqlDriver.createPost(SessionManager.getInstance().getUserId(), postTile.getText().trim(), postContent.getText().trim(), status.toUpperCase());
+                Post post = new Post(SessionManager.getInstance().getUserId(), postTile.getText().trim(), postContent.getText().trim(), status.toUpperCase());
+                postService.createPost(post);
                 showInfo("Post Created Successfully");
                 switchTo("PostList");
-            } catch (DatabaseException e) {
+            } catch (DatabaseQueryException e) {
                 showError("Failed to create post. Please try again.");
             }
         }
