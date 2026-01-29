@@ -9,6 +9,7 @@ import javafx.scene.control.Hyperlink;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.FlowPane;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
 
@@ -21,6 +22,8 @@ import java.util.Optional;
 import com.blogging_platform.classes.CacheManager;
 import com.blogging_platform.classes.PostRecord;
 import com.blogging_platform.classes.SessionManager;
+import com.blogging_platform.classes.TagRecord;
+import com.blogging_platform.exceptions.DatabaseQueryException;
 
 public class PostHomeController extends BaseController {
 
@@ -37,19 +40,27 @@ public class PostHomeController extends BaseController {
 
     @FXML
     private void initialize() {
-        loadAllPosts();
+        // Don't load posts here - wait for service injection
         String userRole = SessionManager.getInstance().getUserRole();
-        if (userRole.equals("Admin")){
+        if (userRole != null && userRole.equals("Admin")){
             blogLink.setDisable(false);
             blogLink.setVisible(true);
         }
     }
 
-    // @Override
-    // public void setPostService(PostService postService) {
-    //     super.setPostService(postService);
-    //     loadPosts();
-    // }
+    @Override
+    public void setTagService(com.blogging_platform.service.TagService tagService) {
+        super.setTagService(tagService);
+    }
+
+    @Override
+    public void setReviewService(com.blogging_platform.service.ReviewService reviewService) {
+        super.setReviewService(reviewService);
+        // Load posts after both tagService and reviewService are injected (so ratings show on cards)
+        if (reviewService != null && tagService != null) {
+            loadAllPosts();
+        }
+    }
 
     @FXML
     private void searchPosts() {
@@ -82,7 +93,10 @@ public class PostHomeController extends BaseController {
 
                 LocalDateTime publishedDate = LocalDateTime.parse(dateStr.replace(" ", "T")); // quick fix for space
 
-                Node card = createPostCard(title, content, status, author, publishedDate, id, commentCount);
+                // Fetch tags for this post
+                List<TagRecord> tags = getTagsForPost(id);
+                double avgRating = getAverageRating(id);
+                Node card = createPostCard(title, content, status, author, publishedDate, id, commentCount, tags, avgRating);
                 postsFlowPane.getChildren().add(card);
             }
         } catch (com.blogging_platform.exceptions.DatabaseException e) {
@@ -91,19 +105,44 @@ public class PostHomeController extends BaseController {
     }
 
     private void loadAllPosts() {
-        CacheManager cache = new CacheManager();
+        CacheManager cache = CacheManager.getInstance();
         List<PostRecord> posts = cache.getPublishedPosts();
         postsFlowPane.getChildren().clear();
 
         for (PostRecord post : posts){
-            Node card = createPostCard(post.title(), post.content(), post.status(), post.author(), post.publishedDate(), post.id(), post.commentCount() != null ? post.commentCount() : 0);
+            // Fetch tags for this post
+            List<TagRecord> tags = getTagsForPost(post.id());
+            double avgRating = getAverageRating(post.id());
+            Node card = createPostCard(post.title(), post.content(), post.status(), post.author(), post.publishedDate(), post.id(), post.commentCount() != null ? post.commentCount() : 0, tags, avgRating);
             postsFlowPane.getChildren().add(card);
         }
 
     }
 
+    private List<TagRecord> getTagsForPost(String postId) {
+        if (tagService == null) {
+            return new ArrayList<>();
+        }
+        try {
+            return tagService.getTagsByPostId(postId);
+        } catch (DatabaseQueryException e) {
+            return new ArrayList<>();
+        }
+    }
+
+    private double getAverageRating(String postId) {
+        if (reviewService == null) {
+            return 0.0;
+        }
+        try {
+            return reviewService.getAverageRating(postId);
+        } catch (DatabaseQueryException e) {
+            return 0.0;
+        }
+    }
+
     private Node createPostCard(String title, String content, String status,
-                                String author, LocalDateTime publishedDate, String id, int commentCount) {
+                                String author, LocalDateTime publishedDate, String id, int commentCount, List<TagRecord> tags, double avgRating) {
 
         VBox card = new VBox(15);
         card.setPadding(new Insets(20));
@@ -115,10 +154,42 @@ public class PostHomeController extends BaseController {
         card.setMaxWidth(350);
         card.setPrefWidth(350);
 
-        // Title
+        // Title and Tags container
+        VBox titleContainer = new VBox(8);
+        
+        // Title row with tags beside it
+        HBox titleRow = new HBox(10);
+        titleRow.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+        titleRow.setPrefWidth(310); // Match card width minus padding
+        
         Label titleLabel = new Label(title);
         titleLabel.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;");
         titleLabel.setWrapText(true);
+        HBox.setHgrow(titleLabel, javafx.scene.layout.Priority.ALWAYS);
+        
+        titleRow.getChildren().add(titleLabel);
+        
+        // Add tags beside the title (on the same row)
+        if (tags != null && !tags.isEmpty()) {
+            System.out.println("Adding " + tags.size() + " tags to card for post: " + id);
+            HBox tagsBox = new HBox(5);
+            tagsBox.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+            for (TagRecord tag : tags) {
+                Label tagLabel = new Label(tag.tag());
+                tagLabel.setStyle("""
+                    -fx-background-color: #e8f5e9;
+                    -fx-background-radius: 12;
+                    -fx-padding: 4 10;
+                    -fx-font-size: 11px;
+                    -fx-text-fill: #2e7d32;
+                    -fx-font-weight: bold;
+                    """);
+                tagsBox.getChildren().add(tagLabel);
+            }
+            titleRow.getChildren().add(tagsBox);
+        }
+        
+        titleContainer.getChildren().add(titleRow);
 
         // Author & Date
         String metaText = "by " + author + " • " + publishedDate.format(dateFormatter);
@@ -128,6 +199,25 @@ public class PostHomeController extends BaseController {
         Label commentLabel = new Label(commentCount + (commentCount == 1 ? " comment" : " comments"));
         commentLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #3498db;");
 
+        // Rating stars (clickable → Review page)
+        HBox ratingBox = new HBox(6);
+        ratingBox.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+        int fullStars = (int) Math.round(avgRating);
+        fullStars = Math.max(0, Math.min(5, fullStars));
+        StringBuilder stars = new StringBuilder();
+        for (int i = 0; i < fullStars; i++) stars.append("★");
+        for (int i = fullStars; i < 5; i++) stars.append("☆");
+        Label starsLabel = new Label(stars.toString());
+        starsLabel.setStyle("-fx-font-size: 16px; -fx-text-fill: #f1c40f;");
+        Label ratingText = new Label(avgRating > 0 ? String.format("%.1f", avgRating) : "No reviews");
+        ratingText.setStyle("-fx-font-size: 12px; -fx-text-fill: #7f8c8d;");
+        ratingBox.getChildren().addAll(starsLabel, ratingText);
+        ratingBox.setStyle("-fx-cursor: hand;");
+        ratingBox.setOnMouseClicked(e -> {
+            e.consume();
+            switchTo("ReviewPage", id);
+        });
+
         // Short excerpt
         String excerpt = content.length() > 150
                 ? content.substring(0, 150) + "..."
@@ -136,7 +226,7 @@ public class PostHomeController extends BaseController {
         preview.setStyle("-fx-font-size: 15px; -fx-text-fill: #555;");
         preview.setWrappingWidth(310);
 
-        card.getChildren().addAll(titleLabel, metaLabel, commentLabel, preview);
+        card.getChildren().addAll(titleContainer, metaLabel, commentLabel, ratingBox, preview);
 
         // Click anywhere on the card → open full postz
         card.setOnMouseClicked(e -> openSinglePost(id));

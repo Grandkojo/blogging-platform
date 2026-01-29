@@ -11,12 +11,18 @@ import java.io.IOException;
 import com.blogging_platform.classes.ParameterReceiver;
 import com.blogging_platform.dao.interfaces.CommentDAO;
 import com.blogging_platform.dao.interfaces.PostDAO;
+import com.blogging_platform.dao.interfaces.ReviewDAO;
+import com.blogging_platform.dao.interfaces.TagDAO;
 import com.blogging_platform.dao.interfaces.UserDAO;
 import com.blogging_platform.dao.interfaces.implementation.JdbcCommentDAO;
 import com.blogging_platform.dao.interfaces.implementation.JdbcPostDAO;
+import com.blogging_platform.dao.interfaces.implementation.JdbcReviewDAO;
+import com.blogging_platform.dao.interfaces.implementation.JdbcTagDAO;
 import com.blogging_platform.dao.interfaces.implementation.JdbcUserDAO;
 import com.blogging_platform.service.CommentService;
 import com.blogging_platform.service.PostService;
+import com.blogging_platform.service.ReviewService;
+import com.blogging_platform.service.TagService;
 import com.blogging_platform.service.UserService;
 
 /**
@@ -31,11 +37,15 @@ public class App extends Application {
     private UserService userService;
     private PostService postService;
     private CommentService commentService;
+    private TagService tagService;
+    private ReviewService reviewService;
 
 
     public UserService getUserService() { return userService; }
     public PostService getPostService() { return postService; }
     public CommentService getCommentService() { return commentService; }
+    public TagService getTagService() { return tagService; }
+    public ReviewService getReviewService() { return reviewService; }
     
 
     public App() { instance = this; }
@@ -51,11 +61,15 @@ public class App extends Application {
         UserDAO userDAO = new JdbcUserDAO();
         PostDAO postDAO = new JdbcPostDAO();
         CommentDAO commentDAO = new JdbcCommentDAO();
+        TagDAO tagDAO = new JdbcTagDAO();
+        ReviewDAO reviewDAO = new JdbcReviewDAO();
 
         //initialize services
         this.userService = new UserService(userDAO);
         this.postService = new PostService(postDAO);
         this.commentService = new CommentService(commentDAO);
+        this.tagService = new TagService(tagDAO);
+        this.reviewService = new ReviewService(reviewDAO);
 
         scene = new Scene(loadFXML("Login"));
         stage.setResizable(true);
@@ -76,6 +90,8 @@ public class App extends Application {
             baseController.setUserService(getInstance().getUserService()); 
             baseController.setPostService(getInstance().getPostService());
             baseController.setCommentSerivce(getInstance().getCommentService());
+            baseController.setTagService(getInstance().getTagService());
+            baseController.setReviewService(getInstance().getReviewService());
 
         }
 
@@ -103,6 +119,8 @@ public class App extends Application {
         baseController.setUserService(getInstance().getUserService());
         baseController.setPostService(getInstance().getPostService());
         baseController.setCommentSerivce(getInstance().getCommentService());
+        baseController.setTagService(getInstance().getTagService());
+        baseController.setReviewService(getInstance().getReviewService());
     }
 
     return parent;

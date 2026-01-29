@@ -15,14 +15,14 @@ public class PostService {
         this.postDAO = postDAO;
     }
 
-    public void createPost(Post post) throws DatabaseQueryException{
+    public String createPost(Post post) throws DatabaseQueryException{
         if (post.getStatus().equals("PUBLISHED")){
             post.setIsPublish(true);
         } else {
             post.setIsPublish(false);
         }
 
-        postDAO.create(post);
+        return postDAO.create(post);
     }
 
     public List<PostRecord> getUserPosts(String userId) throws DatabaseQueryException{

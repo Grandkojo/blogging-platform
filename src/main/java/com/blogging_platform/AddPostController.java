@@ -1,15 +1,17 @@
 package com.blogging_platform;
 
 import java.net.URL;
-import java.sql.SQLException;
+import java.util.List;
 import java.util.ResourceBundle;
 
 import com.blogging_platform.classes.SessionManager;
-import com.blogging_platform.exceptions.DatabaseException;
+import com.blogging_platform.classes.TagRecord;
 import com.blogging_platform.exceptions.DatabaseQueryException;
 import com.blogging_platform.model.Post;
+import com.blogging_platform.service.TagService;
 
 import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -27,6 +29,9 @@ public class AddPostController extends BaseController implements Initializable {
     private ComboBox<String> postStatus;
     
     @FXML
+    private ComboBox<String> postTag;
+    
+    @FXML
     private TextField postTile;
 
     @FXML
@@ -40,7 +45,33 @@ public class AddPostController extends BaseController implements Initializable {
     
     @Override
     public void initialize(URL arg0, ResourceBundle arg1) {
-        postStatus.setItems(FXCollections.observableArrayList("Draft", "Publish"));    
+        postStatus.setItems(FXCollections.observableArrayList("Draft", "Publish"));
+        // Don't load tags here - wait for service injection
+        postTag.setItems(FXCollections.observableArrayList());
+    }
+
+    @Override
+    public void setTagService(TagService tagService) {
+        super.setTagService(tagService);
+        loadTags(); // Load tags after service is injected
+    }
+
+    private void loadTags() {
+        if (tagService == null) {
+            // Service not yet injected, skip loading
+            return;
+        }
+        try {
+            List<TagRecord> tags = tagService.getAllTags();
+            ObservableList<String> tagNames = FXCollections.observableArrayList();
+            for (TagRecord tag : tags) {
+                tagNames.add(tag.tag());
+            }
+            postTag.setItems(tagNames);
+        } catch (DatabaseQueryException e) {
+            // If tags can't be loaded, just continue without tags
+            postTag.setItems(FXCollections.observableArrayList());
+        }
     }
 
     private boolean validateForm() {
@@ -88,7 +119,21 @@ public class AddPostController extends BaseController implements Initializable {
         if (validateForm()){
             try {
                 Post post = new Post(SessionManager.getInstance().getUserId(), postTile.getText().trim(), postContent.getText().trim(), status.toUpperCase());
-                postService.createPost(post);
+                String postId = postService.createPost(post);
+                
+                // Link tag to post if selected
+                if (postTag.getValue() != null && !postTag.getValue().trim().isEmpty()) {
+                    try {
+                        TagRecord selectedTag = tagService.getTagByTagName(postTag.getValue().trim());
+                        if (selectedTag != null) {
+                            tagService.linkTagToPost(postId, selectedTag.id());
+                        }
+                    } catch (DatabaseQueryException e) {
+                        // Tag linking failed, but post was created, so just log and continue
+                        System.err.println("Failed to link tag to post: " + e.getMessage());
+                    }
+                }
+                
                 showInfo("Post Created Successfully");
                 switchTo("PostList");
             } catch (DatabaseQueryException e) {

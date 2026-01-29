@@ -6,6 +6,8 @@ import java.util.Optional;
 
 import com.blogging_platform.service.CommentService;
 import com.blogging_platform.service.PostService;
+import com.blogging_platform.service.ReviewService;
+import com.blogging_platform.service.TagService;
 import com.blogging_platform.service.UserService;
 
 import javafx.scene.control.Alert;
@@ -27,6 +29,8 @@ public abstract class BaseController {
     protected UserService userService;
     protected PostService postService;
     protected CommentService commentService;
+    protected TagService tagService;
+    protected ReviewService reviewService;
     
     /**
      * Called by the App class after loading the FXML.
@@ -44,6 +48,14 @@ public abstract class BaseController {
 
     public void setCommentSerivce(CommentService commentService) {
         this.commentService = commentService;
+    }
+
+    public void setTagService(TagService tagService) {
+        this.tagService = tagService;
+    }
+
+    public void setReviewService(ReviewService reviewService) {
+        this.reviewService = reviewService;
     }
 
     /**

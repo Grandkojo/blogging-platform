@@ -1,20 +1,30 @@
 package com.blogging_platform.model;
 
-import java.util.UUID;
-
 public class Tag {
-    private UUID id;
+    private String id;
     private String tag;
-    
-    public UUID getId() {
+
+    public Tag(String tag) {
+        this.tag = tag;
+    }
+
+    public Tag(String id, String tag) {
+        this.id = id;
+        this.tag = tag;
+    }
+
+    public String getId() {
         return id;
     }
-    public void setId(UUID id) {
+
+    public void setId(String id) {
         this.id = id;
     }
+
     public String getTag() {
         return tag;
     }
+
     public void setTag(String tag) {
         this.tag = tag;
     }

@@ -21,34 +21,29 @@ public class CacheManager {
     private List<PostRecord> publishedPostsCache = new ArrayList<>();
     private Map<String, PostRecord> postByIdCache = new ConcurrentHashMap<>();
 
-    private static CacheManager getInstance() {
+    public static CacheManager getInstance() {
         return instance;
     }
 
     //load all published posts into cache
     public void refreshCache() throws DatabaseException {
-        List<PostRecord> posts = postService.getPosts();
-        for (PostRecord post: posts){
-            publishedPostsCache.add(post);
-        }
-
+        publishedPostsCache.clear();
         postByIdCache.clear();
 
-        for (PostRecord post: posts){
+        List<PostRecord> posts = postService.getPosts();
+        for (PostRecord post : posts) {
+            publishedPostsCache.add(post);
             postByIdCache.put(post.id(), post);
         }
     }
 
     public void refreshCache(String query) throws DatabaseException {
-        List<PostRecord> posts = postService.getPosts();
-
-        for (PostRecord post: posts){
-            publishedPostsCache.add(post);
-        }
-        
+        publishedPostsCache.clear();
         postByIdCache.clear();
 
-        for (PostRecord post: posts){
+        List<PostRecord> posts = postService.getPosts();
+        for (PostRecord post : posts) {
+            publishedPostsCache.add(post);
             postByIdCache.put(post.id(), post);
         }
     }
@@ -58,22 +53,24 @@ public class CacheManager {
         return postByIdCache.get(id);
     }
 
-    // Get cached list (for home page)
+    // Get cached list (for home page) – always returns fresh data after optional refresh
     public List<PostRecord> getPublishedPosts() {
         try {
             refreshCache();
         } catch (DatabaseException e) {
-            return publishedPostsCache;
+            return new ArrayList<>(publishedPostsCache);
         }
-        return new ArrayList<>(publishedPostsCache); 
+        return new ArrayList<>(publishedPostsCache);
     }
 
-    // Invalidate cache after create/update/delete
+    // Invalidate cache and load fresh data (call after comment/review create, update, delete)
     public void invalidateCache() {
         try {
+            publishedPostsCache.clear();
+            postByIdCache.clear();
             refreshCache();
         } catch (DatabaseException e) {
-           System.out.println("Cache invalidation failed");
+            System.err.println("Cache invalidation failed: " + e.getMessage());
         }
     }
 } 

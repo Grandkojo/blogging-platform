@@ -10,8 +10,12 @@ import java.util.ResourceBundle;
 import com.blogging_platform.classes.PostRecord;
 import com.blogging_platform.classes.SessionManager;
 import com.blogging_platform.exceptions.DatabaseException;
+import com.blogging_platform.exceptions.DatabaseQueryException;
+import com.blogging_platform.exceptions.DuplicateResourceException;
 import com.blogging_platform.exceptions.PostNotFoundException;
+import com.blogging_platform.model.Tag;
 import com.blogging_platform.service.PostService;
+import com.blogging_platform.service.TagService;
 
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -20,11 +24,13 @@ import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
+import javafx.scene.control.TextInputDialog;
 import javafx.util.Callback;
 
 public class PostListController extends BaseController implements Initializable {
@@ -52,6 +58,9 @@ public class PostListController extends BaseController implements Initializable 
 
     @FXML
     private TextField searchField;
+
+    @FXML
+    private Button createTagButton;
 
     private ObservableList<PostRecord> postData = FXCollections.observableArrayList();
 
@@ -100,13 +109,26 @@ public class PostListController extends BaseController implements Initializable 
         dateColumn.setCellFactory(getDateCellFactory());
     
         postsTable.setItems(postData);
-    
+        
+        // Show create tag button only for admin users
+        String userRole = SessionManager.getInstance().getUserRole();
+        if (userRole != null && userRole.equals("Admin")) {
+            createTagButton.setVisible(true);
+        } else {
+            createTagButton.setVisible(false);
+        }
     }
 
     @Override
     public void setPostService(PostService postService) {
         super.setPostService(postService);
         loadPosts();
+    }
+
+    @Override
+    public void setTagService(TagService tagService) {
+        super.setTagService(tagService);
+        // Tag service is now available
     }
 
     private void loadPosts(){
@@ -176,5 +198,33 @@ public class PostListController extends BaseController implements Initializable 
     @FXML
     void openAddPost(ActionEvent event) {
         switchTo("AddPost");
+    }
+
+    @FXML
+    void openCreateTagDialog(ActionEvent event) {
+        if (tagService == null) {
+            showError("Tag service is not available. Please try again.");
+            return;
+        }
+
+        TextInputDialog dialog = new TextInputDialog();
+        dialog.setTitle("Create New Tag");
+        dialog.setHeaderText("Enter tag name");
+        dialog.setContentText("Tag name:");
+
+        Optional<String> result = dialog.showAndWait();
+        
+        if (result.isPresent() && !result.get().trim().isEmpty()) {
+            String tagName = result.get().trim();
+            try {
+                Tag tag = new Tag(tagName);
+                tagService.createTag(tag);
+                showInfo("Tag '" + tagName + "' created successfully!");
+            } catch (DuplicateResourceException e) {
+                showError("Tag '" + tagName + "' already exists!");
+            } catch (DatabaseQueryException e) {
+                showError("Failed to create tag. Please try again.");
+            }
+        }
     }
 }

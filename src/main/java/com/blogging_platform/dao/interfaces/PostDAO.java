@@ -9,7 +9,7 @@ import com.blogging_platform.model.Post;
 
 public interface PostDAO {
 
-    void create(Post post) throws DatabaseQueryException;
+    String create(Post post) throws DatabaseQueryException;
 
     PostRecord getByID(String postId, String userId) throws DatabaseQueryException, PostNotFoundException;
 

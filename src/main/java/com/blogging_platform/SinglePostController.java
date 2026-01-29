@@ -13,15 +13,17 @@ import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
 
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import com.blogging_platform.classes.CacheManager;
 import com.blogging_platform.classes.CommentRecord;
 import com.blogging_platform.classes.ParameterReceiver;
 import com.blogging_platform.classes.PostRecord;
 import com.blogging_platform.classes.SessionManager;
+import com.blogging_platform.classes.TagRecord;
 import com.blogging_platform.exceptions.DatabaseException;
+import com.blogging_platform.exceptions.DatabaseQueryException;
 import com.blogging_platform.exceptions.PostNotFoundException;
 import com.blogging_platform.model.Comment;
 import com.blogging_platform.exceptions.CommentNotFoundException;
@@ -35,6 +37,8 @@ public class SinglePostController extends BaseController implements ParameterRec
     @FXML private VBox addCommentForm;
     @FXML private TextArea commentInput;
     @FXML private Label noCommentsLabel;
+    @FXML private HBox tagsContainer;
+    @FXML private HBox ratingStarsContainer;
 
     @FXML private VBox commentsContainer;
 
@@ -53,12 +57,82 @@ public class SinglePostController extends BaseController implements ParameterRec
             authorLabel.setText("by " + post.author());
             dateLabel.setText(post.publishedDate().format(formatter));
 
+            // Load and display tags
+            loadTags(id);
+
+            // Load and display rating stars
+            loadRatingStars(id);
+
             loadComments(id);
         } catch (PostNotFoundException e) {
             showError(e.getUserMessage());
             switchTo("PostHome");
         } catch (DatabaseException e) {
             showError("Failed to load post. Please try again.");
+        }
+    }
+
+    private void loadTags(String postId) {
+        tagsContainer.getChildren().clear();
+        
+        if (tagService == null) {
+            return;
+        }
+        
+        try {
+            List<TagRecord> tags = tagService.getTagsByPostId(postId);
+            if (tags != null && !tags.isEmpty()) {
+                for (TagRecord tag : tags) {
+                    Label tagLabel = new Label(tag.tag());
+                    tagLabel.setStyle("""
+                        -fx-background-color: #e8f5e9;
+                        -fx-background-radius: 12;
+                        -fx-padding: 4 10;
+                        -fx-font-size: 11px;
+                        -fx-text-fill: #2e7d32;
+                        -fx-font-weight: bold;
+                        """);
+                    tagsContainer.getChildren().add(tagLabel);
+                }
+            }
+        } catch (DatabaseQueryException e) {
+            // Silently fail - tags are optional
+            System.err.println("Failed to load tags: " + e.getMessage());
+        }
+    }
+
+    private void loadRatingStars(String postId) {
+        ratingStarsContainer.getChildren().clear();
+        if (reviewService == null) {
+            return;
+        }
+        try {
+            double avg = reviewService.getAverageRating(postId);
+            int fullStars = (int) Math.round(avg);
+            fullStars = Math.max(0, Math.min(5, fullStars));
+            StringBuilder stars = new StringBuilder();
+            for (int i = 0; i < fullStars; i++) {
+                stars.append("★");
+            }
+            for (int i = fullStars; i < 5; i++) {
+                stars.append("☆");
+            }
+            Label starsLabel = new Label(stars.toString());
+            starsLabel.setStyle("-fx-font-size: 22px; -fx-text-fill: #f1c40f;");
+            Label ratingLabel = new Label(avg > 0 ? String.format("%.1f", avg) : "No reviews");
+            ratingLabel.setStyle("-fx-font-size: 16px; -fx-text-fill: #7f8c8d;");
+            ratingStarsContainer.getChildren().addAll(starsLabel, ratingLabel);
+        } catch (DatabaseQueryException e) {
+            Label noRating = new Label("No reviews");
+            noRating.setStyle("-fx-font-size: 16px; -fx-text-fill: #7f8c8d;");
+            ratingStarsContainer.getChildren().add(noRating);
+        }
+    }
+
+    @FXML
+    private void openReviewPage() {
+        if (currentPostId != null) {
+            switchTo("ReviewPage", currentPostId);
         }
     }
 
@@ -141,6 +215,7 @@ public class SinglePostController extends BaseController implements ParameterRec
         if (result.isPresent() && result.get() == ButtonType.OK) {
             try {
                 commentService.deleteComment(commentId, SessionManager.getInstance().getUserId());
+                CacheManager.getInstance().invalidateCache();
                 showInfo("Comment deleted successfully");
                 loadComments(currentPostId);
             } catch (CommentNotFoundException e) {
@@ -206,6 +281,7 @@ public class SinglePostController extends BaseController implements ParameterRec
 
                 try {
                     commentService.editComment(Comment.forEdit(commentId, SessionManager.getInstance().getUserId(), newContent));
+                    CacheManager.getInstance().invalidateCache();
                     showInfo("Comment updated!");
                     loadComments(currentPostId); // refresh all comments
                 } catch (CommentNotFoundException ex) {
@@ -238,6 +314,7 @@ public class SinglePostController extends BaseController implements ParameterRec
 
         try {
             commentService.addComment(Comment.forCreate(content, SessionManager.getInstance().getUserId(), currentPostId));
+            CacheManager.getInstance().invalidateCache();
             commentInput.clear();
             loadComments(currentPostId);  // refresh
             showInfo("Comment added!");

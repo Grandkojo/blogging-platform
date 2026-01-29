@@ -19,7 +19,7 @@ import com.blogging_platform.model.Post;
 public class JdbcPostDAO implements PostDAO {
 
     @Override
-    public void create(Post post) throws DatabaseQueryException {
+    public String create(Post post) throws DatabaseQueryException {
         String sql = """
                 INSERT INTO posts (user_id, title, content, status, created_at, published_datetime) VALUES (UUID_TO_BIN(?),?,?,?,?,?);
                 """;
@@ -29,14 +29,34 @@ public class JdbcPostDAO implements PostDAO {
             statement.setString(2, post.getTitle());
             statement.setString(3, post.getContent());
             statement.setString(4, post.getStatus());
-            statement.setObject(5, LocalDateTime.now());
+            LocalDateTime now = LocalDateTime.now();
+            statement.setObject(5, now);
             if (post.getIsPublish()) {
-                statement.setObject(6, LocalDateTime.now());
+                statement.setObject(6, now);
             } else {
                 statement.setObject(6, null);
             }
 
             statement.executeUpdate();
+            
+            // Get the created post ID by querying with title and user_id
+            String getIdSql = """
+                SELECT BIN_TO_UUID(id) AS id 
+                FROM posts 
+                WHERE title = ? AND user_id = UUID_TO_BIN(?)
+                ORDER BY created_at DESC 
+                LIMIT 1
+                """;
+            try (PreparedStatement getIdStmt = conn.prepareStatement(getIdSql)) {
+                getIdStmt.setString(1, post.getTitle());
+                getIdStmt.setString(2, post.getUserId());
+                try (ResultSet rs = getIdStmt.executeQuery()) {
+                    if (rs.next()) {
+                        return rs.getString("id");
+                    }
+                }
+            }
+            throw new DatabaseQueryException("Failed to retrieve created post ID", sql, null);
         } catch (SQLException e) {
             throw new DatabaseQueryException("Failed to create post", sql, e);
         }
@@ -51,7 +71,7 @@ public class JdbcPostDAO implements PostDAO {
                     p.content,
                     p.status,
                     COALESCE(u.name, 'Unknown') AS author,
-                    p.created_at,c
+                    p.created_at,
                     p.published_datetime,
                     (SELECT COUNT(*) 
                     FROM comments c 

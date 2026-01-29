@@ -22,6 +22,7 @@
                 <TextField fx:id="searchField" prefWidth="350" promptText="Search by title or author..." />
                 <Button onAction="#searchPosts" text="Search" />
                 <Region HBox.hgrow="ALWAYS" />
+                <Button fx:id="createTagButton" onAction="#openCreateTagDialog" style="-fx-background-color: #17a2b8; -fx-text-fill: white; -fx-font-size: 14px;" text="Create Tag" visible="false" />
                 <Button onAction="#openAddPost" style="-fx-background-color: #28a745; -fx-text-fill: white; -fx-font-size: 14px;" text="Add New Post" />
             </HBox>
         </VBox>

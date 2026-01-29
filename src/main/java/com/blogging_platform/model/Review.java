@@ -1,50 +1,74 @@
 package com.blogging_platform.model;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 public class Review {
-    private UUID id;
-    private UUID postId;
-    private UUID userId;
-    private int rating;
+    private String id;
+    private String postId;
+    private String userId;
+    private Integer rating;
     private String message;
     private LocalDateTime createdAt;
-    
-    public UUID getId() {
+
+    public Review(String postId, String userId, Integer rating, String message) {
+        this.postId = postId;
+        this.userId = userId;
+        this.rating = rating;
+        this.message = message;
+    }
+
+    public Review(String id, String postId, String userId, Integer rating, String message) {
+        this.id = id;
+        this.postId = postId;
+        this.userId = userId;
+        this.rating = rating;
+        this.message = message;
+    }
+
+    public String getId() {
         return id;
     }
-    
-    public void setId(UUID id) {
+
+    public void setId(String id) {
         this.id = id;
     }
-    public UUID getPostId() {
+
+    public String getPostId() {
         return postId;
     }
-    public void setPostId(UUID postId) {
+
+    public void setPostId(String postId) {
         this.postId = postId;
     }
-    public UUID getUserId() {
+
+    public String getUserId() {
         return userId;
     }
-    public void setUserId(UUID userId) {
+
+    public void setUserId(String userId) {
         this.userId = userId;
     }
-    public int getRating() {
+
+    public Integer getRating() {
         return rating;
     }
-    public void setRating(int rating) {
+
+    public void setRating(Integer rating) {
         this.rating = rating;
     }
+
     public String getMessage() {
         return message;
     }
+
     public void setMessage(String message) {
         this.message = message;
     }
+
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
+
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
     }
