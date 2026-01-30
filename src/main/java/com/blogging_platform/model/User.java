@@ -2,6 +2,9 @@ package com.blogging_platform.model;
 
 import java.util.UUID;
 
+/**
+ * Domain model for a user (registration, login). Holds name, email, password, and role.
+ */
 public class User {
     private UUID id;
     private String name;

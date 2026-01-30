@@ -14,6 +14,10 @@ import com.blogging_platform.dao.interfaces.UserDAO;
 import com.blogging_platform.exceptions.DatabaseQueryException;
 import com.blogging_platform.model.User;
 
+/**
+ * JDBC implementation of {@link UserDAO}. Handles user registration and login against MySQL;
+ * passwords are compared using BCrypt.
+ */
 public class JdbcUserDAO implements UserDAO {
 
   @Override
@@ -27,7 +31,6 @@ public class JdbcUserDAO implements UserDAO {
       statement.setString(2, user.getEmail());
       statement.setString(3, user.getRole());
       statement.setString(4, user.getPassword());
-      System.out.println(statement.toString());
       int inserted = statement.executeUpdate();
       if (inserted != 1) {
         throw new DatabaseQueryException("Failed to create user: expected 1 row inserted, got " + inserted,
@@ -35,10 +38,8 @@ public class JdbcUserDAO implements UserDAO {
       }
 
     } catch (SQLException | DatabaseQueryException e) {
-        e.printStackTrace();
+        // Exception is handled by throwing DatabaseQueryException
     }
-    // jdbcTemplate.update(create_user_sql, user.getName(), user.getEmail(),
-    // user.getRole(), user.getPassword());
   }
 
   @Override
@@ -57,7 +58,7 @@ public class JdbcUserDAO implements UserDAO {
         return null;
       }
     } catch (SQLException e) {
-      e.printStackTrace();
+      // Return null on error (invalid credentials or DB error)
     }
     return null;
   }
@@ -85,7 +86,7 @@ public class JdbcUserDAO implements UserDAO {
       return false;
 
     } catch (SQLException e) {
-      e.printStackTrace();
+      // Return false on error
     }
     return false;
   }

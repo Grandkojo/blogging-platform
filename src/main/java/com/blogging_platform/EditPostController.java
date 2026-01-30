@@ -24,6 +24,10 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 
+/**
+ * FXML controller for Edit Post (EditPost.fxml). Loads an existing post by id (from navigation parameter),
+ * allows editing title, content, status, and tag; on save updates the post and tag association.
+ */
 public class EditPostController extends BaseController implements ParameterReceiver, Initializable {
 
     @FXML

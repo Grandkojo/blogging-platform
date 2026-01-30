@@ -33,15 +33,25 @@ public class CacheManager {
 
     private TagService tagService;
 
+    /** Returns the singleton cache manager instance. */
     public static CacheManager getInstance() {
         return instance;
     }
 
+    /**
+     * Injects the tag service so the cache can build the post–tag index for search-by-tag.
+     *
+     * @param tagService the tag service (may be null; then tag search is disabled)
+     */
     public void setTagService(TagService tagService) {
         this.tagService = tagService;
     }
 
-    /** Load all published posts into cache and build tag index for search-by-tag. */
+    /**
+     * Loads all published posts into cache and builds the tag index for search-by-tag.
+     *
+     * @throws DatabaseException if loading posts fails
+     */
     public void refreshCache() throws DatabaseException {
         publishedPostsCache.clear();
         postByIdCache.clear();
@@ -64,12 +74,21 @@ public class CacheManager {
         }
     }
 
-    /** Fast lookup by ID (hash index – O(1)). */
+    /**
+     * Returns the post with the given id from the cache (O(1) hash lookup).
+     *
+     * @param id post id
+     * @return the post record, or null if not in cache
+     */
     public PostRecord getPostById(String id) {
         return postByIdCache.get(id);
     }
 
-    /** Get a copy of the cached list (refreshes from DB first). */
+    /**
+     * Returns a copy of the cached published posts list, refreshing from the DB first.
+     *
+     * @return list of published post records
+     */
     public List<PostRecord> getPublishedPosts() {
         try {
             refreshCache();
@@ -80,8 +99,11 @@ public class CacheManager {
     }
 
     /**
-     * In-memory search: filter cached posts by title, author, or tag (case-insensitive contains).
-     * No DB query – uses the cache and tag index.
+     * In-memory search: filters cached posts by title, author, or tag (case-insensitive contains).
+     * No DB query; uses the cache and tag index.
+     *
+     * @param query search string (null or empty returns all cached posts)
+     * @return list of matching post records
      */
     public List<PostRecord> searchPosts(String query) {
         if (query == null || query.trim().isEmpty())
@@ -103,7 +125,10 @@ public class CacheManager {
     }
 
     /**
-     * Sort list in place using QuickSort (O(n log n) average). sortBy: "date_desc", "date_asc", "title_asc", "title_desc", "author_asc", "author_desc".
+     * Sorts the list in place using QuickSort (O(n log n) average).
+     *
+     * @param list   the list to sort (modified in place)
+     * @param sortBy one of: "date_desc", "date_asc", "title_asc", "title_desc", "author_asc", "author_desc"
      */
     public void sortPosts(List<PostRecord> list, String sortBy) {
         if (list == null || list.isEmpty()) return;
@@ -171,8 +196,11 @@ public class CacheManager {
     }
 
     /**
-     * Search (in-memory from cache) then sort (QuickSort). Use this for home page list.
-     * sortBy: "date_desc", "date_asc", "title_asc", "title_desc", "author_asc", "author_desc".
+     * Refreshes cache, then filters by query and sorts. Use for the home page list.
+     *
+     * @param query  search string (null or empty = no filter)
+     * @param sortBy one of: "date_desc", "date_asc", "title_asc", "title_desc", "author_asc", "author_desc"
+     * @return list of matching post records in the requested order
      */
     public List<PostRecord> getPublishedPostsSearchAndSort(String query, String sortBy) {
         try {
@@ -185,6 +213,9 @@ public class CacheManager {
         return list;
     }
 
+    /**
+     * Clears the cache and reloads from the DB. Call after comment/review create, update, or delete.
+     */
     public void invalidateCache() {
         try {
             publishedPostsCache.clear();

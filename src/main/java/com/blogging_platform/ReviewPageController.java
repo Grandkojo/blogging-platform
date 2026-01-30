@@ -27,6 +27,10 @@ import com.blogging_platform.exceptions.DuplicateResourceException;
 import com.blogging_platform.exceptions.PostNotFoundException;
 import com.blogging_platform.model.Review;
 
+/**
+ * FXML controller for the review page (ReviewPage.fxml). Receives post id via navigation parameter;
+ * displays post, average rating, and list of reviews; allows adding/editing/deleting reviews (author or admin post-owner).
+ */
 public class ReviewPageController extends BaseController implements ParameterReceiver {
 
     @FXML private Label postTitleLabel;

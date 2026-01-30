@@ -28,6 +28,10 @@ import com.blogging_platform.exceptions.PostNotFoundException;
 import com.blogging_platform.model.Comment;
 import com.blogging_platform.exceptions.CommentNotFoundException;
 
+/**
+ * FXML controller for single post view (SinglePostView.fxml). Receives post id via navigation parameter;
+ * displays post, tags, average rating, and comments; allows adding/editing/deleting comments (with auth).
+ */
 public class SinglePostController extends BaseController implements ParameterReceiver {
 
     @FXML private Label postTitleLabel;

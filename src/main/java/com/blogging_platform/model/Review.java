@@ -2,6 +2,9 @@ package com.blogging_platform.model;
 
 import java.time.LocalDateTime;
 
+/**
+ * Domain model for a post review (rating 1–5 and message). Used when creating or updating reviews.
+ */
 public class Review {
     private String id;
     private String postId;

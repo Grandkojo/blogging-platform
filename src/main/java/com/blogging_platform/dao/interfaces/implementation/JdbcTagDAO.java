@@ -14,6 +14,9 @@ import com.blogging_platform.exceptions.DatabaseQueryException;
 import com.blogging_platform.exceptions.DuplicateResourceException;
 import com.blogging_platform.model.Tag;
 
+/**
+ * JDBC implementation of {@link TagDAO}. Manages tags and post_tags table for linking tags to posts.
+ */
 public class JdbcTagDAO implements TagDAO {
 
     @Override

@@ -26,6 +26,11 @@ import com.blogging_platform.classes.SessionManager;
 import com.blogging_platform.classes.TagRecord;
 import com.blogging_platform.exceptions.DatabaseQueryException;
 
+/**
+ * FXML controller for the home page (PostHome.fxml). Displays published posts as cards with search
+ * (title, author, tag) and sort (date, title, author) using {@link com.blogging_platform.classes.CacheManager};
+ * shows tags, comment count, and average rating per post; Admin sees link to PostList.
+ */
 public class PostHomeController extends BaseController {
 
     @FXML private FlowPane postsFlowPane;
@@ -245,8 +250,6 @@ public class PostHomeController extends BaseController {
         if (result.isPresent() && result.get() == ButtonType.OK) {
             userService.logout();
             switchTo("Login");
-        } else {
-            System.out.println("Logout cancelled");
         }
     }
 }

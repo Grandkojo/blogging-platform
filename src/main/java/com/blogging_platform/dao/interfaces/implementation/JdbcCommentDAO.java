@@ -15,6 +15,9 @@ import com.blogging_platform.exceptions.CommentNotFoundException;
 import com.blogging_platform.exceptions.DatabaseQueryException;
 import com.blogging_platform.model.Comment;
 
+/**
+ * JDBC implementation of {@link CommentDAO}. Persists comments to MySQL and joins with users for author names.
+ */
 public class JdbcCommentDAO implements CommentDAO {
 
     @Override
@@ -71,7 +74,6 @@ public class JdbcCommentDAO implements CommentDAO {
             return comments;
 
         } catch (SQLException e) {
-            e.printStackTrace();
             throw new DatabaseQueryException("Failed to add comment post", sql, e);
         }
     }
@@ -98,7 +100,6 @@ public class JdbcCommentDAO implements CommentDAO {
             }
         }
         catch (SQLException e) {
-            e.printStackTrace();
             throw new DatabaseQueryException("Failed to update comment", sql, e);
         }
     }
@@ -122,7 +123,6 @@ public class JdbcCommentDAO implements CommentDAO {
                 throw new DatabaseQueryException("Failed to delete comment");
             }
         } catch (SQLException e) {
-            e.printStackTrace();
             throw new DatabaseQueryException("Failed to delete comment", sql, e);
         }
     }
@@ -160,7 +160,6 @@ public class JdbcCommentDAO implements CommentDAO {
                 }
             }
         } catch (SQLException e) {
-            e.printStackTrace();
             throw new DatabaseQueryException("Failed to get comment", sql, e);
         }
     }

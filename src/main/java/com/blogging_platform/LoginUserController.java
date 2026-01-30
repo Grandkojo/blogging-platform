@@ -8,6 +8,10 @@ import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 
+/**
+ * FXML controller for Login (Login.fxml). Validates email and password, authenticates via
+ * {@link com.blogging_platform.service.UserService}, and navigates to PostHome on success.
+ */
 public class LoginUserController extends BaseController {
 
     @FXML

@@ -20,6 +20,10 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 
+/**
+ * FXML controller for Add Post (AddPost.fxml). Handles creating a new post with title,
+ * content, status (Draft/Publish), and optional tag; links the selected tag to the post after creation.
+ */
 public class AddPostController extends BaseController implements Initializable {
     
     @FXML

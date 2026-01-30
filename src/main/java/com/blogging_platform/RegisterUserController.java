@@ -15,6 +15,10 @@ import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 
+/**
+ * FXML controller for Register (RegisterUser.fxml). Validates name, email, password, and role;
+ * registers the user via {@link com.blogging_platform.service.UserService} and navigates to Login on success.
+ */
 public class RegisterUserController extends BaseController implements Initializable {
 
     
@@ -91,7 +95,6 @@ public class RegisterUserController extends BaseController implements Initializa
     void submitUser(ActionEvent event) {
         if (validateForm()) {
             try {
-                System.out.println(userRole.getValue());
                 User user = new User(userName.getText().trim(), userEmail.getText().trim(), userPassword.getText().trim(), userRole.getValue().trim());
                 userService.registerUser(user);
                 showInfo("User Registered Successfully");

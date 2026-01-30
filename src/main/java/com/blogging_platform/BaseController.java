@@ -15,15 +15,13 @@ import javafx.scene.control.ButtonType;
 import javafx.scene.control.Alert.AlertType;
 
 /**
- * Base controller that all other controllers should extend.
- * Provides easy access to the main App instance for scene switching.
+ * Base controller that all FXML controllers extend.
+ * Holds references to the main {@link App} and injected services (user, post, comment, tag, review),
+ * and provides helpers for scene switching and dialogs (error, info, confirm).
  */
 public abstract class BaseController {
 
-    // Reference to the main application
     private App app;
-
-    // id for controller
     private String currentId;
 
     protected UserService userService;
@@ -31,36 +29,44 @@ public abstract class BaseController {
     protected CommentService commentService;
     protected TagService tagService;
     protected ReviewService reviewService;
-    
+
     /**
-     * Called by the App class after loading the FXML.
-     * Do not call this manually.
-    */
+     * Sets the application reference. Called by {@link App} after loading FXML; do not call manually.
+     *
+     * @param app the application instance
+     */
     public void setApp(App app) {
         this.app = app;
     }
 
+    /** Sets the user service (injected by App). */
     public void setUserService(UserService userService) { this.userService = userService; }
-    
+
+    /** Sets the post service (injected by App). */
     public void setPostService(PostService postService) {
         this.postService = postService;
     }
 
+    /** Sets the comment service (injected by App). */
     public void setCommentSerivce(CommentService commentService) {
         this.commentService = commentService;
     }
 
+    /** Sets the tag service (injected by App). */
     public void setTagService(TagService tagService) {
         this.tagService = tagService;
     }
 
+    /** Sets the review service (injected by App). */
     public void setReviewService(ReviewService reviewService) {
         this.reviewService = reviewService;
     }
 
     /**
-     * Helper to switch to another FXML scene.
-     * Usage: switchTo("Login") → loads Login.fxml
+     * Switches to another FXML scene and passes a string parameter (e.g. post id) to its controller.
+     *
+     * @param fxmlName base name of the FXML file (e.g. "SinglePostView")
+     * @param id       optional parameter passed to the controller if it implements {@link com.blogging_platform.classes.ParameterReceiver}
      */
     protected void switchTo(String fxmlName, String id) {
         if (app == null) {
@@ -70,11 +76,15 @@ public abstract class BaseController {
         try {
             App.setRoot(fxmlName, id);
         } catch (IOException e) {
-            e.printStackTrace();
             showError("Could not load " + fxmlName + ".fxml");
         }
     }
 
+    /**
+     * Switches to another FXML scene without passing a parameter.
+     *
+     * @param fxmlName base name of the FXML file (e.g. "Login", "PostHome")
+     */
     protected void switchTo(String fxmlName) {
         if (app == null) {
             System.err.println("App reference is null! Cannot switch scene.");
@@ -83,13 +93,14 @@ public abstract class BaseController {
         try {
             App.setRoot(fxmlName, null);
         } catch (IOException e) {
-            e.printStackTrace();
             showError("Could not load " + fxmlName + ".fxml");
         }
     }
 
     /**
-     * Optional: simple error alert
+     * Shows an error alert with the given message.
+     *
+     * @param message the error text to display
      */
     protected void showError(String message) {
         Alert alert = new Alert(
@@ -102,7 +113,9 @@ public abstract class BaseController {
     }
 
     /**
-     * Optional: simple info alert
+     * Shows an information alert with the given message.
+     *
+     * @param message the text to display
      */
     protected void showInfo(String message) {
         javafx.scene.control.Alert alert = new Alert(
@@ -114,6 +127,12 @@ public abstract class BaseController {
         alert.showAndWait();
     }
 
+    /**
+     * Shows a confirmation dialog and returns the user's choice.
+     *
+     * @param message the confirmation question
+     * @return the selected button (e.g. OK, Cancel), or empty if dismissed
+     */
     protected Optional<ButtonType> confirmDialog(String message) {
         Alert alert = new Alert(AlertType.CONFIRMATION);
         alert.setTitle("Confirm");
@@ -122,15 +141,21 @@ public abstract class BaseController {
         return alert.showAndWait();
     }
 
-    protected  void setCurrentId(String id){
+    /**
+     * Stores an identifier for the current context (e.g. post id).
+     *
+     * @param id the identifier to store
+     */
+    protected void setCurrentId(String id) {
         this.currentId = id;
     }
 
-    protected String getCurrentId(){
+    /**
+     * Returns the stored context identifier.
+     *
+     * @return the current id, or null if not set
+     */
+    protected String getCurrentId() {
         return this.currentId;
     }
-
-   
-
-    // You can add more common methods here (e.g., logout, getCurrentUser, etc.)
 }

@@ -15,6 +15,9 @@ import com.blogging_platform.exceptions.DatabaseQueryException;
 import com.blogging_platform.exceptions.DuplicateResourceException;
 import com.blogging_platform.model.Review;
 
+/**
+ * JDBC implementation of {@link ReviewDAO}. Persists reviews (rating, message) and joins with users for author names.
+ */
 public class JdbcReviewDAO implements ReviewDAO {
 
     @Override

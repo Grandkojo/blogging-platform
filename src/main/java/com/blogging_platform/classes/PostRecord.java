@@ -2,6 +2,10 @@ package com.blogging_platform.classes;
 
 import java.time.LocalDateTime;
 
+/**
+ * Immutable data transfer object for a blog post as returned by the DAO layer.
+ * Contains id, title, content, status, author, timestamps, comment count, and optional user id.
+ */
 public record PostRecord(
     String id,
     String title,
@@ -13,7 +17,10 @@ public record PostRecord(
     Integer commentCount,
     String userId
 ) {
-    
+
+    /**
+     * Constructor without comment count or user id (e.g. for list views).
+     */
     public PostRecord(
         String id,
         String title,
@@ -26,6 +33,9 @@ public record PostRecord(
         this(id, title, content, status, author, createdAt, publishedDate, null, null);
     }
 
+    /**
+     * Constructor with user id but without comment count.
+     */
     public PostRecord(
         String id,
         String title,

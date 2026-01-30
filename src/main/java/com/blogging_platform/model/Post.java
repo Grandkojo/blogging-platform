@@ -2,6 +2,9 @@ package com.blogging_platform.model;
 
 import java.time.LocalDateTime;
 
+/**
+ * Domain model for a blog post. Used when creating or updating posts via the service layer.
+ */
 public class Post {
     private String id;
     private String userId;

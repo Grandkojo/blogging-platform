@@ -39,6 +39,10 @@ import javafx.scene.control.TextField;
 import javafx.scene.control.TextInputDialog;
 import javafx.util.Callback;
 
+/**
+ * FXML controller for My Blog Posts (PostList.fxml). Displays the current user's posts in a table
+ * with in-memory search (title, author, tag) and sort; supports edit, delete, add post, and (Admin) create tag.
+ */
 public class PostListController extends BaseController implements Initializable {
 
     @FXML

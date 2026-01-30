@@ -8,9 +8,18 @@ import java.util.Scanner;
 
 import com.blogging_platform.exceptions.ConfigurationException;
 
+/**
+ * Loads configuration from a .env file and system environment variables.
+ * Values are read once at startup; keys not in .env fall back to {@link System#getenv(String)}.
+ */
 public class Config {
     private static final Map<String, String> envVars = loadEnvFile();
 
+    /**
+     * Loads KEY=VALUE pairs from .env in the project root (skips comments and empty lines).
+     *
+     * @return map of keys to values (may be empty if .env is missing)
+     */
     private static Map<String, String> loadEnvFile() {
         Map<String, String> vars = new HashMap<>();
         
@@ -46,6 +55,14 @@ public class Config {
         return vars;
     }
 
+    /**
+     * Returns the value for the given configuration key.
+     * Checks .env first, then system environment variables.
+     *
+     * @param key the configuration key (e.g. DB_NAME, USERNAME)
+     * @return the value for the key
+     * @throws ConfigurationException if the key is not found
+     */
     public static String get(String key) throws ConfigurationException {
         // First check .env file, then fall back to system environment variables
         String value = envVars.get(key);

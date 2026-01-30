@@ -6,6 +6,10 @@ import java.sql.SQLException;
 
 import com.blogging_platform.exceptions.ConfigurationException;
 
+/**
+ * Provides JDBC connections to the MySQL database using credentials from {@link Config}.
+ * Connection URL, username, and password are loaded at class initialization.
+ */
 public class DBConnection {
     private static String db_name;
     private static String username;
@@ -22,7 +26,13 @@ public class DBConnection {
 
         }
     }
-    
+
+    /**
+     * Returns a new connection to the database.
+     *
+     * @return a JDBC connection (caller must close it)
+     * @throws SQLException if the connection cannot be established
+     */
     public static Connection getConnection() throws SQLException {
         return DriverManager.getConnection(databaseUrl, username, password);
     }

@@ -1,5 +1,8 @@
 package com.blogging_platform.model;
 
+/**
+ * Domain model for a tag. Used when creating tags or linking them to posts.
+ */
 public class Tag {
     private String id;
     private String tag;

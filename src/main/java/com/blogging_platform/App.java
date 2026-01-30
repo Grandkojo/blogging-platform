@@ -26,14 +26,15 @@ import com.blogging_platform.service.TagService;
 import com.blogging_platform.service.UserService;
 
 /**
- * JavaFX App
+ * Main JavaFX application for the Blogging Platform.
+ * Initializes DAOs and services, manages the primary scene, and injects dependencies
+ * into FXML controllers. Also handles scene transitions (e.g. Login, PostHome, SinglePostView).
  */
 public class App extends Application {
 
     private static App instance;
     private static Scene scene;
 
-    //services
     private UserService userService;
     private PostService postService;
     private CommentService commentService;
@@ -41,19 +42,22 @@ public class App extends Application {
     private ReviewService reviewService;
 
 
+    /** Returns the shared user service. */
     public UserService getUserService() { return userService; }
+    /** Returns the shared post service. */
     public PostService getPostService() { return postService; }
+    /** Returns the shared comment service. */
     public CommentService getCommentService() { return commentService; }
+    /** Returns the shared tag service. */
     public TagService getTagService() { return tagService; }
+    /** Returns the shared review service. */
     public ReviewService getReviewService() { return reviewService; }
-    
 
     public App() { instance = this; }
 
+    /** Returns the singleton application instance. */
     public static App getInstance() { return instance; }
 
-    
-    
     @Override
     public void start(Stage stage) throws IOException {
 
@@ -79,6 +83,13 @@ public class App extends Application {
         stage.show();
     }
 
+    /**
+     * Replaces the scene root with the given FXML view and passes an optional parameter to the controller.
+     *
+     * @param fxml      base name of the FXML file (e.g. "Login", "SinglePostView")
+     * @param parameter optional data passed to the controller if it implements {@link ParameterReceiver}
+     * @throws IOException if the FXML cannot be loaded
+     */
     static void setRoot(String fxml, Object parameter) throws IOException {
         FXMLLoader loader = new FXMLLoader(App.class.getResource(fxml + ".fxml"));
         Parent root = loader.load();
@@ -102,10 +113,23 @@ public class App extends Application {
         scene.setRoot(root);
     }
 
+    /**
+     * Replaces the scene root with the given FXML view (no parameter).
+     *
+     * @param fxml base name of the FXML file
+     * @throws IOException if the FXML cannot be loaded
+     */
     static void setRoot(String fxml) throws IOException {
         setRoot(fxml, null);
     }
 
+    /**
+     * Loads an FXML file and injects App and services into its controller.
+     *
+     * @param fxml base name of the FXML file (without .fxml)
+     * @return the root node of the loaded FXML
+     * @throws IOException if the FXML cannot be loaded
+     */
     private static Parent loadFXML(String fxml) throws IOException {
     FXMLLoader fxmlLoader = new FXMLLoader(App.class.getResource(fxml + ".fxml"));
     Parent parent = fxmlLoader.load();
@@ -126,8 +150,13 @@ public class App extends Application {
     return parent;
 }
 
+    /**
+     * Launches the JavaFX application.
+     *
+     * @param args command-line arguments
+     */
     public static void main(String[] args) {
-        launch();
+        launch(args);
     }
 
 }

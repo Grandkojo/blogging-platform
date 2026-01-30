@@ -2,6 +2,10 @@ package com.blogging_platform.model;
 
 import java.time.LocalDateTime;
 
+/**
+ * Domain model for a comment on a post. Use {@link #forCreate(String, String, String)} for new comments
+ * and {@link #forEdit(String, String, String)} for updates.
+ */
 public class Comment {
     private String id;
     private String userId;
@@ -13,7 +17,15 @@ public class Comment {
     
     private Comment() {
     }
-    
+
+    /**
+     * Creates a comment instance for editing an existing comment.
+     *
+     * @param id      comment id
+     * @param userId  user id
+     * @param comment new content
+     * @return a Comment instance for update
+     */
     public static Comment forEdit(String id, String userId, String comment) {
         Comment c = new Comment();
         c.id = id;
@@ -21,7 +33,15 @@ public class Comment {
         c.comment = comment;
         return c;
     }
-    
+
+    /**
+     * Creates a comment instance for adding a new comment to a post.
+     *
+     * @param comment comment text
+     * @param userId  user id
+     * @param postId  post id
+     * @return a Comment instance for create
+     */
     public static Comment forCreate(String comment, String userId, String postId) {
         Comment c = new Comment();
         c.comment = comment;

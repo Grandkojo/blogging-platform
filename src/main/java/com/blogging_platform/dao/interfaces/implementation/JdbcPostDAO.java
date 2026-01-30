@@ -15,7 +15,10 @@ import com.blogging_platform.exceptions.DatabaseQueryException;
 import com.blogging_platform.exceptions.PostNotFoundException;
 import com.blogging_platform.model.Post;
 
-
+/**
+ * JDBC implementation of {@link PostDAO}. Persists posts to MySQL using {@link DBConnection},
+ * with UUIDs stored as BINARY(16) and converted via BIN_TO_UUID / UUID_TO_BIN.
+ */
 public class JdbcPostDAO implements PostDAO {
 
     @Override
@@ -101,7 +104,6 @@ public class JdbcPostDAO implements PostDAO {
                 }
             }
         } catch (SQLException e) {
-            e.printStackTrace();
             throw new DatabaseQueryException("Failed to get post", sql, e);
         }
     }
@@ -145,7 +147,6 @@ public class JdbcPostDAO implements PostDAO {
                 }
             }
         } catch (SQLException e) {
-            e.printStackTrace();
             throw new DatabaseQueryException("Failed to get post", sql, e);
         }
     }
@@ -189,7 +190,6 @@ public class JdbcPostDAO implements PostDAO {
             }
             return posts;
         } catch (SQLException e) {
-            e.printStackTrace();
             throw new DatabaseQueryException("Failed to load posts", sql, e);
 
         }
@@ -235,17 +235,11 @@ public class JdbcPostDAO implements PostDAO {
             }
             return posts;
         } catch (SQLException e) {
-            e.printStackTrace();
             throw new DatabaseQueryException("Failed to load posts", sql, e);
 
         }
     }
 
-    @Override
-    public List<Post> search(String keyword) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'search'");
-    }
 
     @Override
     public void edit(Post post) throws DatabaseQueryException, PostNotFoundException {
@@ -278,7 +272,6 @@ public class JdbcPostDAO implements PostDAO {
             }
         }
         catch (SQLException e) {
-            e.printStackTrace();
             throw new DatabaseQueryException("Failed to edit post", sql, e);
         }
 
@@ -301,7 +294,6 @@ public class JdbcPostDAO implements PostDAO {
             }
         }
         catch (SQLException e) {
-            e.printStackTrace();
             throw new DatabaseQueryException("Failed to delete post", sql, e);
         }
                 
