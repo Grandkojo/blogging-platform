@@ -1,23 +1,29 @@
 # Blogging Platform
 
-A desktop blogging platform built with JavaFX and MySQL, featuring user authentication, post management, commenting system, and full-text search capabilities.
+A desktop blogging platform built with JavaFX and MySQL, featuring user authentication, post management with tags, review system (ratings), commenting, and advanced in-memory search/sort capabilities using data structures and algorithms (hashing, caching, QuickSort).
 
 ## Features
 
 - **User Management**: Registration and authentication with role-based access (Admin/Regular)
 - **Post Management**: Create, edit, delete, and publish blog posts with draft/published status
-- **Comment System**: Add, edit, and delete comments on posts
-- **Search Functionality**: Full-text search across post titles and author names
+- **Tag System**: Categorize posts with tags; create tags (Admin only); link tags to posts
+- **Review System**: Rate posts (1-5 stars) with messages; view average ratings; edit/delete reviews (author or admin post-owner)
+- **Comment System**: Add, edit, and delete comments on posts (author-only edit/delete)
+- **Advanced Search & Sort**: 
+  - In-memory search by title, author, or tag (cache-based, no DB queries)
+  - QuickSort-based sorting by date, title, or author (ascending/descending)
+  - Search and sort on home page and admin post list
+- **Caching**: In-memory cache with hash index (O(1) lookup) and tag index for fast search
 - **Session Management**: Secure session handling for authenticated users
-- **Caching**: Post caching for improved performance
 - **Custom Exception Handling**: Comprehensive exception hierarchy for error management
+- **DAO/Service Architecture**: Clean separation with DAO interfaces, JDBC implementations, and service layer
 
 ## Prerequisites
 
-- **Java Development Kit (JDK) 25** or higher
+- **Java Development Kit (JDK) 21** or higher
 - **Maven 3.6+** for dependency management
 - **MySQL 8.0+** database server
-- **JavaFX 25** (included via Maven dependencies)
+- **JavaFX 21** (included via Maven dependencies)
 
 ## Database Schema
 
@@ -33,6 +39,7 @@ See the complete ERD diagram at: [`docs/blogging_platform_erd.png`](docs/bloggin
 - **comments**: Stores user comments on posts with metadata support
 - **tags**: Stores available tags for categorizing posts
 - **post_tags**: Junction table for many-to-many relationship between posts and tags
+- **reviews**: Stores post reviews with rating (1-5), message, and timestamps (one review per user per post)
 
 ### SQL Scripts
 
@@ -107,7 +114,7 @@ mvn clean install
 The project uses the following key dependencies (managed via Maven):
 
 ### Core Dependencies
-- **JavaFX 25**: Desktop UI framework
+- **JavaFX 21**: Desktop UI framework
   - `javafx-base`, `javafx-controls`, `javafx-fxml`, `javafx-graphics`, `javafx-media`, `javafx-web`
 - **MySQL Connector/J 9.0.0**: MySQL database driver
 - **jBCrypt 0.4**: Password hashing library
@@ -158,12 +165,25 @@ mvn javafx:run
 
 1. **Login Screen**: The application starts at the login screen
 2. **Registration**: New users can register with name, email, role (Admin/Regular), and password
-3. **Post Home**: After login, users see published posts with search functionality
+3. **Post Home**: After login, users see published posts with:
+   - Search by title, author, or tag (in-memory, cache-based)
+   - Sort by date (newest/oldest), title (A-Z/Z-A), or author (A-Z/Z-A)
+   - Post cards showing tags, comment count, and average rating
 4. **Post Management**: 
    - Admins can access "My Posts" to create, edit, and delete posts
    - Posts can be saved as Draft or Published
-5. **Post Viewing**: Click on any post to view full content and comments
-6. **Commenting**: Authenticated users can add, edit, and delete comments
+   - Tags can be assigned when creating or editing posts
+   - Admin can create new tags
+5. **Post Viewing**: Click on any post to view:
+   - Full content, tags, and average rating
+   - Comments (add, edit, delete - author only)
+   - Click rating to view all reviews
+6. **Review Page**: View and manage reviews for a post:
+   - See all reviews with author, rating, and message
+   - Add a review (one per user per post)
+   - Edit/delete your own review
+   - Admin post-owner can delete any review on their post
+7. **Commenting**: Authenticated users can add, edit (author only), and delete (author only) comments
 
 ## Testing
 
@@ -209,19 +229,48 @@ blogging_platform/
 │   ├── main/
 │   │   ├── java/com/blogging_platform/
 │   │   │   ├── App.java               # Main application entry point
-│   │   │   ├── Config.java            # Configuration management
-│   │   │   ├── MySQLDriver.java       # Database operations
+│   │   │   ├── Config.java            # Configuration management (.env loader)
+│   │   │   ├── DBConnection.java      # JDBC connection management
+│   │   │   ├── MySQLDriver.java       # Legacy database operations
 │   │   │   ├── BaseController.java    # Base controller for all views
 │   │   │   ├── classes/               # Data models and utilities
-│   │   │   │   ├── User.java
-│   │   │   │   ├── SessionManager.java
-│   │   │   │   ├── CacheManager.java
+│   │   │   │   ├── CacheManager.java  # In-memory cache with search/sort
+│   │   │   │   ├── SessionManager.java # User session management
+│   │   │   │   ├── PostRecord.java    # DTOs for data transfer
+│   │   │   │   ├── CommentRecord.java
+│   │   │   │   ├── ReviewRecord.java
+│   │   │   │   ├── TagRecord.java
 │   │   │   │   └── ...
+│   │   │   ├── dao/                   # Data Access Layer
+│   │   │   │   ├── interfaces/        # DAO interfaces
+│   │   │   │   │   ├── PostDAO.java
+│   │   │   │   │   ├── UserDAO.java
+│   │   │   │   │   ├── CommentDAO.java
+│   │   │   │   │   ├── TagDAO.java
+│   │   │   │   │   └── ReviewDAO.java
+│   │   │   │   └── implementation/   # JDBC implementations
+│   │   │   │       ├── JdbcPostDAO.java
+│   │   │   │       ├── JdbcUserDAO.java
+│   │   │   │       ├── JdbcCommentDAO.java
+│   │   │   │       ├── JdbcTagDAO.java
+│   │   │   │       └── JdbcReviewDAO.java
+│   │   │   ├── service/               # Business logic layer
+│   │   │   │   ├── PostService.java
+│   │   │   │   ├── UserService.java
+│   │   │   │   ├── CommentService.java
+│   │   │   │   ├── TagService.java
+│   │   │   │   └── ReviewService.java
+│   │   │   ├── model/                 # Domain models
+│   │   │   │   ├── Post.java
+│   │   │   │   ├── User.java
+│   │   │   │   ├── Comment.java
+│   │   │   │   ├── Review.java
+│   │   │   │   └── Tag.java
 │   │   │   ├── exceptions/            # Custom exception hierarchy
 │   │   │   │   ├── BloggingPlatformException.java
 │   │   │   │   ├── DatabaseException.java
 │   │   │   │   └── ...
-│   │   │   └── [Controller classes]    # UI controllers
+│   │   │   └── [Controller classes]  # UI controllers (FXML)
 │   │   └── resources/com/blogging_platform/
 │   │       └── *.fxml                 # JavaFX UI layouts
 │   └── test/
@@ -234,22 +283,63 @@ blogging_platform/
 └── .env                               # Environment configuration (create this)
 ```
 
-## Search Performance Optimization
+## Architecture & Performance
 
-The application implements MySQL FULLTEXT search for improved performance:
+### Data Structures & Algorithms Integration
 
-### Before Optimization
-- Used `LOWER(title) LIKE '%term%'` queries
-- Full table scans, no index usage
-- Linear performance degradation with data growth
+The application implements several D&S concepts:
 
-### After Optimization
+- **Hashing/Caching**: 
+  - `CacheManager` uses `ConcurrentHashMap` for O(1) post lookup by id (hash index)
+  - In-memory cache stores published posts and tag associations
+  - Cache invalidation after comment/review create/update/delete
+
+- **Sorting**: 
+  - QuickSort algorithm implemented in `CacheManager.sortPosts()` for O(n log n) average performance
+  - Supports sorting by date, title, or author (ascending/descending)
+
+- **Searching**: 
+  - In-memory linear search on cached posts (filters by title, author, or tag)
+  - No database queries for search - all filtering happens in memory
+  - Tag index (`postIdToTagNames`) enables fast tag-based search
+
+- **Indexing Concept**: 
+  - Hash index (`postByIdCache`) analogous to database primary key index
+  - Tag index (`postIdToTagNames`) for efficient tag lookups
+  - In-memory structures mirror database indexing principles
+
+### Search & Sort Implementation
+
+- **Home Page & Post List**: Search and sort run entirely in memory using cached data
+- **No Database Queries**: Search filters cached posts; sort uses QuickSort on filtered results
+- **Performance**: O(n) search + O(n log n) sort = efficient for typical post counts
+
+### Legacy MySQL FULLTEXT Search
+
+The application previously used MySQL FULLTEXT search (still available in `MySQLDriver`):
+
 - FULLTEXT indexes on `posts.title` and `users.name`
 - Uses `MATCH() AGAINST()` in NATURAL LANGUAGE MODE
 - Relevance-based sorting
 - Expected 10-100x faster on large datasets (1000+ posts)
 
 See [`docs/performance_review.sql`](docs/performance_review.sql) for optimization details.
+
+**Note**: Current implementation prefers cache-based in-memory search/sort for better responsiveness.
+
+## Recent Updates
+
+### Latest Changes (2026)
+
+- **Documentation**: Comprehensive Javadocs added to all classes, methods, and interfaces
+- **Code Cleanup**: Removed commented-out code and debug statements
+- **Cache-Based Search & Sort**: In-memory search by title/author/tag with QuickSort (D&S integration)
+- **Tags & Reviews**: Full tag management and review system (ratings 1-5) with authorization
+- **Cache Invalidation**: Automatic cache refresh after comment/review create/update/delete
+- **Edit Post Tags**: Tag field added to edit post screen
+- **Architecture**: Migrated to DAO/Service layer pattern for better separation of concerns
+
+See git log for detailed commit history.
 
 ## Troubleshooting
 
@@ -272,11 +362,25 @@ See [`docs/performance_review.sql`](docs/performance_review.sql) for optimizatio
 ### JavaFX Runtime Issues
 
 - Ensure JavaFX dependencies are properly downloaded: `mvn dependency:resolve`
-- For Java 25, ensure `--enable-native-access=javafx.graphics` VM option is set
+- For Java 21+, ensure `--enable-native-access=javafx.graphics` VM option is set
 - Check that JavaFX modules are accessible in module path
 
 ### Build Issues
 
 - Clean and rebuild: `mvn clean install`
-- Check Java version: `java -version` (should be 25+)
+- Check Java version: `java -version` (should be 21+)
 - Verify Maven installation: `mvn -version`
+
+## Documentation
+
+All classes, methods, and interfaces are fully documented with Javadoc comments following Java best practices. Generate documentation using:
+
+```bash
+mvn javadoc:javadoc
+```
+
+The generated documentation will be available in `target/site/apidocs/`.
+
+## License
+
+[Add your license information here]
