@@ -1,11 +1,17 @@
 package com.blogging_platform.model;
 
+import jakarta.persistence.Id;
+
 /**
  * Domain model for a tag. Used when creating tags or linking them to posts.
  */
 public class Tag {
+    @Id
     private String id;
     private String tag;
+
+    public Tag() {
+    }
 
     public Tag(String tag) {
         this.tag = tag;

@@ -32,6 +32,6 @@ public interface UserDAO {
      */
     UserRecord login(String email, String password);
 
-    /** Clears any server-side session state (if applicable). */
+    /** Clears any session state (if applicable). */
     void logout();
 }

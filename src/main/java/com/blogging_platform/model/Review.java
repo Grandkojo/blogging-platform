@@ -2,16 +2,24 @@ package com.blogging_platform.model;
 
 import java.time.LocalDateTime;
 
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+
 /**
  * Domain model for a post review (rating 1–5 and message). Used when creating or updating reviews.
  */
+@Entity
 public class Review {
+    @Id
     private String id;
     private String postId;
     private String userId;
     private Integer rating;
     private String message;
     private LocalDateTime createdAt;
+
+    public Review() {
+    }
 
     public Review(String postId, String userId, Integer rating, String message) {
         this.postId = postId;

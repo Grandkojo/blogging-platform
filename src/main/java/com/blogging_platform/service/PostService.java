@@ -1,6 +1,7 @@
 package com.blogging_platform.service;
 
 import java.util.List;
+import java.util.UUID;
 
 import com.blogging_platform.classes.PostRecord;
 import com.blogging_platform.dao.interfaces.PostDAO;
@@ -44,9 +45,9 @@ public class PostService {
      * @return list of post records
      * @throws DatabaseQueryException if the query fails
      */
-    public List<PostRecord> getUserPosts(String userId) throws DatabaseQueryException {
-        return postDAO.getAll(userId);
-    }
+    // public List<PostRecord> getUserPosts(String userId) throws DatabaseQueryException {
+    //     return postDAO.getAll(userId);
+    // }
 
     /**
      * Fetches a post by id for a specific user (ownership check).
@@ -57,7 +58,7 @@ public class PostService {
      * @throws PostNotFoundException if the post does not exist or user does not own it
      * @throws DatabaseQueryException if the query fails
      */
-    public PostRecord getPost(String postId, String userId) throws DatabaseQueryException, PostNotFoundException {
+    public PostRecord getPost(UUID postId, UUID userId) throws DatabaseQueryException, PostNotFoundException {
         return postDAO.getByID(postId, userId);
     }
 
@@ -69,7 +70,7 @@ public class PostService {
      * @throws PostNotFoundException if the post does not exist
      * @throws DatabaseQueryException if the query fails
      */
-    public PostRecord getPost(String postId) throws DatabaseQueryException, PostNotFoundException {
+    public PostRecord getPost(UUID postId) throws DatabaseQueryException, PostNotFoundException {
         return postDAO.getByID(postId);
     }
 
@@ -107,7 +108,7 @@ public class PostService {
      * @throws PostNotFoundException if the post does not exist or user does not own it
      * @throws DatabaseQueryException if the delete fails
      */
-    public void deletePost(String postId, String userId) throws DatabaseQueryException, PostNotFoundException {
+    public void deletePost(UUID postId, UUID userId) throws DatabaseQueryException, PostNotFoundException {
         postDAO.delete(postId, userId);
     }
 }

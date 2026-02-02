@@ -1,17 +1,31 @@
 package com.blogging_platform.model;
 
+
+import java.sql.Types;
 import java.util.UUID;
+
+import org.hibernate.annotations.JdbcTypeCode;
+
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 
 /**
  * Domain model for a user (registration, login). Holds name, email, password, and role.
  */
+@Entity
+@Table(name = "users")
 public class User {
+    @Id
+    @JdbcTypeCode(Types.BINARY)
     private UUID id;
     private String name;
     private String email;
     private String password;
     private String role;
 
+    public User() {
+    }
     
     public User(String name, String email, String password, String role) {
         this.name = name;

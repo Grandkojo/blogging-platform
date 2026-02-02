@@ -2,11 +2,16 @@ package com.blogging_platform.model;
 
 import java.time.LocalDateTime;
 
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+
 /**
  * Domain model for a comment on a post. Use {@link #forCreate(String, String, String)} for new comments
  * and {@link #forEdit(String, String, String)} for updates.
  */
+@Entity
 public class Comment {
+    @Id
     private String id;
     private String userId;
     private String postId;

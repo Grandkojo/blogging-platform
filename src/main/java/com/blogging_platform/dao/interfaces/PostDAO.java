@@ -1,6 +1,7 @@
 package com.blogging_platform.dao.interfaces;
 
 import java.util.List;
+import java.util.UUID;
 
 import com.blogging_platform.classes.PostRecord;
 import com.blogging_platform.exceptions.DatabaseQueryException;
@@ -31,7 +32,7 @@ public interface PostDAO {
      * @throws PostNotFoundException if the post does not exist or user does not own it
      * @throws DatabaseQueryException if the query fails
      */
-    PostRecord getByID(String postId, String userId) throws DatabaseQueryException, PostNotFoundException;
+    PostRecord getByID(UUID postId, UUID userId) throws DatabaseQueryException, PostNotFoundException;
 
     /**
      * Returns all published posts.
@@ -48,7 +49,7 @@ public interface PostDAO {
      * @return list of post records
      * @throws DatabaseQueryException if the query fails
      */
-    List<PostRecord> getAll(String userId) throws DatabaseQueryException;
+    List<PostRecord> getAll(UUID userId) throws DatabaseQueryException;
 
     /**
      * Fetches a post by id (no ownership check).
@@ -58,7 +59,7 @@ public interface PostDAO {
      * @throws PostNotFoundException if the post does not exist
      * @throws DatabaseQueryException if the query fails
      */
-    PostRecord getByID(String postId) throws DatabaseQueryException, PostNotFoundException;
+    PostRecord getByID(UUID postId) throws DatabaseQueryException, PostNotFoundException;
 
     /**
      * Updates an existing post.
@@ -77,5 +78,5 @@ public interface PostDAO {
      * @throws PostNotFoundException if the post does not exist or user does not own it
      * @throws DatabaseQueryException if the delete fails
      */
-    void delete(String postId, String userId) throws DatabaseQueryException, PostNotFoundException;
+    void delete(UUID postId, UUID userId) throws DatabaseQueryException, PostNotFoundException;
 }

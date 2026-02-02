@@ -1,13 +1,19 @@
 package com.blogging_platform.model;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
+
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
 
 /**
  * Domain model for a blog post. Used when creating or updating posts via the service layer.
  */
+@Entity
 public class Post {
-    private String id;
-    private String userId;
+    @Id
+    private UUID id;
+    private UUID userId;
     private String title;
     private String content;
     private String status;
@@ -16,14 +22,17 @@ public class Post {
     private LocalDateTime publishedDatetime;
     private boolean isPublish;
 
-    public Post(String userId, String title, String content, String status) {
+    public Post() {
+    }
+
+    public Post(UUID userId, String title, String content, String status) {
         this.userId = userId;
         this.title = title;
         this.content = content;
         this.status = status;
     }
 
-    public Post(String postId, String userId, String title, String content, String status) {
+    public Post(UUID postId, UUID userId, String title, String content, String status) {
         this.id = postId;
         this.userId = userId;
         this.title = title;
@@ -31,19 +40,19 @@ public class Post {
         this.status = status;
     }
 
-    public String getId() {
+    public UUID getId() {
         return id;
     }
 
-    public void setId(String id) {
+    public void setId(UUID id) {
         this.id = id;
     }
 
-    public String getUserId() {
+    public UUID getUserId() {
         return userId;
     }
 
-    public void setUserId(String userId) {
+    public void setUserId(UUID userId) {
         this.userId = userId;
     }
 
