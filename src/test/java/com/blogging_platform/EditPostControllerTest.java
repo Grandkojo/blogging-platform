@@ -2,6 +2,9 @@ package com.blogging_platform;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import com.blogging_platform.controller.EditPostController;
+
 import org.junit.jupiter.api.DisplayName;
 
 import static org.junit.jupiter.api.Assertions.*;

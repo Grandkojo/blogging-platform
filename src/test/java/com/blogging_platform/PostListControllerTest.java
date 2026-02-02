@@ -1,6 +1,8 @@
 package com.blogging_platform;
 
 import com.blogging_platform.classes.SessionManager;
+import com.blogging_platform.controller.PostListController;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;

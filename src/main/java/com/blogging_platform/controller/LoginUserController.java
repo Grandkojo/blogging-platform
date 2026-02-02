@@ -1,4 +1,4 @@
-package com.blogging_platform;
+package com.blogging_platform.controller;
 import com.blogging_platform.exceptions.AuthenticationException;
 
 import javafx.event.ActionEvent;

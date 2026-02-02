@@ -1,9 +1,10 @@
-package com.blogging_platform;
+package com.blogging_platform.controller;
 
 
 import java.io.IOException;
 import java.util.Optional;
 
+import com.blogging_platform.App;
 import com.blogging_platform.service.CommentService;
 import com.blogging_platform.service.PostService;
 import com.blogging_platform.service.ReviewService;

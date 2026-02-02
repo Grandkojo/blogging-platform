@@ -1,4 +1,4 @@
-package com.blogging_platform;
+package com.blogging_platform.controller;
 
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;

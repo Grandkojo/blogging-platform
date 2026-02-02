@@ -9,6 +9,7 @@ import javafx.stage.Stage;
 import java.io.IOException;
 
 import com.blogging_platform.classes.ParameterReceiver;
+import com.blogging_platform.controller.BaseController;
 import com.blogging_platform.dao.interfaces.CommentDAO;
 import com.blogging_platform.dao.interfaces.PostDAO;
 import com.blogging_platform.dao.interfaces.ReviewDAO;
@@ -90,7 +91,7 @@ public class App extends Application {
      * @param parameter optional data passed to the controller if it implements {@link ParameterReceiver}
      * @throws IOException if the FXML cannot be loaded
      */
-    static void setRoot(String fxml, Object parameter) throws IOException {
+    public static void setRoot(String fxml, Object parameter) throws IOException {
         FXMLLoader loader = new FXMLLoader(App.class.getResource(fxml + ".fxml"));
         Parent root = loader.load();
 

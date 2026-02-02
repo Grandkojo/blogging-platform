@@ -12,7 +12,7 @@
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
 
-<BorderPane xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.blogging_platform.PostListController">
+<BorderPane xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.blogging_platform.controller.PostListController">
 
     <top>
         <VBox alignment="CENTER_LEFT" spacing="15" style="-fx-padding: 20;">
