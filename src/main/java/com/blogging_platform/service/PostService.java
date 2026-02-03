@@ -135,6 +135,10 @@ public class PostService {
      * @throws DatabaseQueryException if the delete fails
      */
     public void deletePost(String postId, String userId) throws DatabaseQueryException, PostNotFoundException {
-        postDAO.delete(postId, userId);
+        if (postDAO.existsById(postId) && userDAO.existsById(userId)) {
+            postDAO.delete(postId, userId);
+        } else {
+            throw new PostNotFoundException("Post not found");
+        }
     }
 }
