@@ -2,6 +2,7 @@ package com.blogging_platform.dao.interfaces;
 
 import java.util.List;
 
+
 import com.blogging_platform.classes.PostRecord;
 import com.blogging_platform.exceptions.DatabaseQueryException;
 import com.blogging_platform.exceptions.PostNotFoundException;
@@ -78,4 +79,6 @@ public interface PostDAO {
      * @throws DatabaseQueryException if the delete fails
      */
     void delete(String postId, String userId) throws DatabaseQueryException, PostNotFoundException;
+
+    boolean existsById(String postId);
 }

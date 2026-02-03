@@ -1,6 +1,12 @@
+
 package com.blogging_platform.service;
 
+
+import java.util.List;
+
 import org.mindrot.jbcrypt.BCrypt;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 import com.blogging_platform.classes.SessionManager;
 import com.blogging_platform.classes.UserRecord;
@@ -13,8 +19,10 @@ import com.blogging_platform.model.User;
  * Application service for user registration and authentication. Hashes passwords
  * and delegates persistence to {@link UserDAO}; updates {@link SessionManager} on login.
  */
+@Service
 public class UserService {
 
+    @Autowired
     private UserDAO userDAO;
 
     /** Creates a user service with the given DAO. */
@@ -29,7 +37,7 @@ public class UserService {
      * @throws DuplicateEmailException if the email is already registered
      */
     public void registerUser(User user) throws DuplicateEmailException {
-        if(userDAO.existsByEmail(user.getEmail())){
+         if(userDAO.existsByEmail(user.getEmail())){
             throw new DuplicateEmailException("An account with this email already exists");
         }
 
@@ -46,19 +54,22 @@ public class UserService {
      * @return true if login succeeded
      * @throws AuthenticationException if credentials are invalid
      */
-    public boolean loginUser(String email, String password) throws AuthenticationException {
+    public UserRecord loginUser(String email, String password) throws AuthenticationException {
 
         UserRecord user = userDAO.login(email, password);
         if (user == null){
             throw new AuthenticationException("Invalid email or password");
         } else {
             SessionManager.getInstance().login(user);
-            return true;
+            return user;
         }
     }
 
-    /** Clears the current session (logout). */
-    public void logout() {
-        userDAO.logout();
+    public boolean existsById(String userId){
+        return userDAO.existsById(userId);
+    }
+
+    public List<UserRecord> getUsers(){
+        return userDAO.findAll();
     }
 }

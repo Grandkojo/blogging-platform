@@ -4,7 +4,7 @@ package com.blogging_platform.exceptions;
  * Base exception class for all blogging platform exceptions.
  * Provides a common structure for all custom exceptions in the system.
  */
-public class BloggingPlatformException extends Exception {
+public class BloggingPlatformException extends RuntimeException {
     
     private final String errorCode;
     private final String userMessage;

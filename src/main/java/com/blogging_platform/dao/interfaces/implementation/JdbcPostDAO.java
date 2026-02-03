@@ -8,6 +8,8 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.stereotype.Repository;
+
 import com.blogging_platform.classes.PostRecord;
 import com.blogging_platform.config.DBConnection;
 import com.blogging_platform.dao.interfaces.PostDAO;
@@ -19,6 +21,7 @@ import com.blogging_platform.model.Post;
  * JDBC implementation of {@link PostDAO}. Persists posts to MySQL using {@link DBConnection},
  * with UUIDs stored as BINARY(16) and converted via BIN_TO_UUID / UUID_TO_BIN.
  */
+@Repository
 public class JdbcPostDAO implements PostDAO {
 
     @Override
@@ -265,6 +268,7 @@ public class JdbcPostDAO implements PostDAO {
             }
             statement.setString(5, post.getId());
             statement.setString(6, post.getUserId());
+            System.out.println("Statement -> " + statement);
 
             int updated = statement.executeUpdate();
             if (updated == 0) {
@@ -272,7 +276,7 @@ public class JdbcPostDAO implements PostDAO {
             }
         }
         catch (SQLException e) {
-            throw new DatabaseQueryException("Failed to edit post", sql, e);
+            throw new DatabaseQueryException("Failed to edit post: " + e.getMessage(), sql, e);
         }
 
     }
@@ -298,6 +302,28 @@ public class JdbcPostDAO implements PostDAO {
         }
                 
     
+    }
+
+    @Override
+    public boolean existsById(String postId) {
+        String sql = """
+        SELECT COUNT(id) AS id FROM posts WHERE id = UUID_TO_BIN(?) LIMIT 1;
+        """;
+    try (Connection conn = DBConnection.getConnection();
+        PreparedStatement statement = conn.prepareStatement(sql)) {
+
+      statement.setString(1, postId);
+      System.out.println("Statement " + statement);
+      ResultSet rs = statement.executeQuery();
+
+      if (rs.next()) {
+        return rs.getInt("id") > 0;
+      }
+      return false;
+
+    } catch (SQLException e) {
+      throw new DatabaseQueryException("post does not exist", sql, e);
+    }
     }
 
 }

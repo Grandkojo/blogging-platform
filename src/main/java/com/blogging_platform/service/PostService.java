@@ -2,22 +2,33 @@ package com.blogging_platform.service;
 
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
 import com.blogging_platform.classes.PostRecord;
 import com.blogging_platform.dao.interfaces.PostDAO;
+import com.blogging_platform.dao.interfaces.UserDAO;
 import com.blogging_platform.exceptions.DatabaseQueryException;
 import com.blogging_platform.exceptions.PostNotFoundException;
 import com.blogging_platform.model.Post;
 
 /**
- * Application service for blog posts. Delegates to {@link PostDAO} and normalizes
+ * Application service for blog posts. Delegates to {@link PostDAO} and
+ * normalizes
  * publish status (PUBLISHED vs DRAFT) when creating or updating posts.
  */
+@Service
 public class PostService {
+
+    @Autowired
     private PostDAO postDAO;
+    @Autowired
+    private UserDAO userDAO;
 
     /** Creates a post service with the given DAO. */
-    public PostService(PostDAO postDAO) {
+    public PostService(PostDAO postDAO, UserDAO userDAO) {
         this.postDAO = postDAO;
+        this.userDAO = userDAO;
     }
 
     /**
@@ -28,12 +39,15 @@ public class PostService {
      * @throws DatabaseQueryException if the insert fails
      */
     public String createPost(Post post) throws DatabaseQueryException {
-        if (post.getStatus().equals("PUBLISHED")){
-            post.setIsPublish(true);
-        } else {
-            post.setIsPublish(false);
+        if (userDAO.existsById(post.getUserId())) {
+            if ("PUBLISH".equalsIgnoreCase(post.getStatus())) {
+                post.setIsPublish(true);
+                post.setStatus("PUBLISHED");
+            } else {
+                post.setIsPublish(false);
+                post.setStatus("DRAFT");
+            }
         }
-
         return postDAO.create(post);
     }
 
@@ -54,7 +68,8 @@ public class PostService {
      * @param postId post id
      * @param userId user id (must own the post)
      * @return the post record
-     * @throws PostNotFoundException if the post does not exist or user does not own it
+     * @throws PostNotFoundException  if the post does not exist or user does not
+     *                                own it
      * @throws DatabaseQueryException if the query fails
      */
     public PostRecord getPost(String postId, String userId) throws DatabaseQueryException, PostNotFoundException {
@@ -66,11 +81,15 @@ public class PostService {
      *
      * @param postId post id
      * @return the post record
-     * @throws PostNotFoundException if the post does not exist
+     * @throws PostNotFoundException  if the post does not exist
      * @throws DatabaseQueryException if the query fails
      */
     public PostRecord getPost(String postId) throws DatabaseQueryException, PostNotFoundException {
         return postDAO.getByID(postId);
+    }
+
+    public boolean existsById(String postId) {
+        return postDAO.existsById(postId);
     }
 
     /**
@@ -87,16 +106,23 @@ public class PostService {
      * Updates an existing post. Sets isPublish from status.
      *
      * @param post the post with updated fields
-     * @throws PostNotFoundException if the post does not exist
+     * @throws PostNotFoundException  if the post does not exist
      * @throws DatabaseQueryException if the update fails
      */
-    public void updatePost(Post post) throws DatabaseQueryException, PostNotFoundException {
-        if (post.getStatus().equals("PUBLISHED")){
-            post.setIsPublish(true);
+    public void updatePost(Post post, String postId) throws DatabaseQueryException, PostNotFoundException {
+        if (postDAO.existsById(postId) && userDAO.existsById(post.getUserId())) {
+            if ("PUBLISH".equalsIgnoreCase(post.getStatus())) {
+                post.setIsPublish(true);
+                post.setStatus("PUBLISHED");
+            } else {
+                post.setIsPublish(false);
+                post.setStatus("DRAFT");
+            }
+            post.setId(postId);
+            postDAO.edit(post);
         } else {
-            post.setIsPublish(false);
+            throw new PostNotFoundException("Post not found");
         }
-        postDAO.edit(post);
     }
 
     /**
@@ -104,7 +130,8 @@ public class PostService {
      *
      * @param postId post id
      * @param userId user id (must own the post)
-     * @throws PostNotFoundException if the post does not exist or user does not own it
+     * @throws PostNotFoundException  if the post does not exist or user does not
+     *                                own it
      * @throws DatabaseQueryException if the delete fails
      */
     public void deletePost(String postId, String userId) throws DatabaseQueryException, PostNotFoundException {

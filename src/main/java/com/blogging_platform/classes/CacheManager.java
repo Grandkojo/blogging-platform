@@ -7,7 +7,9 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.blogging_platform.dao.interfaces.PostDAO;
+import com.blogging_platform.dao.interfaces.UserDAO;
 import com.blogging_platform.dao.interfaces.implementation.JdbcPostDAO;
+import com.blogging_platform.dao.interfaces.implementation.JdbcUserDAO;
 import com.blogging_platform.exceptions.DatabaseException;
 import com.blogging_platform.exceptions.DatabaseQueryException;
 import com.blogging_platform.service.PostService;
@@ -21,7 +23,8 @@ import com.blogging_platform.service.TagService;
  */
 public class CacheManager {
     private PostDAO postDAO = new JdbcPostDAO();
-    private PostService postService = new PostService(postDAO);
+    private UserDAO userDAO = new JdbcUserDAO();
+    private PostService postService = new PostService(postDAO, userDAO);
 
     private static final CacheManager instance = new CacheManager();
 

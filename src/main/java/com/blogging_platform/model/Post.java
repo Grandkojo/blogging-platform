@@ -11,10 +11,12 @@ public class Post {
     private String title;
     private String content;
     private String status;
-    private String createdAt;
+    private LocalDateTime createdAt;
 
     private LocalDateTime publishedDatetime;
     private boolean isPublish;
+
+    public Post(){}
 
     public Post(String userId, String title, String content, String status) {
         this.userId = userId;
@@ -30,6 +32,8 @@ public class Post {
         this.content = content;
         this.status = status;
     }
+
+    
 
     public String getId() {
         return id;
@@ -79,11 +83,11 @@ public class Post {
         this.publishedDatetime = publishedDatetime;
     }
 
-    public String getCreatedAt() {
+    public LocalDateTime getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(String createdAt) {
+    public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
     }
 

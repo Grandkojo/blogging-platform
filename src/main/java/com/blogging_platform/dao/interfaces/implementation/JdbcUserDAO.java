@@ -4,8 +4,11 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.mindrot.jbcrypt.BCrypt;
+import org.springframework.stereotype.Repository;
 
 import com.blogging_platform.classes.SessionManager;
 import com.blogging_platform.classes.UserRecord;
@@ -15,9 +18,11 @@ import com.blogging_platform.exceptions.DatabaseQueryException;
 import com.blogging_platform.model.User;
 
 /**
- * JDBC implementation of {@link UserDAO}. Handles user registration and login against MySQL;
+ * JDBC implementation of {@link UserDAO}. Handles user registration and login
+ * against MySQL;
  * passwords are compared using BCrypt.
  */
+@Repository
 public class JdbcUserDAO implements UserDAO {
 
   @Override
@@ -38,7 +43,7 @@ public class JdbcUserDAO implements UserDAO {
       }
 
     } catch (SQLException | DatabaseQueryException e) {
-        // Exception is handled by throwing DatabaseQueryException
+      // Exception is handled by throwing DatabaseQueryException
     }
   }
 
@@ -65,7 +70,7 @@ public class JdbcUserDAO implements UserDAO {
 
   @Override
   public void logout() {
-      SessionManager.getInstance().logout();
+    SessionManager.getInstance().logout();
   }
 
   @Override
@@ -89,6 +94,48 @@ public class JdbcUserDAO implements UserDAO {
       // Return false on error
     }
     return false;
+  }
+
+  @Override
+  public List<UserRecord> findAll() {
+    List<UserRecord> users = new ArrayList<>();
+    String sql = """
+        SELECT BIN_TO_UUID(id) AS id, name, email, password, role FROM users;
+        """;
+    try (Connection conn = DBConnection.getConnection();
+        PreparedStatement statement = conn.prepareStatement(sql)) {
+      ResultSet rs = statement.executeQuery();
+      while (rs.next()) {
+        users
+            .add(new UserRecord(rs.getString("id"), rs.getString("name"), rs.getString("email"), rs.getString("role")));
+      }
+      return users;
+    } catch (SQLException e) {
+      throw new DatabaseQueryException("Failed to get all users", sql, e);
+    }
+  }
+
+  @Override
+  public boolean existsById(String userId) {
+    System.out.println("Heyyy "+ userId);
+    String sql = """
+        SELECT COUNT(id) AS id FROM users WHERE id = UUID_TO_BIN(?) LIMIT 1;
+        """;
+    try (Connection conn = DBConnection.getConnection();
+        PreparedStatement statement = conn.prepareStatement(sql)) {
+          statement.setString(1, userId);
+          System.out.println("Statmentt " + statement);
+
+        ResultSet rs = statement.executeQuery();
+
+        if (rs.next()) {
+          return rs.getInt("id") > 0;
+        }
+        return false;
+
+      } catch (SQLException e) {
+      throw new DatabaseQueryException("user does not exist", sql, e);
+    }
   }
 
 }

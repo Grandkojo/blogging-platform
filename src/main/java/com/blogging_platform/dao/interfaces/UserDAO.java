@@ -1,5 +1,8 @@
 package com.blogging_platform.dao.interfaces;
 
+import java.util.List;
+
+
 import com.blogging_platform.classes.UserRecord;
 import com.blogging_platform.model.User;
 
@@ -34,4 +37,8 @@ public interface UserDAO {
 
     /** Clears any server-side session state (if applicable). */
     void logout();
+
+    List<UserRecord> findAll();
+
+    boolean existsById(String userId);
 }
