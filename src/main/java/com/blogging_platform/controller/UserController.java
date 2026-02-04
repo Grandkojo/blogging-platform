@@ -28,7 +28,7 @@ public class UserController {
     @GetMapping("/users")
     public ResponseEntity<ApiResponse<Object>> getUsers() {
         List<UserRecord> users = userService.getUsers();
-        return ResponseEntity.ok(ApiResponse.success(HttpStatus.FOUND, users, "Users Fetched Successfully"));
+        return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK, users, "Users Fetched Successfully"));
     }
     
 
@@ -42,7 +42,7 @@ public class UserController {
     public ResponseEntity<ApiResponse<Object>> loginUser(@RequestBody User user) {
         UserRecord lUser =  userService.loginUser(user.getEmail(), user.getPassword());
         if (lUser != null){
-            return ResponseEntity.ok(ApiResponse.success(HttpStatus.FOUND, lUser, "User Login Successful"));
+            return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK, lUser, "User Login Successful"));
         }
         return ResponseEntity.ok(ApiResponse.error(HttpStatus.NOT_FOUND, "User Login Failed, try again"));
     }

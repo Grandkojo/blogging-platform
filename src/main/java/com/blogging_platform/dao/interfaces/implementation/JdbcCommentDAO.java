@@ -8,6 +8,8 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.stereotype.Repository;
+
 import com.blogging_platform.classes.CommentRecord;
 import com.blogging_platform.config.DBConnection;
 import com.blogging_platform.dao.interfaces.CommentDAO;
@@ -18,6 +20,7 @@ import com.blogging_platform.model.Comment;
 /**
  * JDBC implementation of {@link CommentDAO}. Persists comments to MySQL and joins with users for author names.
  */
+@Repository
 public class JdbcCommentDAO implements CommentDAO {
 
     @Override
@@ -160,7 +163,42 @@ public class JdbcCommentDAO implements CommentDAO {
                 }
             }
         } catch (SQLException e) {
-            throw new DatabaseQueryException("Failed to get comment", sql, e);
+            throw new DatabaseQueryException("Failed to get comment: " + e.getMessage(), sql, e);
+        }
+    }
+
+    @Override
+    public List<CommentRecord> getComments() {
+        List<CommentRecord> comments = new ArrayList<>();
+        String sql = """
+            SELECT 
+                BIN_TO_UUID(c.id) AS id,
+                BIN_TO_UUID(c.post_id) AS postId,
+                BIN_TO_UUID(c.user_id) AS userId,
+                COALESCE(u.name, 'Unknown') AS authorName,
+                c.comment,
+                c.datetime AS date
+                FROM comments c
+                LEFT JOIN users u ON c.user_id = u.id
+                ORDER BY c.datetime DESC;           
+            """;
+        try (Connection conn = DBConnection.getConnection();
+                PreparedStatement statement = conn.prepareStatement(sql)) {
+            try (ResultSet rs = statement.executeQuery()) {
+                while (rs.next()) {
+                    comments.add(new CommentRecord(
+                            rs.getString("id"),
+                            rs.getString("postId"),
+                            rs.getString("userId"),
+                            rs.getString("authorName"),
+                            rs.getString("comment"),
+                            rs.getObject("date", LocalDateTime.class)));       
+                }
+            }
+            return comments;
+
+        } catch (SQLException e) {
+            throw new DatabaseQueryException("Failed to add comment post", sql, e);
         }
     }
     

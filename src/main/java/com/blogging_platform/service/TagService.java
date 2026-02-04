@@ -2,6 +2,9 @@ package com.blogging_platform.service;
 
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
 import com.blogging_platform.classes.TagRecord;
 import com.blogging_platform.dao.interfaces.TagDAO;
 import com.blogging_platform.exceptions.DatabaseQueryException;
@@ -11,7 +14,9 @@ import com.blogging_platform.model.Tag;
 /**
  * Application service for tags and post–tag associations. Delegates to {@link TagDAO}.
  */
+@Service
 public class TagService {
+    @Autowired
     private TagDAO tagDAO;
 
     /** Creates a tag service with the given DAO. */

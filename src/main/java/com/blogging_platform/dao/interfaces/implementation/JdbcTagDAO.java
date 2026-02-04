@@ -7,16 +7,20 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.stereotype.Repository;
+
 import com.blogging_platform.classes.TagRecord;
 import com.blogging_platform.config.DBConnection;
 import com.blogging_platform.dao.interfaces.TagDAO;
 import com.blogging_platform.exceptions.DatabaseQueryException;
 import com.blogging_platform.exceptions.DuplicateResourceException;
+import com.blogging_platform.exceptions.TagNotFoundException;
 import com.blogging_platform.model.Tag;
 
 /**
  * JDBC implementation of {@link TagDAO}. Manages tags and post_tags table for linking tags to posts.
  */
+@Repository
 public class JdbcTagDAO implements TagDAO {
 
     @Override
@@ -105,7 +109,7 @@ public class JdbcTagDAO implements TagDAO {
                             rs.getString("id"),
                             rs.getString("tag"));
                 } else {
-                    return null;
+                    throw new TagNotFoundException("Tag not found");
                 }
             }
         } catch (SQLException e) {

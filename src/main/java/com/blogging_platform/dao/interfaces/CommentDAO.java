@@ -57,4 +57,6 @@ public interface CommentDAO {
      * @throws DatabaseQueryException if the delete fails
      */
     void delete(String commentId, String userId) throws DatabaseQueryException, CommentNotFoundException;
+
+    List<CommentRecord> getComments();
 }

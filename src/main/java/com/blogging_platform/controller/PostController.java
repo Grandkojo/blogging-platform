@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 
 
 
+
 @RestController
 public class PostController {
 
@@ -34,8 +35,15 @@ public class PostController {
     @GetMapping("/posts")
     public ResponseEntity<ApiResponse<Object>> getPosts() {
         List<PostRecord> posts = postService.getPosts();
-        return ResponseEntity.ok(ApiResponse.success(HttpStatus.FOUND, posts, "Posts Fetched Successfully"));
+        return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK, posts, "Posts Fetched Successfully"));
     }
+
+    @GetMapping("/posts/{id}")
+    public ResponseEntity<ApiResponse<Object>> getPost(@PathVariable String id) {
+        PostRecord post = postService.getPost(id);
+        return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK, post , "Post Found Successfully"));
+    }
+    
 
     @PostMapping("/posts")
     public ResponseEntity<ApiResponse<Object>> createPost(@RequestBody Post post) {

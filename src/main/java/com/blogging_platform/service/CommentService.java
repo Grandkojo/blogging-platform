@@ -2,6 +2,9 @@ package com.blogging_platform.service;
 
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
 import com.blogging_platform.classes.CommentRecord;
 import com.blogging_platform.dao.interfaces.CommentDAO;
 import com.blogging_platform.exceptions.CommentNotFoundException;
@@ -11,7 +14,9 @@ import com.blogging_platform.model.Comment;
 /**
  * Application service for comments on posts. Delegates to {@link CommentDAO}.
  */
+@Service
 public class CommentService {
+    @Autowired
     private CommentDAO commentDAO;
 
     /** Creates a comment service with the given DAO. */
@@ -38,6 +43,10 @@ public class CommentService {
      */
     public List<CommentRecord> getComments(String postId) throws DatabaseQueryException {
         return commentDAO.getComments(postId);
+    }
+
+    public List<CommentRecord> getComments() throws DatabaseQueryException {
+        return commentDAO.getComments();
     }
 
     /**
