@@ -1,7 +1,5 @@
 package com.blogging_platform.classes;
 
-import java.util.UUID;
-
 /**
  * Singleton that holds the currently logged-in user for the duration of the session.
  * Used by controllers to obtain user id, name, email, and role after login.
@@ -35,7 +33,7 @@ public class SessionManager {
     }
 
     /** Returns the current user's id, or null if not logged in. */
-    public UUID getUserId() {
+    public String getUserId() {
         return currentUser != null ? currentUser.id() : null;
     }
 
