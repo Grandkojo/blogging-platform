@@ -58,9 +58,9 @@ public class PostService {
      * @return list of post records
      * @throws DatabaseQueryException if the query fails
      */
-    public List<PostRecord> getUserPosts(String userId) throws DatabaseQueryException {
-        return postDAO.getAll(userId);
-    }
+    // public List<PostRecord> getUserPosts(String userId) throws DatabaseQueryException {
+    //     return postDAO.getAll(userId);
+    // }
 
     /**
      * Fetches a post by id for a specific user (ownership check).

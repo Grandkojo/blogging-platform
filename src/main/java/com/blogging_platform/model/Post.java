@@ -1,11 +1,15 @@
 package com.blogging_platform.model;
 
 import java.time.LocalDateTime;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
 
 /**
  * Domain model for a blog post. Used when creating or updating posts via the service layer.
  */
+@Entity
 public class Post {
+    @Id
     private String id;
     private String userId;
     private String title;

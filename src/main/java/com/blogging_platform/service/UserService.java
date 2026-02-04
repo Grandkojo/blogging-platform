@@ -26,6 +26,9 @@ public class UserService {
     private UserDAO userDAO;
 
     /** Creates a user service with the given DAO. */
+    // public UserService(UserDAO userDAO) {
+    //     this.userDAO = userDAO;
+    // }
     public UserService(UserDAO userDAO) {
         this.userDAO = userDAO;
     }
