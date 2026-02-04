@@ -3,6 +3,8 @@ package com.blogging_platform.controller;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.blogging_platform.ApiResponse;
+import com.blogging_platform.classes.CacheManager;
+import com.blogging_platform.classes.PagedResult;
 import com.blogging_platform.classes.PostRecord;
 import com.blogging_platform.model.Post;
 import com.blogging_platform.service.PostService;
@@ -16,6 +18,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
@@ -27,13 +30,27 @@ import org.springframework.web.bind.annotation.PathVariable;
 public class PostController {
 
     private final PostService postService;
+    private final CacheManager cacheManager;
 
-    public PostController(PostService postService){
+    public PostController(PostService postService, CacheManager cacheManager){
         this.postService = postService;
+        this.cacheManager = cacheManager;
     }
 
     @GetMapping("/posts")
-    public ResponseEntity<ApiResponse<Object>> getPosts() {
+    public ResponseEntity<ApiResponse<PagedResult<PostRecord>>> getPosts(
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "10") int size,
+        @RequestParam(required = false) String query,
+        @RequestParam(required = false) String sortBy
+    ) {
+        
+        PagedResult<PostRecord> posts = cacheManager.getPaginatedPublishedPosts(page, size, query, sortBy);
+        return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK, posts, "Posts Fetched Successfully"));
+    }
+
+    @GetMapping("/postss")
+    public ResponseEntity<ApiResponse<Object>> getPostsFull() {
         List<PostRecord> posts = postService.getPosts();
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK, posts, "Posts Fetched Successfully"));
     }

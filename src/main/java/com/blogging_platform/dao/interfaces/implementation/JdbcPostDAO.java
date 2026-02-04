@@ -325,5 +325,4 @@ public class JdbcPostDAO implements PostDAO {
       throw new DatabaseQueryException("post does not exist", sql, e);
     }
     }
-
 }
