@@ -53,5 +53,7 @@ public interface ReviewDAO {
      * @param reviewId review id
      * @throws DatabaseQueryException if the delete fails
      */
-    void delete(String reviewId) throws DatabaseQueryException;
+    void delete(String reviewId, String userId) throws DatabaseQueryException;
+
+    List<ReviewRecord> getReviews();
 }

@@ -2,6 +2,8 @@ package com.blogging_platform.service;
 
 import java.util.List;
 
+import org.springframework.stereotype.Service;
+
 import com.blogging_platform.classes.ReviewRecord;
 import com.blogging_platform.dao.interfaces.ReviewDAO;
 import com.blogging_platform.exceptions.DatabaseQueryException;
@@ -12,6 +14,7 @@ import com.blogging_platform.model.Review;
  * Application service for post reviews (ratings and messages). Delegates to {@link ReviewDAO}
  * and provides average rating calculation.
  */
+@Service
 public class ReviewService {
     private ReviewDAO reviewDAO;
 
@@ -42,6 +45,10 @@ public class ReviewService {
         return reviewDAO.getReviewsByPostId(postId);
     }
 
+    public List<ReviewRecord> getReviews() throws DatabaseQueryException {
+        return reviewDAO.getReviews();
+    }
+
     /**
      * Fetches a single review by id.
      *
@@ -69,8 +76,8 @@ public class ReviewService {
      * @param reviewId review id
      * @throws DatabaseQueryException if the delete fails
      */
-    public void deleteReview(String reviewId) throws DatabaseQueryException {
-        reviewDAO.delete(reviewId);
+    public void deleteReview(String reviewId, String userId) throws DatabaseQueryException {
+        reviewDAO.delete(reviewId, userId);
     }
 
     /**
