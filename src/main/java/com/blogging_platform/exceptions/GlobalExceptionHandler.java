@@ -61,4 +61,11 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.NOT_FOUND)
                 .body(ApiResponse.error(HttpStatus.NOT_FOUND, ex.getUserMessage()));
     }
+
+    @ExceptionHandler(ReviewNotFoundException.class)
+    public ResponseEntity<ApiResponse<Object>> handleReviewNotFoundException(ReviewNotFoundException ex){
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(ApiResponse.error(HttpStatus.NOT_FOUND, ex.getUserMessage()));
+    }
 }

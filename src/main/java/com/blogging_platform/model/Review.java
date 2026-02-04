@@ -18,8 +18,7 @@ public class Review {
     private String message;
     private LocalDateTime createdAt;
 
-    public Review() {
-    }
+    public Review(){}
 
     public Review(String postId, String userId, Integer rating, String message) {
         this.postId = postId;
