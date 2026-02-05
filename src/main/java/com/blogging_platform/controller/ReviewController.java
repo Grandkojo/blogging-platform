@@ -17,6 +17,8 @@ import com.blogging_platform.classes.ReviewRecord;
 import com.blogging_platform.model.Review;
 import com.blogging_platform.service.ReviewService;
 
+import jakarta.validation.Valid;
+
 @RestController
 public class ReviewController {
 
@@ -46,7 +48,7 @@ public class ReviewController {
     
 
     @PostMapping("/reviews")
-    public ResponseEntity<ApiResponse<Object>> createReview(@RequestBody Review review) {
+    public ResponseEntity<ApiResponse<Object>> createReview(@Valid @RequestBody Review review) {
         reviewService.createReview(review);  
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.CREATED, null, "Review Added Successfully"));
       

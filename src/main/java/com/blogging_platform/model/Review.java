@@ -4,6 +4,10 @@ import java.time.LocalDateTime;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
 /**
  * Domain model for a post review (rating 1–5 and message). Used when creating or updating reviews.
@@ -12,9 +16,19 @@ import jakarta.persistence.Id;
 public class Review {
     @Id
     private String id;
+
+    @NotBlank(message = "Post id is required")
     private String postId;
+
+    @NotBlank(message = "User id is required")
     private String userId;
+
+    @NotNull(message = "Rating is required")
+    @Min(value = 1, message = "Rating must be at least 1")
+    @Max(value = 5, message = "Rating cannot be more than 5")    
     private Integer rating;
+
+    @NotBlank(message = "Review message is required")
     private String message;
     private LocalDateTime createdAt;
 

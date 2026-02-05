@@ -1,6 +1,7 @@
 package com.blogging_platform.model;
 
 import jakarta.persistence.Id;
+import jakarta.validation.constraints.NotBlank;
 
 /**
  * Domain model for a tag. Used when creating tags or linking them to posts.
@@ -8,6 +9,8 @@ import jakarta.persistence.Id;
 public class Tag {
     @Id
     private String id;
+    
+    @NotBlank(message = "Tag name is required")
     private String tag;
 
     public Tag(){}

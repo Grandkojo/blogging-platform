@@ -64,7 +64,7 @@ public class JdbcPostDAO implements PostDAO {
             }
             throw new DatabaseQueryException("Failed to retrieve created post ID", sql, null);
         } catch (SQLException e) {
-            throw new DatabaseQueryException("Failed to create post", sql, e);
+            throw new DatabaseQueryException("Failed to create post: "+ e.getMessage(), sql, e);
         }
     }
 

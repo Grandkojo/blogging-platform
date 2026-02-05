@@ -3,6 +3,7 @@ package com.blogging_platform.model;
 import java.time.LocalDateTime;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.validation.constraints.NotBlank;
 
 /**
  * Domain model for a blog post. Used when creating or updating posts via the service layer.
@@ -11,10 +12,19 @@ import jakarta.persistence.Id;
 public class Post {
     @Id
     private String id;
+    
+    @NotBlank(message = "User id is required")
     private String userId;
+
+    @NotBlank(message = "Title is required")
     private String title;
+
+    @NotBlank(message = "Content is required")
     private String content;
+
+    @NotBlank(message = "Post status is required")
     private String status;
+
     private LocalDateTime createdAt;
 
     private LocalDateTime publishedDatetime;

@@ -17,6 +17,8 @@ import com.blogging_platform.classes.CommentRecord;
 import com.blogging_platform.model.Comment;
 import com.blogging_platform.service.CommentService;
 
+import jakarta.validation.Valid;
+
 @RestController
 public class CommentController {
     
@@ -46,7 +48,7 @@ public class CommentController {
     
 
     @PostMapping("/comments")
-    public ResponseEntity<ApiResponse<Object>> createComment(@RequestBody Comment comment) {
+    public ResponseEntity<ApiResponse<Object>> createComment(@Valid @RequestBody Comment comment) {
         commentService.addComment(comment);  
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.CREATED, null, "Comment Added Successfully"));
       

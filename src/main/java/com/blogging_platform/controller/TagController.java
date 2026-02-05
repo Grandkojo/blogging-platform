@@ -16,6 +16,8 @@ import com.blogging_platform.classes.TagRecord;
 import com.blogging_platform.model.Tag;
 import com.blogging_platform.service.TagService;
 
+import jakarta.validation.Valid;
+
 @RestController
 public class TagController {
     
@@ -51,7 +53,7 @@ public class TagController {
     
 
     @PostMapping("/tags")
-    public ResponseEntity<ApiResponse<Object>> createPost(@RequestBody Tag tag) {
+    public ResponseEntity<ApiResponse<Object>> createPost(@Valid @RequestBody Tag tag) {
         tagService.createTag(tag);  
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.CREATED, null, "Tag Created Successfully"));
       

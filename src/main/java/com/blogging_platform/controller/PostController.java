@@ -9,6 +9,7 @@ import com.blogging_platform.classes.PostRecord;
 import com.blogging_platform.model.Post;
 import com.blogging_platform.service.PostService;
 
+import jakarta.validation.Valid;
 
 import java.util.List;
 
@@ -63,14 +64,14 @@ public class PostController {
     
 
     @PostMapping("/posts")
-    public ResponseEntity<ApiResponse<Object>> createPost(@RequestBody Post post) {
+    public ResponseEntity<ApiResponse<Object>> createPost(@Valid @RequestBody Post post) {
         String postId = postService.createPost(post);  
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.CREATED, postId, "Post Created Successfully"));
       
     }
 
     @PutMapping("posts/{id}")
-    public ResponseEntity<ApiResponse<Object>> editPost(@PathVariable String id, @RequestBody Post post) {
+    public ResponseEntity<ApiResponse<Object>> editPost(@PathVariable String id, @Valid @RequestBody Post post) {
         postService.updatePost(post, id);
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.CREATED, null, "Post Updated Successfully"));
 

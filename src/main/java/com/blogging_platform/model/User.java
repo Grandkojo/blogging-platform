@@ -6,9 +6,14 @@ import java.util.UUID;
 
 import org.hibernate.annotations.JdbcTypeCode;
 
+import com.blogging_platform.validation.UniqueEmail;
+
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 
 /**
  * Domain model for a user (registration, login). Holds name, email, password, and role.
@@ -19,9 +24,19 @@ public class User {
     @Id
     @JdbcTypeCode(Types.BINARY)
     private UUID id;
+
+    @NotBlank(message = "Name is required")
     private String name;
+    
+    @NotBlank(message = "Email is required")
+    @Email(message = "Invalid email format")
+    @UniqueEmail
     private String email;
+    
+    @NotBlank(message = "Password is required")
+    @Size(min = 8, message = "Password must be at least 8 characters")
     private String password;
+    @NotBlank(message = "Role is required")
     private String role;
 
     public User(){}

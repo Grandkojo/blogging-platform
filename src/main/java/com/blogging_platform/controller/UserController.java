@@ -7,6 +7,8 @@ import com.blogging_platform.classes.UserRecord;
 import com.blogging_platform.model.User;
 import com.blogging_platform.service.UserService;
 
+import jakarta.validation.Valid;
+
 import java.util.List;
 
 import org.springframework.http.HttpStatus;
@@ -33,7 +35,7 @@ public class UserController {
     
 
     @PostMapping("/users/register")
-    public ResponseEntity<ApiResponse<Object>> registerUser(@RequestBody User user) {
+    public ResponseEntity<ApiResponse<Object>> registerUser(@Valid @RequestBody User user) {
         userService.registerUser(user);
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.CREATED, null, "User Registered Successfully"));
     }

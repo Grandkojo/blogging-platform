@@ -43,7 +43,7 @@ public class JdbcUserDAO implements UserDAO {
       }
 
     } catch (SQLException | DatabaseQueryException e) {
-      // Exception is handled by throwing DatabaseQueryException
+            throw new DatabaseQueryException("Failed to create user: "+ e.getMessage(), create_user_sql, e);
     }
   }
 

@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.validation.constraints.NotBlank;
 
 /**
  * Domain model for a comment on a post. Use {@link #forCreate(String, String, String)} for new comments
@@ -13,8 +14,14 @@ import jakarta.persistence.Id;
 public class Comment {
     @Id
     private String id;
+
+    @NotBlank(message = "User id is required")
     private String userId;
+
+    @NotBlank(message = "Post id is required")
     private String postId;
+
+    @NotBlank(message = "Comment is required")
     private String comment;
     private String metadata;
     private LocalDateTime datetime;
