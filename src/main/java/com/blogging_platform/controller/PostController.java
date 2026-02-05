@@ -14,6 +14,8 @@ import jakarta.validation.Valid;
 import java.util.List;
 
 import org.springframework.graphql.data.method.annotation.QueryMapping;
+import org.springframework.graphql.data.method.annotation.MutationMapping;
+import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -42,6 +44,11 @@ public class PostController {
     @QueryMapping
     public List<PostRecord> getPosts(){
         return postService.getPosts();
+    }
+
+    @QueryMapping(name = "getPost")
+    public PostRecord getPostById(@Argument String id) {
+        return postService.getPost(id);
     }
 
     @GetMapping("/posts")
@@ -87,6 +94,39 @@ public class PostController {
     public ResponseEntity<ApiResponse<Object>> deletePost(@PathVariable String userId, @PathVariable String id) {
         postService.deletePost(id, userId);
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.ACCEPTED, null, "Post Deleted Successfully"));
+    }
+
+    @MutationMapping(name = "createPost")
+    public String createPostMutation(
+        @Argument String userId,
+        @Argument String title,
+        @Argument String content,
+        @Argument String status
+    ) {
+        Post post = new Post(userId, title, content, status);
+        return postService.createPost(post);
+    }
+
+    @MutationMapping(name = "updatePost")
+    public Boolean updatePostMutation(
+        @Argument String id,
+        @Argument String userId,
+        @Argument String title,
+        @Argument String content,
+        @Argument String status
+    ) {
+        Post post = new Post(userId, title, content, status);
+        postService.updatePost(post, id);
+        return true;
+    }
+
+    @MutationMapping(name = "deletePost")
+    public Boolean deletePostMutation(
+        @Argument String userId,
+        @Argument String id
+    ) {
+        postService.deletePost(id, userId);
+        return true;
     }
     
     

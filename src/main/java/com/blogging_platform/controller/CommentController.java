@@ -2,6 +2,9 @@ package com.blogging_platform.controller;
 
 import java.util.List;
 
+import org.springframework.graphql.data.method.annotation.Argument;
+import org.springframework.graphql.data.method.annotation.QueryMapping;
+import org.springframework.graphql.data.method.annotation.MutationMapping;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -28,6 +31,11 @@ public class CommentController {
         this.commentService = commentService;
     }
 
+    @QueryMapping
+    public List<CommentRecord> getCommentss(){
+        return commentService.getComments();
+    }
+
     @GetMapping("/comments")
     public ResponseEntity<ApiResponse<Object>> getComments() {
         List<CommentRecord> comments = commentService.getComments();
@@ -40,12 +48,52 @@ public class CommentController {
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK, comment , "Comment Found Successfully"));
     }
 
+    @QueryMapping
+    public CommentRecord getCommentt(@Argument String id){
+        return commentService.getComment(id);
+    }    
+
     @GetMapping("/posts/{postId}/comments")
     public ResponseEntity<ApiResponse<Object>> getPostComments(@PathVariable String postId) {
         List<CommentRecord> comments = commentService.getComments(postId);
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK, comments , "Post Comments Found Successfully"));
     }
+
+    @QueryMapping
+    public List<CommentRecord> getPostCommentss(@Argument String postId){
+        return commentService.getComments(postId);
+    } 
     
+    @MutationMapping(name = "createComment")
+    public Boolean createCommentMutation(
+        @Argument String userId,
+        @Argument String postId,
+        @Argument String content
+    ) {
+        Comment comment = Comment.forCreate(content, userId, postId);
+        commentService.addComment(comment);
+        return true;
+    }
+
+    @MutationMapping(name = "updateComment")
+    public Boolean updateCommentMutation(
+        @Argument String id,
+        @Argument String userId,
+        @Argument String content
+    ) {
+        Comment comment = Comment.forEdit(id, userId, content);
+        commentService.editComment(comment);
+        return true;
+    }
+
+    @MutationMapping(name = "deleteComment")
+    public Boolean deleteCommentMutation(
+        @Argument String userId,
+        @Argument String id
+    ) {
+        commentService.deleteComment(id, userId);
+        return true;
+    }
 
     @PostMapping("/comments")
     public ResponseEntity<ApiResponse<Object>> createComment(@Valid @RequestBody Comment comment) {

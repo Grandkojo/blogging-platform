@@ -2,6 +2,9 @@ package com.blogging_platform.controller;
 
 import java.util.List;
 
+import org.springframework.graphql.data.method.annotation.QueryMapping;
+import org.springframework.graphql.data.method.annotation.MutationMapping;
+import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -26,6 +29,45 @@ public class ReviewController {
 
     public ReviewController(ReviewService reviewService){
         this.reviewService = reviewService;
+    }
+
+    @QueryMapping
+    public List<ReviewRecord> getReviewss(){
+        return reviewService.getReviews();
+    }
+
+    @MutationMapping(name = "createReview")
+    public Boolean createReviewMutation(
+        @Argument String postId,
+        @Argument String userId,
+        @Argument Integer rating,
+        @Argument String message
+    ) {
+        Review review = new Review(postId, userId, rating, message);
+        reviewService.createReview(review);
+        return true;
+    }
+
+    @MutationMapping(name = "updateReview")
+    public Boolean updateReviewMutation(
+        @Argument String id,
+        @Argument String postId,
+        @Argument String userId,
+        @Argument Integer rating,
+        @Argument String message
+    ) {
+        Review review = new Review(id, postId, userId, rating, message);
+        reviewService.updateReview(review);
+        return true;
+    }
+
+    @MutationMapping(name = "deleteReview")
+    public Boolean deleteReviewMutation(
+        @Argument String userId,
+        @Argument String id
+    ) {
+        reviewService.deleteReview(id, userId);
+        return true;
     }
 
     @GetMapping("/reviews")

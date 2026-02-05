@@ -50,14 +50,9 @@ public record PostRecord(
     }
 
     public PostRecord {
-        // If null is passed, default it to 0
+        // Default commentCount to 0 if null; leave userId as provided
         if (commentCount == null) {
             commentCount = 0;
-        } else if (userId == null){
-            userId = "";
-        } else {
-            commentCount = 0;
-            userId = null;
         }
     }
 }

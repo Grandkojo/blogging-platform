@@ -12,6 +12,8 @@ import jakarta.validation.Valid;
 import java.util.List;
 
 import org.springframework.graphql.data.method.annotation.QueryMapping;
+import org.springframework.graphql.data.method.annotation.MutationMapping;
+import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -53,6 +55,26 @@ public class UserController {
             return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK, lUser, "User Login Successful"));
         }
         return ResponseEntity.ok(ApiResponse.error(HttpStatus.NOT_FOUND, "User Login Failed, try again"));
+    }
+
+    @MutationMapping
+    public Boolean registerUser(
+        @Argument String name,
+        @Argument String email,
+        @Argument String password,
+        @Argument String role
+    ) {
+        User user = new User(name, email, password, role);
+        userService.registerUser(user);
+        return true;
+    }
+
+    @MutationMapping
+    public UserRecord loginUser(
+        @Argument String email,
+        @Argument String password
+    ) {
+        return userService.loginUser(email, password);
     }
     
 }

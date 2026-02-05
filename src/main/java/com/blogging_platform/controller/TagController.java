@@ -2,6 +2,9 @@ package com.blogging_platform.controller;
 
 import java.util.List;
 
+import org.springframework.graphql.data.method.annotation.QueryMapping;
+import org.springframework.graphql.data.method.annotation.MutationMapping;
+import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -25,6 +28,33 @@ public class TagController {
 
     public TagController(TagService tagService){
         this.tagService = tagService;
+    }
+
+    @QueryMapping
+    public List<TagRecord> getTagss(){
+        return tagService.getAllTags();
+    }
+
+    @MutationMapping(name = "createTag")
+    public Boolean createTagMutation(@Argument String tag) {
+        Tag t = new Tag(tag);
+        tagService.createTag(t);
+        return true;
+    }
+
+    @MutationMapping(name = "linkTagToPost")
+    public Boolean linkTagToPostMutation(
+        @Argument String tagId,
+        @Argument String postId
+    ) {
+        tagService.linkTagToPost(postId, tagId);
+        return true;
+    }
+
+    @MutationMapping(name = "unlinkTagsFromPost")
+    public Boolean unlinkTagsFromPostMutation(@Argument String postId) {
+        tagService.unlinkAllTagsFromPost(postId);
+        return true;
     }
 
     @GetMapping("/tags")

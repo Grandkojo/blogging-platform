@@ -14,21 +14,21 @@ type Post {
 }
 
 type Comment {
-    id: ID!
-    userId: ID!
-    postId: ID!
-    comment: String!
+    id: ID
+    userId: ID
+    postId: ID
+    content: String
 }
 
 type Tag {
-    id: ID!
+    id: ID
     tag: String
 }
 
 type Review {
-    id: ID!
-    postId: ID!
-    userId: ID!
+    id: ID
+    postId: ID
+    userId: ID
     rating: Int
     message: String
 }
@@ -36,4 +36,99 @@ type Review {
 type Query {
     getPosts: [Post]
     getUserss: [User]
+    getCommentss: [Comment]
+    getCommentt(id: ID!): Comment
+    getPostCommentss(postId: ID!): [Comment]
+    getReviewss: [Review]
+    getTagss: [Tag]
+    getPost(id: ID!): Post
+}
+
+type Mutation {
+    # Post mutations
+    createPost(
+        userId: ID!,
+        title: String!,
+        content: String!,
+        status: String!
+    ): ID
+
+    updatePost(
+        id: ID!,
+        userId: ID!,
+        title: String!,
+        content: String!,
+        status: String!
+    ): Boolean
+
+    deletePost(
+        userId: ID!,
+        id: ID!
+    ): Boolean
+
+    # User mutations
+    registerUser(
+        name: String!,
+        email: String!,
+        password: String!,
+        role: String!
+    ): Boolean
+
+    loginUser(
+        email: String!,
+        password: String!
+    ): User
+
+    # Comment mutations
+    createComment(
+        userId: ID!,
+        postId: ID!,
+        content: String!
+    ): Boolean
+
+    updateComment(
+        id: ID!,
+        userId: ID!,
+        content: String!
+    ): Boolean
+
+    deleteComment(
+        userId: ID!,
+        id: ID!
+    ): Boolean
+
+    # Review mutations
+    createReview(
+        postId: ID!,
+        userId: ID!,
+        rating: Int!,
+        message: String!
+    ): Boolean
+
+    updateReview(
+        id: ID!,
+        postId: ID!,
+        userId: ID!,
+        rating: Int!,
+        message: String!
+    ): Boolean
+
+    deleteReview(
+        userId: ID!,
+        id: ID!
+    ): Boolean
+
+    # Tag mutations
+    createTag(
+        tag: String!
+    ): Boolean
+
+    linkTagToPost(
+        tagId: ID!,
+        postId: ID!
+    ): Boolean
+
+    unlinkTagsFromPost(
+        postId: ID!
+    ): Boolean
 }

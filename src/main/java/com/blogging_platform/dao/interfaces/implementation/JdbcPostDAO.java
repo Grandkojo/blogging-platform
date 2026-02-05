@@ -160,6 +160,7 @@ public class JdbcPostDAO implements PostDAO {
         String sql = """
                 SELECT 
                 BIN_TO_UUID(p.id) AS id,
+                BIN_TO_UUID(p.user_id) AS user_id,
                 p.title,
                 p.content,
                 p.status,
@@ -188,7 +189,7 @@ public class JdbcPostDAO implements PostDAO {
                             rs.getObject("created_at", LocalDateTime.class),
                             rs.getObject("published_datetime", LocalDateTime.class),
                             rs.getInt("comment_count"),
-                            null));
+                            rs.getString("user_id")));
                 }
             }
             return posts;
@@ -204,6 +205,7 @@ public class JdbcPostDAO implements PostDAO {
         String sql = """
                     SELECT
                     BIN_TO_UUID(p.id) AS id,
+                    BIN_TO_UUID(p.user_id) AS user_id,
                     p.title,
                     p.content,
                     p.status,
@@ -233,7 +235,7 @@ public class JdbcPostDAO implements PostDAO {
                             rs.getObject("created_at", LocalDateTime.class),
                             rs.getObject("published_datetime", LocalDateTime.class),
                             rs.getInt("comment_count"),
-                            null));
+                            rs.getString("user_id")));
                 }
             }
             return posts;
