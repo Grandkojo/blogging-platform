@@ -22,48 +22,78 @@ import com.blogging_platform.service.CommentService;
 
 import jakarta.validation.Valid;
 
+/**
+ * REST and GraphQL controller for comments on posts.
+ * <p>
+ * Supports listing, creating, updating and deleting comments as both REST endpoints
+ * and GraphQL mutations/queries.
+ */
 @RestController
 public class CommentController {
     
     private final CommentService commentService;
 
-    public CommentController(CommentService commentService){
+    /**
+     * Creates a controller with the required {@link CommentService}.
+     */
+    public CommentController(CommentService commentService) {
         this.commentService = commentService;
     }
 
+    /**
+     * GraphQL query that returns all comments.
+     */
     @QueryMapping
-    public List<CommentRecord> getCommentss(){
+    public List<CommentRecord> getCommentss() {
         return commentService.getComments();
     }
 
+    /**
+     * REST endpoint returning all comments.
+     */
     @GetMapping("/comments")
     public ResponseEntity<ApiResponse<Object>> getComments() {
         List<CommentRecord> comments = commentService.getComments();
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK, comments, "Comments Fetched Successfully"));
     }
 
+    /**
+     * REST endpoint returning a single comment by id.
+     */
     @GetMapping("/comments/{id}")
     public ResponseEntity<ApiResponse<Object>> getComment(@PathVariable String id) {
         CommentRecord comment = commentService.getComment(id);
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK, comment , "Comment Found Successfully"));
     }
 
+    /**
+     * GraphQL query that returns a single comment by id.
+     */
     @QueryMapping
-    public CommentRecord getCommentt(@Argument String id){
+    public CommentRecord getCommentt(@Argument String id) {
         return commentService.getComment(id);
     }    
 
+    /**
+     * REST endpoint returning all comments for a given post.
+     */
     @GetMapping("/posts/{postId}/comments")
     public ResponseEntity<ApiResponse<Object>> getPostComments(@PathVariable String postId) {
         List<CommentRecord> comments = commentService.getComments(postId);
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK, comments , "Post Comments Found Successfully"));
     }
 
+    /**
+     * GraphQL query that returns all comments for a given post.
+     */
     @QueryMapping
-    public List<CommentRecord> getPostCommentss(@Argument String postId){
+    public List<CommentRecord> getPostCommentss(@Argument String postId) {
         return commentService.getComments(postId);
     } 
     
+    /**
+     * GraphQL mutation to create a new comment on a post.
+     */
     @MutationMapping(name = "createComment")
     public Boolean createCommentMutation(
         @Argument String userId,
@@ -75,6 +105,9 @@ public class CommentController {
         return true;
     }
 
+    /**
+     * GraphQL mutation to update an existing comment.
+     */
     @MutationMapping(name = "updateComment")
     public Boolean updateCommentMutation(
         @Argument String id,
@@ -86,6 +119,9 @@ public class CommentController {
         return true;
     }
 
+    /**
+     * GraphQL mutation to delete a comment for a given user.
+     */
     @MutationMapping(name = "deleteComment")
     public Boolean deleteCommentMutation(
         @Argument String userId,
@@ -95,6 +131,9 @@ public class CommentController {
         return true;
     }
 
+    /**
+     * REST endpoint to create a new comment.
+     */
     @PostMapping("/comments")
     public ResponseEntity<ApiResponse<Object>> createComment(@Valid @RequestBody Comment comment) {
         commentService.addComment(comment);  
@@ -102,6 +141,9 @@ public class CommentController {
       
     }
 
+    /**
+     * REST endpoint to update an existing comment.
+     */
     @PutMapping("comments/{id}")
     public ResponseEntity<ApiResponse<Object>> editPost(@PathVariable String id, @RequestBody Comment comment) {
         comment.setId(id);
@@ -110,6 +152,9 @@ public class CommentController {
 
     }
 
+    /**
+     * REST endpoint to delete a comment for a given user.
+     */
     @DeleteMapping("/{userId}/comments/{id}")
     public ResponseEntity<ApiResponse<Object>> deletePost(@PathVariable String userId, @PathVariable String id) {
         commentService.deleteComment(id, userId);

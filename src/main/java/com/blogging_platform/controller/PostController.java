@@ -30,27 +30,50 @@ import org.springframework.web.bind.annotation.PathVariable;
 
 
 
+/**
+ * REST and GraphQL controller for blog posts.
+ * <p>
+ * Exposes:
+ * <ul>
+ *   <li>REST endpoints for paginated post lists, single post retrieval and CRUD operations</li>
+ *   <li>GraphQL queries and mutations mirroring the same operations</li>
+ * </ul>
+ */
 @RestController
 public class PostController {
 
     private final PostService postService;
     private final CacheManager cacheManager;
 
-    public PostController(PostService postService, CacheManager cacheManager){
+    /**
+     * Creates a controller with the required {@link PostService} and {@link CacheManager}.
+     */
+    public PostController(PostService postService, CacheManager cacheManager) {
         this.postService = postService;
         this.cacheManager = cacheManager;
     }
 
+    /**
+     * GraphQL query that returns all published posts.
+     */
     @QueryMapping
-    public List<PostRecord> getPosts(){
+    public List<PostRecord> getPosts() {
         return postService.getPosts();
     }
 
+    /**
+     * GraphQL query to fetch a single post by its id.
+     *
+     * @param id post identifier (UUID as string)
+     */
     @QueryMapping(name = "getPost")
     public PostRecord getPostById(@Argument String id) {
         return postService.getPost(id);
     }
 
+    /**
+     * REST endpoint returning a paginated, searchable and sortable list of published posts.
+     */
     @GetMapping("/posts")
     public ResponseEntity<ApiResponse<PagedResult<PostRecord>>> getPosts(
         @RequestParam(defaultValue = "0") int page,
@@ -63,12 +86,18 @@ public class PostController {
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK, posts, "Posts Fetched Successfully"));
     }
 
+    /**
+     * REST endpoint returning the full list of published posts without pagination.
+     */
     @GetMapping("/postss")
     public ResponseEntity<ApiResponse<Object>> getPostsFull() {
         List<PostRecord> posts = postService.getPosts();
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK, posts, "Posts Fetched Successfully"));
     }
 
+    /**
+     * REST endpoint to fetch a single post by id.
+     */
     @GetMapping("/posts/{id}")
     public ResponseEntity<ApiResponse<Object>> getPost(@PathVariable String id) {
         PostRecord post = postService.getPost(id);
@@ -76,6 +105,9 @@ public class PostController {
     }
     
 
+    /**
+     * REST endpoint to create a new post.
+     */
     @PostMapping("/posts")
     public ResponseEntity<ApiResponse<Object>> createPost(@Valid @RequestBody Post post) {
         String postId = postService.createPost(post);  
@@ -83,6 +115,9 @@ public class PostController {
       
     }
 
+    /**
+     * REST endpoint to update an existing post.
+     */
     @PutMapping("posts/{id}")
     public ResponseEntity<ApiResponse<Object>> editPost(@PathVariable String id, @Valid @RequestBody Post post) {
         postService.updatePost(post, id);
@@ -90,12 +125,18 @@ public class PostController {
 
     }
 
+    /**
+     * REST endpoint to delete a post for a given user (ownership enforced in the service layer).
+     */
     @DeleteMapping("/{userId}/posts/{id}")
     public ResponseEntity<ApiResponse<Object>> deletePost(@PathVariable String userId, @PathVariable String id) {
         postService.deletePost(id, userId);
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.ACCEPTED, null, "Post Deleted Successfully"));
     }
 
+    /**
+     * GraphQL mutation to create a new post.
+     */
     @MutationMapping(name = "createPost")
     public String createPostMutation(
         @Argument String userId,
@@ -107,6 +148,9 @@ public class PostController {
         return postService.createPost(post);
     }
 
+    /**
+     * GraphQL mutation to update an existing post.
+     */
     @MutationMapping(name = "updatePost")
     public Boolean updatePostMutation(
         @Argument String id,
@@ -120,6 +164,9 @@ public class PostController {
         return true;
     }
 
+    /**
+     * GraphQL mutation to delete a post for a given user.
+     */
     @MutationMapping(name = "deletePost")
     public Boolean deletePostMutation(
         @Argument String userId,

@@ -1,6 +1,6 @@
 # Blogging Platform
 
-A desktop blogging platform built with JavaFX and MySQL, featuring user authentication, post management with tags, review system (ratings), commenting, and advanced in-memory search/sort capabilities using data structures and algorithms (hashing, caching, QuickSort).
+A Spring Boot blogging backend with REST and GraphQL APIs, backed by MySQL, featuring user authentication, post management with tags, review system (ratings), commenting, and advanced in-memory search/sort capabilities using data structures and algorithms (hashing, caching, QuickSort).
 
 ## Features
 
@@ -23,7 +23,6 @@ A desktop blogging platform built with JavaFX and MySQL, featuring user authenti
 - **Java Development Kit (JDK) 21** or higher
 - **Maven 3.6+** for dependency management
 - **MySQL 8.0+** database server
-- **JavaFX 21** (included via Maven dependencies)
 
 ## Database Schema
 
@@ -84,22 +83,17 @@ cd blogging_platform
 
 ### 3. Configuration
 
-Create a `.env` file in the project root directory with the following variables:
+Database configuration is managed via Spring Boot `application.properties` (and profile-specific variants like `application-dev.properties`):
 
-```env
-DB_NAME=blogging_platform
-USERNAME=your_mysql_username
-PASSWORD=your_mysql_password
+```properties
+spring.datasource.url=jdbc:mysql://localhost:3306/blogging_platform?allowPublicKeyRetrieval=true&useSSL=false
+spring.datasource.username=your_mysql_username
+spring.datasource.password=your_mysql_password
+spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+server.servlet.context-path=/api/v1
 ```
 
-**Example:**
-```env
-DB_NAME=blogging_platform
-USERNAME=root
-PASSWORD=mypassword123
-```
-
-**Note**: The application will first check for a `.env` file, then fall back to system environment variables if the file is not found.
+Update the database name and credentials to match your local MySQL setup.
 
 ### 4. Install Dependencies
 
@@ -114,10 +108,15 @@ mvn clean install
 The project uses the following key dependencies (managed via Maven):
 
 ### Core Dependencies
-- **JavaFX 21**: Desktop UI framework
-  - `javafx-base`, `javafx-controls`, `javafx-fxml`, `javafx-graphics`, `javafx-media`, `javafx-web`
-- **MySQL Connector/J 9.0.0**: MySQL database driver
-- **jBCrypt 0.4**: Password hashing library
+- **Spring Boot**:
+  - `spring-boot-starter-web` – REST API
+  - `spring-boot-starter-graphql` – GraphQL endpoint on `/graphql`
+  - `spring-boot-starter-data-jpa` and `spring-boot-starter-jdbc` – data access
+  - `spring-boot-starter-validation` – Bean validation (Jakarta Validation)
+  - `spring-boot-starter-aop` – cross-cutting logging and performance monitoring
+- **springdoc-openapi** – interactive REST docs at `/swagger-ui.html`
+- **MySQL Connector/J** – MySQL database driver
+- **jBCrypt 0.4** – Password hashing library
 
 ### Test Dependencies
 - **JUnit Jupiter 5.10.0**: Unit testing framework
@@ -224,23 +223,37 @@ blogging_platform/
 ├── docs/
 │   ├── blogging_platform_erd.png      # Entity-Relationship Diagram
 │   ├── blogging_platform.sql          # MySQL database schema
-│   └── performance_review.sql         # Performance optimization queries
+│   ├── performance_review.sql         # Performance optimization queries
+│   ├── swagger_ui.png                 # REST API documentation (Swagger UI)
+│   ├── graphql1.png                   # GraphQL schema / queries
+│   ├── graphql2.png                   # GraphQL mutations
+│   ├── custom_validation.png          # Bean validation & error handling
+│   └── aop_logging.png                # AOP logging and performance metrics
 ├── src/
 │   ├── main/
 │   │   ├── java/com/blogging_platform/
-│   │   │   ├── App.java               # Main application entry point
-│   │   │   ├── Config.java            # Configuration management (.env loader)
-│   │   │   ├── DBConnection.java      # JDBC connection management
-│   │   │   ├── MySQLDriver.java       # Legacy database operations
-│   │   │   ├── BaseController.java    # Base controller for all views
-│   │   │   ├── classes/               # Data models and utilities
-│   │   │   │   ├── CacheManager.java  # In-memory cache with search/sort
-│   │   │   │   ├── SessionManager.java # User session management
-│   │   │   │   ├── PostRecord.java    # DTOs for data transfer
+│   │   │   ├── Main.java              # Spring Boot entry point
+│   │   │   ├── ApiResponse.java       # Standard API response wrapper
+│   │   │   ├── aop/                   # Cross‑cutting concerns
+│   │   │   │   └── ServiceLoggingAspect.java
+│   │   │   ├── classes/               # Data records and utilities
+│   │   │   │   ├── CacheManager.java
+│   │   │   │   ├── PagedResult.java
+│   │   │   │   ├── PostRecord.java
 │   │   │   │   ├── CommentRecord.java
 │   │   │   │   ├── ReviewRecord.java
 │   │   │   │   ├── TagRecord.java
-│   │   │   │   └── ...
+│   │   │   │   └── UserRecord.java
+│   │   │   ├── config/                # Infrastructure configuration
+│   │   │   │   ├── Config.java        # .env loader (legacy support)
+│   │   │   │   ├── DBConnection.java  # JDBC connection helper using Spring DataSource
+│   │   │   │   └── DatabaseConfig.java# Wires Spring DataSource into DBConnection
+│   │   │   ├── controller/            # REST + GraphQL controllers (BEM‑05 Web & GraphQL)
+│   │   │   │   ├── PostController.java
+│   │   │   │   ├── UserController.java
+│   │   │   │   ├── CommentController.java
+│   │   │   │   ├── ReviewController.java
+│   │   │   │   └── TagController.java
 │   │   │   ├── dao/                   # Data Access Layer
 │   │   │   │   ├── interfaces/        # DAO interfaces
 │   │   │   │   │   ├── PostDAO.java
@@ -248,7 +261,7 @@ blogging_platform/
 │   │   │   │   │   ├── CommentDAO.java
 │   │   │   │   │   ├── TagDAO.java
 │   │   │   │   │   └── ReviewDAO.java
-│   │   │   │   └── implementation/   # JDBC implementations
+│   │   │   │   └── implementation/    # JDBC implementations
 │   │   │   │       ├── JdbcPostDAO.java
 │   │   │   │       ├── JdbcUserDAO.java
 │   │   │   │       ├── JdbcCommentDAO.java
@@ -260,7 +273,7 @@ blogging_platform/
 │   │   │   │   ├── CommentService.java
 │   │   │   │   ├── TagService.java
 │   │   │   │   └── ReviewService.java
-│   │   │   ├── model/                 # Domain models
+│   │   │   ├── model/                 # Domain models (JPA entities)
 │   │   │   │   ├── Post.java
 │   │   │   │   ├── User.java
 │   │   │   │   ├── Comment.java
@@ -269,21 +282,36 @@ blogging_platform/
 │   │   │   ├── exceptions/            # Custom exception hierarchy
 │   │   │   │   ├── BloggingPlatformException.java
 │   │   │   │   ├── DatabaseException.java
-│   │   │   │   └── ...
-│   │   │   └── [Controller classes]  # UI controllers (FXML)
-│   │   └── resources/com/blogging_platform/
-│   │       └── *.fxml                 # JavaFX UI layouts
+│   │   │   │   ├── GlobalExceptionHandler.java      # REST error handling
+│   │   │   │   └── GraphQLExceptionHandler.java     # GraphQL error handling
+│   │   │   └── validation/            # Bean validation helpers
+│   │   │       ├── UniqueEmail.java
+│   │   │       └── UniqueEmailValidator.java
+│   │   └── resources/
+│   │       ├── application.properties             # Default Spring Boot config
+│   │       ├── application-dev.properties         # Dev profile config
+│   │       ├── application-test.properties        # Test profile config
+│   │       ├── application-prod.properties        # Prod profile config
+│   │       └── graphql/schema.graphqls            # GraphQL schema (queries + mutations)
 │   └── test/
 │       └── java/com/blogging_platform/
-│           ├── [Controller tests]
-│           └── exceptions/
-│               └── [Exception tests]
+│           └── exceptions/                        # Exception tests (existing)
 ├── pom.xml                            # Maven configuration
 ├── README.md                          # This file
-└── .env                               # Environment configuration (create this)
+└── .env                               # Optional environment configuration (legacy)
 ```
 
 ## Architecture & Performance
+
+### Cross‑Cutting Concerns (AOP)
+
+The service layer is instrumented with Spring AOP to provide centralized logging and performance monitoring (Epic **BEM‑05 AOP Logging & Monitoring**):
+
+- A `ServiceLoggingAspect` applies `@Before`, `@AfterReturning`, and `@Around` advice to all public methods in `com.blogging_platform.service.*`.
+- Each service call logs method name, arguments, and either the returned object or (for collections) the collection size for easier debugging.
+- The `@Around` advice measures execution time and logs slow calls (over 500 ms) as warnings; all calls log their duration in milliseconds.
+- Example log output is illustrated in `docs/aop_logging.png`:  
+  ![AOP logging and timing](docs/aop_logging.png)
 
 ### Data Structures & Algorithms Integration
 
@@ -338,6 +366,10 @@ See [`docs/performance_review.sql`](docs/performance_review.sql) for optimizatio
 - **Cache Invalidation**: Automatic cache refresh after comment/review create/update/delete
 - **Edit Post Tags**: Tag field added to edit post screen
 - **Architecture**: Migrated to DAO/Service layer pattern for better separation of concerns
+- **BEM‑05 Web & GraphQL**: Introduced Spring Boot REST controllers and GraphQL mappings for posts, users, comments, reviews, and tags (see screenshots in `docs/graphql1.png` and `docs/graphql2.png`).
+- **BEM‑05 Validation & Exceptions**: Centralized validation and error handling via `GlobalExceptionHandler` and `GraphQLExceptionHandler`, with field‑level constraints (see `docs/custom_validation.png`).  
+  ![Custom validation and error handling](docs/custom_validation.png)
+- **BEM‑05 AOP Logging & Monitoring**: Added `ServiceLoggingAspect` for request tracing and performance metrics on service methods (see `docs/aop_logging.png`).
 
 See git log for detailed commit history.
 

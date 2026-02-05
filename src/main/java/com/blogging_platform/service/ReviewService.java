@@ -45,6 +45,12 @@ public class ReviewService {
         return reviewDAO.getReviewsByPostId(postId);
     }
 
+    /**
+     * Returns all reviews in the system.
+     *
+     * @return list of review records
+     * @throws DatabaseQueryException if the query fails
+     */
     public List<ReviewRecord> getReviews() throws DatabaseQueryException {
         return reviewDAO.getReviews();
     }
@@ -71,9 +77,10 @@ public class ReviewService {
     }
 
     /**
-     * Deletes a review by id.
+     * Deletes a review by id for a given user.
      *
      * @param reviewId review id
+     * @param userId   user id requesting the delete (ownership/authorization enforced in DAO)
      * @throws DatabaseQueryException if the delete fails
      */
     public void deleteReview(String reviewId, String userId) throws DatabaseQueryException {

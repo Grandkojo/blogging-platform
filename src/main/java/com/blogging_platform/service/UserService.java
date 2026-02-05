@@ -68,10 +68,21 @@ public class UserService {
         }
     }
 
+    /**
+     * Checks whether a user exists with the given id.
+     *
+     * @param userId user identifier
+     * @return true if a user with this id exists
+     */
     public boolean existsById(String userId){
         return userDAO.existsById(userId);
     }
 
+    /**
+     * Returns all registered users.
+     *
+     * @return list of user records
+     */
     public List<UserRecord> getUsers(){
         return userDAO.findAll();
     }

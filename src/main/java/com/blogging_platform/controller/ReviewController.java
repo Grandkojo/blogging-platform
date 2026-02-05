@@ -22,20 +22,32 @@ import com.blogging_platform.service.ReviewService;
 
 import jakarta.validation.Valid;
 
+/**
+ * REST and GraphQL controller for reviews (ratings and messages) on posts.
+ */
 @RestController
 public class ReviewController {
 
     private final ReviewService reviewService;
 
-    public ReviewController(ReviewService reviewService){
+    /**
+     * Creates a controller with the required {@link ReviewService}.
+     */
+    public ReviewController(ReviewService reviewService) {
         this.reviewService = reviewService;
     }
 
+    /**
+     * GraphQL query that returns all reviews.
+     */
     @QueryMapping
-    public List<ReviewRecord> getReviewss(){
+    public List<ReviewRecord> getReviewss() {
         return reviewService.getReviews();
     }
 
+    /**
+     * GraphQL mutation to create a new review for a post.
+     */
     @MutationMapping(name = "createReview")
     public Boolean createReviewMutation(
         @Argument String postId,
@@ -48,6 +60,9 @@ public class ReviewController {
         return true;
     }
 
+    /**
+     * GraphQL mutation to update an existing review.
+     */
     @MutationMapping(name = "updateReview")
     public Boolean updateReviewMutation(
         @Argument String id,
@@ -61,6 +76,9 @@ public class ReviewController {
         return true;
     }
 
+    /**
+     * GraphQL mutation to delete a review for a given user.
+     */
     @MutationMapping(name = "deleteReview")
     public Boolean deleteReviewMutation(
         @Argument String userId,
@@ -70,18 +88,27 @@ public class ReviewController {
         return true;
     }
 
+    /**
+     * REST endpoint that returns all reviews.
+     */
     @GetMapping("/reviews")
     public ResponseEntity<ApiResponse<Object>> getReviews() {
         List<ReviewRecord> reviews = reviewService.getReviews();
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK, reviews, "Reviews Fetched Successfully"));
     }
 
+    /**
+     * REST endpoint returning a single review by id.
+     */
     @GetMapping("/reviews/{id}")
     public ResponseEntity<ApiResponse<Object>> getReview(@PathVariable String id) {
         ReviewRecord review = reviewService.getReviewById(id);
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK, review , "Review Found Successfully"));
     }
 
+    /**
+     * REST endpoint returning all reviews for a given post.
+     */
     @GetMapping("/posts/{postId}/reviews")
     public ResponseEntity<ApiResponse<Object>> getPostReviews(@PathVariable String postId) {
         List<ReviewRecord> comments = reviewService.getReviewsByPostId(postId);
@@ -89,6 +116,9 @@ public class ReviewController {
     }
     
 
+    /**
+     * REST endpoint to create a new review.
+     */
     @PostMapping("/reviews")
     public ResponseEntity<ApiResponse<Object>> createReview(@Valid @RequestBody Review review) {
         reviewService.createReview(review);  
@@ -96,6 +126,9 @@ public class ReviewController {
       
     }
 
+    /**
+     * REST endpoint to update an existing review.
+     */
     @PutMapping("reviews/{id}")
     public ResponseEntity<ApiResponse<Object>> editReview(@PathVariable String id, @RequestBody Review review) {
         review.setId(id);
@@ -104,6 +137,9 @@ public class ReviewController {
 
     }
 
+    /**
+     * REST endpoint to delete a review for a given user.
+     */
     @DeleteMapping("/{userId}/reviews/{id}")
     public ResponseEntity<ApiResponse<Object>> deleteReview(@PathVariable String userId, @PathVariable String id) {
         reviewService.deleteReview(id, userId);

@@ -45,6 +45,12 @@ public class CommentService {
         return commentDAO.getComments(postId);
     }
 
+    /**
+     * Returns all comments across all posts.
+     *
+     * @return list of comment records
+     * @throws DatabaseQueryException if the query fails
+     */
     public List<CommentRecord> getComments() throws DatabaseQueryException {
         return commentDAO.getComments();
     }
