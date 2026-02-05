@@ -1,0 +1,39 @@
+type User {
+    id: ID
+    name: String
+    email: String
+    role: String
+}
+
+type Post {
+    id: ID
+    userId: ID
+    title: String
+    content: String
+    status: String
+}
+
+type Comment {
+    id: ID!
+    userId: ID!
+    postId: ID!
+    comment: String!
+}
+
+type Tag {
+    id: ID!
+    tag: String
+}
+
+type Review {
+    id: ID!
+    postId: ID!
+    userId: ID!
+    rating: Int
+    message: String
+}
+
+type Query {
+    getPosts: [Post]
+    getUserss: [User]
+}

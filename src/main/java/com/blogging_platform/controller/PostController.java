@@ -13,6 +13,7 @@ import jakarta.validation.Valid;
 
 import java.util.List;
 
+import org.springframework.graphql.data.method.annotation.QueryMapping;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -36,6 +37,11 @@ public class PostController {
     public PostController(PostService postService, CacheManager cacheManager){
         this.postService = postService;
         this.cacheManager = cacheManager;
+    }
+
+    @QueryMapping
+    public List<PostRecord> getPosts(){
+        return postService.getPosts();
     }
 
     @GetMapping("/posts")
