@@ -7,6 +7,11 @@ import com.blogging_platform.classes.UserRecord;
 import com.blogging_platform.model.User;
 import com.blogging_platform.service.UserService;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
 import java.util.List;
@@ -23,15 +28,10 @@ import org.springframework.web.bind.annotation.GetMapping;
 
 
 /**
- * REST and GraphQL controller for user registration and login.
- * <p>
- * Provides:
- * <ul>
- *   <li>REST endpoints for registering and logging in users</li>
- *   <li>GraphQL queries and mutations for listing, registering and logging in users</li>
- * </ul>
+ * REST and GraphQL controller for user registration, authentication and session management.
  */
 @RestController
+@Tag(name = "Users", description = "User registration, authentication and listing APIs")
 public class UserController {
     private final UserService userService;
 
@@ -50,9 +50,21 @@ public class UserController {
         return userService.getUsers();
     }
 
-    /**
-     * REST endpoint that returns all users.
-     */
+    @Operation(
+        summary = "List users",
+        description = "Returns all registered users."
+    )
+    @ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "200",
+            description = "Users fetched successfully",
+            content = @Content(schema = @Schema(implementation = ApiResponse.class))
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "500",
+            description = "Unexpected server error"
+        )
+    })
     @GetMapping("/users")
     public ResponseEntity<ApiResponse<Object>> getUsers() {
         List<UserRecord> users = userService.getUsers();
@@ -60,25 +72,57 @@ public class UserController {
     }
     
 
-    /**
-     * REST endpoint to register a new user.
-     */
+    @Operation(
+        summary = "Register user",
+        description = "Registers a new user with name, email, password and role."
+    )
+    @ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "User registered successfully"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Validation error"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409", description = "Email already exists"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Unexpected server error")
+    })
     @PostMapping("/users/register")
     public ResponseEntity<ApiResponse<Object>> registerUser(@Valid @RequestBody User user) {
         userService.registerUser(user);
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.CREATED, null, "User Registered Successfully"));
     }
 
-    /**
-     * REST endpoint to authenticate a user with email and password.
-     */
+    @Operation(
+        summary = "Login user",
+        description = "Authenticates a user using email and password. On success, the session is stored."
+    )
+    @ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Login successful"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Invalid credentials"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Malformed request body"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Unexpected server error")
+    })
     @PostMapping("/users/login")
     public ResponseEntity<ApiResponse<Object>> loginUser(@RequestBody User user) {
-        UserRecord lUser =  userService.loginUser(user.getEmail(), user.getPassword());
-        if (lUser != null){
+        try {
+            UserRecord lUser = userService.loginUser(user.getEmail(), user.getPassword());
             return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK, lUser, "User Login Successful"));
+        } catch (com.blogging_platform.exceptions.AuthenticationException ex) {
+            return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(ApiResponse.error(HttpStatus.UNAUTHORIZED, ex.getMessage()));
         }
-        return ResponseEntity.ok(ApiResponse.error(HttpStatus.NOT_FOUND, "User Login Failed, try again"));
+    }
+
+    @Operation(
+        summary = "Logout user",
+        description = "Logs out the current user by clearing their session."
+    )
+    @ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Logout successful"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "No active session"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Unexpected server error")
+    })
+    @PostMapping("/users/logout")
+    public ResponseEntity<ApiResponse<Object>> logoutUser() {
+        userService.logoutUser();
+        return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK, null, "User Logout Successful"));
     }
 
     /**
@@ -105,6 +149,15 @@ public class UserController {
         @Argument String password
     ) {
         return userService.loginUser(email, password);
+    }
+
+    /**
+     * GraphQL mutation to log out the current user.
+     */
+    @MutationMapping
+    public Boolean logoutUserMutation() {
+        userService.logoutUser();
+        return true;
     }
     
 }

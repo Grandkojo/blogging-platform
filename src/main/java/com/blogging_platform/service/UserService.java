@@ -69,6 +69,14 @@ public class UserService {
     }
 
     /**
+     * Logs out the current user by delegating to the {@link UserDAO}.
+     * Clears the {@link SessionManager} via the DAO implementation.
+     */
+    public void logoutUser() {
+        userDAO.logout();
+    }
+
+    /**
      * Checks whether a user exists with the given id.
      *
      * @param userId user identifier
