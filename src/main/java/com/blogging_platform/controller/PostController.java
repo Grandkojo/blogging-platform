@@ -8,7 +8,13 @@ import com.blogging_platform.classes.PagedResult;
 import com.blogging_platform.classes.PostRecord;
 import com.blogging_platform.model.Post;
 import com.blogging_platform.service.PostService;
+import com.blogging_platform.service.TagService;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
 import java.util.List;
@@ -32,33 +38,39 @@ import org.springframework.web.bind.annotation.PathVariable;
 
 /**
  * REST and GraphQL controller for blog posts.
- * <p>
- * Exposes:
- * <ul>
- *   <li>REST endpoints for paginated post lists, single post retrieval and CRUD operations</li>
- *   <li>GraphQL queries and mutations mirroring the same operations</li>
- * </ul>
  */
 @RestController
+@Tag(name = "Posts", description = "APIs for managing blog posts")
 public class PostController {
 
     private final PostService postService;
     private final CacheManager cacheManager;
+    private final TagService tagService;
 
     /**
      * Creates a controller with the required {@link PostService} and {@link CacheManager}.
      */
-    public PostController(PostService postService, CacheManager cacheManager) {
+    public PostController(PostService postService, CacheManager cacheManager, TagService tagService) {
         this.postService = postService;
         this.cacheManager = cacheManager;
+        this.tagService = tagService;
     }
 
     /**
-     * GraphQL query that returns all published posts.
+     * GraphQL query that returns published posts, optionally filtered and paginated.
+     * Mirrors the REST /posts endpoint behaviour (including tag search).
      */
     @QueryMapping
-    public List<PostRecord> getPosts() {
-        return postService.getPosts();
+    public List<PostRecord> getPosts(
+        @Argument String query,
+        @Argument Integer page,
+        @Argument Integer size,
+        @Argument String sortBy
+    ) {
+        int p = page != null ? page : 0;
+        int s = size != null ? size : 10;
+        PagedResult<PostRecord> posts = cacheManager.getPaginatedPublishedPosts(p, s, query, sortBy);
+        return postService.mapToPostWithTags(posts).content();
     }
 
     /**
@@ -68,12 +80,28 @@ public class PostController {
      */
     @QueryMapping(name = "getPost")
     public PostRecord getPostById(@Argument String id) {
-        return postService.getPost(id);
+        return postService.toPostWithTags(postService.getPost(id));
     }
 
-    /**
-     * REST endpoint returning a paginated, searchable and sortable list of published posts.
-     */
+    @Operation(
+        summary = "List posts (paginated)",
+        description = "Returns a paginated list of published posts, optionally filtered by search query (title, author, or tag) and sorted."
+    )
+    @ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "200",
+            description = "Posts fetched successfully",
+            content = @Content(schema = @Schema(implementation = ApiResponse.class))
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "400",
+            description = "Invalid pagination parameters"
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "500",
+            description = "Unexpected server error"
+        )
+    })
     @GetMapping("/posts")
     public ResponseEntity<ApiResponse<PagedResult<PostRecord>>> getPosts(
         @RequestParam(defaultValue = "0") int page,
@@ -83,31 +111,81 @@ public class PostController {
     ) {
         
         PagedResult<PostRecord> posts = cacheManager.getPaginatedPublishedPosts(page, size, query, sortBy);
-        return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK, posts, "Posts Fetched Successfully"));
+        PagedResult<PostRecord> dto = postService.mapToPostWithTags(posts);
+        return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK, dto, "Posts Fetched Successfully"));
     }
 
-    /**
-     * REST endpoint returning the full list of published posts without pagination.
-     */
+    @Operation(
+        summary = "List all posts",
+        description = "Returns the full list of published posts without pagination."
+    )
+    @ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "200",
+            description = "Posts fetched successfully"
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "500",
+            description = "Unexpected server error"
+        )
+    })
     @GetMapping("/postss")
     public ResponseEntity<ApiResponse<Object>> getPostsFull() {
         List<PostRecord> posts = postService.getPosts();
-        return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK, posts, "Posts Fetched Successfully"));
+        List<PostRecord> dto = posts.stream()
+            .map(postService::toPostWithTags)
+            .toList();
+        return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK, dto, "Posts Fetched Successfully"));
     }
 
-    /**
-     * REST endpoint to fetch a single post by id.
-     */
+    @Operation(
+        summary = "Get post by id",
+        description = "Fetches a single published post by its id, including tags and comment count."
+    )
+    @ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "200",
+            description = "Post found"
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "404",
+            description = "Post not found"
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "500",
+            description = "Unexpected server error"
+        )
+    })
     @GetMapping("/posts/{id}")
     public ResponseEntity<ApiResponse<Object>> getPost(@PathVariable String id) {
         PostRecord post = postService.getPost(id);
-        return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK, post , "Post Found Successfully"));
+        PostRecord dto = postService.toPostWithTags(post);
+        return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK, dto , "Post Found Successfully"));
     }
     
 
-    /**
-     * REST endpoint to create a new post.
-     */
+    @Operation(
+        summary = "Create post",
+        description = "Creates a new post for a user. The status determines whether the post is published or saved as draft."
+    )
+    @ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "201",
+            description = "Post created successfully"
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "400",
+            description = "Validation error"
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "404",
+            description = "User not found"
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "500",
+            description = "Unexpected server error"
+        )
+    })
     @PostMapping("/posts")
     public ResponseEntity<ApiResponse<Object>> createPost(@Valid @RequestBody Post post) {
         String postId = postService.createPost(post);  
@@ -115,9 +193,28 @@ public class PostController {
       
     }
 
-    /**
-     * REST endpoint to update an existing post.
-     */
+    @Operation(
+        summary = "Update post",
+        description = "Updates an existing post owned by the given user."
+    )
+    @ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "201",
+            description = "Post updated successfully"
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "400",
+            description = "Validation error"
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "404",
+            description = "Post or user not found"
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "500",
+            description = "Unexpected server error"
+        )
+    })
     @PutMapping("posts/{id}")
     public ResponseEntity<ApiResponse<Object>> editPost(@PathVariable String id, @Valid @RequestBody Post post) {
         postService.updatePost(post, id);
@@ -125,9 +222,24 @@ public class PostController {
 
     }
 
-    /**
-     * REST endpoint to delete a post for a given user (ownership enforced in the service layer).
-     */
+    @Operation(
+        summary = "Delete post",
+        description = "Deletes a post owned by the given user."
+    )
+    @ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "202",
+            description = "Post deleted successfully"
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "404",
+            description = "Post or user not found"
+        ),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "500",
+            description = "Unexpected server error"
+        )
+    })
     @DeleteMapping("/{userId}/posts/{id}")
     public ResponseEntity<ApiResponse<Object>> deletePost(@PathVariable String userId, @PathVariable String id) {
         postService.deletePost(id, userId);
@@ -175,6 +287,5 @@ public class PostController {
         postService.deletePost(id, userId);
         return true;
     }
-    
-    
+
 }

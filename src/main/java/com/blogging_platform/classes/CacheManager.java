@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.blogging_platform.dao.interfaces.PostDAO;
@@ -105,10 +106,12 @@ public class CacheManager {
 
     /**
      * Injects the tag service so the cache can build the post–tag index for
-     * search-by-tag.
+     * search-by-tag. Spring will call this setter for the managed bean; tests
+     * can also use it directly.
      *
      * @param tagService the tag service (may be null; then tag search is disabled)
      */
+    @Autowired
     public void setTagService(TagService tagService) {
         this.tagService = tagService;
     }

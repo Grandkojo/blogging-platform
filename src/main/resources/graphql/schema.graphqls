@@ -11,6 +11,11 @@ type Post {
     title: String
     content: String
     status: String
+    author: String
+    createdAt: String
+    publishedDate: String
+    commentCount: Int
+    tags: [String]
 }
 
 type Comment {
@@ -34,7 +39,7 @@ type Review {
 }
 
 type Query {
-    getPosts: [Post]
+    getPosts(query: String, page: Int, size: Int, sortBy: String): [Post]
     getUserss: [User]
     getCommentss: [Comment]
     getCommentt(id: ID!): Comment
@@ -78,6 +83,8 @@ type Mutation {
         email: String!,
         password: String!
     ): User
+
+    logoutUser: Boolean
 
     # Comment mutations
     createComment(

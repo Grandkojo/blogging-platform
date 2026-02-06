@@ -1,10 +1,11 @@
 package com.blogging_platform.classes;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * Immutable data transfer object for a blog post as returned by the DAO layer.
- * Contains id, title, content, status, author, timestamps, comment count, and optional user id.
+ * Contains id, title, content, status, author, timestamps, comment count, optional user id, and tags.
  */
 public record PostRecord(
     String id,
@@ -15,7 +16,8 @@ public record PostRecord(
     LocalDateTime createdAt,
     LocalDateTime publishedDate,
     Integer commentCount,
-    String userId
+    String userId,
+    List<String> tags
 ) {
 
     /**
@@ -30,7 +32,7 @@ public record PostRecord(
         LocalDateTime createdAt,
         LocalDateTime publishedDate
     ) {
-        this(id, title, content, status, author, createdAt, publishedDate, null, null);
+        this(id, title, content, status, author, createdAt, publishedDate, null, null, null);
     }
 
     /**
@@ -46,13 +48,16 @@ public record PostRecord(
         LocalDateTime publishedDate,
         String userId
     ) {
-        this(id, title, content, status, author, createdAt, publishedDate, null, userId);
+        this(id, title, content, status, author, createdAt, publishedDate, null, userId, null);
     }
 
     public PostRecord {
-        // Default commentCount to 0 if null; leave userId as provided
+        // Default commentCount to 0 if null; leave userId as provided; default tags to empty list.
         if (commentCount == null) {
             commentCount = 0;
+        }
+        if (tags == null) {
+            tags = List.of();
         }
     }
 }

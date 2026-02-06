@@ -101,6 +101,7 @@ public class JdbcPostDAO implements PostDAO {
                             rs.getObject("created_at", LocalDateTime.class),
                             rs.getObject("published_datetime", LocalDateTime.class),
                             rs.getInt("comment_count"),
+                            null,
                             null);
                 } else {
                     throw new PostNotFoundException(postId);
@@ -144,7 +145,8 @@ public class JdbcPostDAO implements PostDAO {
                             rs.getObject("created_at", LocalDateTime.class),
                             rs.getObject("published_datetime", LocalDateTime.class),
                             rs.getInt("comment_count"),
-                            rs.getString("user_id"));
+                            rs.getString("user_id"),
+                            null);
                 } else {
                     throw new PostNotFoundException(postId);
                 }
@@ -189,7 +191,8 @@ public class JdbcPostDAO implements PostDAO {
                             rs.getObject("created_at", LocalDateTime.class),
                             rs.getObject("published_datetime", LocalDateTime.class),
                             rs.getInt("comment_count"),
-                            rs.getString("user_id")));
+                            rs.getString("user_id"),
+                            null));
                 }
             }
             return posts;
@@ -235,7 +238,8 @@ public class JdbcPostDAO implements PostDAO {
                             rs.getObject("created_at", LocalDateTime.class),
                             rs.getObject("published_datetime", LocalDateTime.class),
                             rs.getInt("comment_count"),
-                            rs.getString("user_id")));
+                            rs.getString("user_id"),
+                            null));
                 }
             }
             return posts;

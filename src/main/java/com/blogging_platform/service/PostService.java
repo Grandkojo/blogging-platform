@@ -6,6 +6,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.blogging_platform.classes.PostRecord;
+import com.blogging_platform.classes.PagedResult;
+import com.blogging_platform.classes.TagRecord;
 import com.blogging_platform.dao.interfaces.PostDAO;
 import com.blogging_platform.dao.interfaces.UserDAO;
 import com.blogging_platform.exceptions.DatabaseQueryException;
@@ -24,6 +26,8 @@ public class PostService {
     private PostDAO postDAO;
     @Autowired
     private UserDAO userDAO;
+    @Autowired
+    private com.blogging_platform.service.TagService tagService;
 
     /** Creates a post service with the given DAO. */
     public PostService(PostDAO postDAO, UserDAO userDAO) {
@@ -139,6 +143,60 @@ public class PostService {
             postDAO.delete(postId, userId);
         } else {
             throw new PostNotFoundException("Post not found");
+        }
+    }
+
+    /**
+     * Enriches a paged result of posts with their tags.
+     */
+    public PagedResult<PostRecord> mapToPostWithTags(PagedResult<PostRecord> source) {
+        List<PostRecord> content = source.content().stream()
+            .map(this::toPostWithTags)
+            .toList();
+        return new PagedResult<>(
+            content,
+            source.page(),
+            source.size(),
+            source.totalElements()
+        );
+    }
+
+    /**
+     * Enriches a single post record with its tags.
+     */
+    public PostRecord toPostWithTags(PostRecord post) {
+        if (post == null) {
+            return null;
+        }
+        return new PostRecord(
+            post.id(),
+            post.title(),
+            post.content(),
+            post.status(),
+            post.author(),
+            post.createdAt(),
+            post.publishedDate(),
+            post.commentCount(),
+            post.userId(),
+            resolveTagsForPost(post.id())
+        );
+    }
+
+    /**
+     * Resolves tag names for a given post id using {@link TagService}.
+     */
+    private List<String> resolveTagsForPost(String postId) {
+        try {
+            List<TagRecord> tags = tagService.getTagsByPostId(postId);
+            if (tags == null) {
+                return List.of();
+            }
+            return tags.stream()
+                .map(TagRecord::tag)
+                .toList();
+        } catch (DatabaseQueryException e) {
+            // On error, return empty tags list rather than failing the whole request
+            return List.of();
         }
     }
 }
