@@ -20,12 +20,16 @@ import com.blogging_platform.classes.ReviewRecord;
 import com.blogging_platform.model.Review;
 import com.blogging_platform.service.ReviewService;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
 /**
  * REST and GraphQL controller for reviews (ratings and messages) on posts.
  */
 @RestController
+@Tag(name = "Reviews", description = "APIs for managing reviews (ratings and messages) on posts")
 public class ReviewController {
 
     private final ReviewService reviewService;
@@ -88,27 +92,44 @@ public class ReviewController {
         return true;
     }
 
-    /**
-     * REST endpoint that returns all reviews.
-     */
+    @Operation(
+        summary = "List reviews",
+        description = "Returns all reviews across all posts."
+    )
+    @ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Reviews fetched successfully"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Unexpected server error")
+    })
     @GetMapping("/reviews")
     public ResponseEntity<ApiResponse<Object>> getReviews() {
         List<ReviewRecord> reviews = reviewService.getReviews();
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK, reviews, "Reviews Fetched Successfully"));
     }
 
-    /**
-     * REST endpoint returning a single review by id.
-     */
+    @Operation(
+        summary = "Get review by id",
+        description = "Fetches a single review by its id."
+    )
+    @ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Review found"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Review not found"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Unexpected server error")
+    })
     @GetMapping("/reviews/{id}")
     public ResponseEntity<ApiResponse<Object>> getReview(@PathVariable String id) {
         ReviewRecord review = reviewService.getReviewById(id);
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK, review , "Review Found Successfully"));
     }
 
-    /**
-     * REST endpoint returning all reviews for a given post.
-     */
+    @Operation(
+        summary = "List reviews for post",
+        description = "Returns all reviews for the specified post."
+    )
+    @ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Post reviews fetched successfully"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Post not found"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Unexpected server error")
+    })
     @GetMapping("/posts/{postId}/reviews")
     public ResponseEntity<ApiResponse<Object>> getPostReviews(@PathVariable String postId) {
         List<ReviewRecord> comments = reviewService.getReviewsByPostId(postId);
@@ -116,9 +137,17 @@ public class ReviewController {
     }
     
 
-    /**
-     * REST endpoint to create a new review.
-     */
+    @Operation(
+        summary = "Create review",
+        description = "Creates a new review for a post. One review per user per post."
+    )
+    @ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Review created successfully"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Validation error"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Post or user not found"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409", description = "User has already reviewed this post"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Unexpected server error")
+    })
     @PostMapping("/reviews")
     public ResponseEntity<ApiResponse<Object>> createReview(@Valid @RequestBody Review review) {
         reviewService.createReview(review);  
@@ -126,9 +155,15 @@ public class ReviewController {
       
     }
 
-    /**
-     * REST endpoint to update an existing review.
-     */
+    @Operation(
+        summary = "Update review",
+        description = "Updates an existing review."
+    )
+    @ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Review updated successfully"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Review not found"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Unexpected server error")
+    })
     @PutMapping("reviews/{id}")
     public ResponseEntity<ApiResponse<Object>> editReview(@PathVariable String id, @RequestBody Review review) {
         review.setId(id);
@@ -137,9 +172,15 @@ public class ReviewController {
 
     }
 
-    /**
-     * REST endpoint to delete a review for a given user.
-     */
+    @Operation(
+        summary = "Delete review",
+        description = "Deletes a review for a given user."
+    )
+    @ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "202", description = "Review deleted successfully"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Review not found"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Unexpected server error")
+    })
     @DeleteMapping("/{userId}/reviews/{id}")
     public ResponseEntity<ApiResponse<Object>> deleteReview(@PathVariable String userId, @PathVariable String id) {
         reviewService.deleteReview(id, userId);
