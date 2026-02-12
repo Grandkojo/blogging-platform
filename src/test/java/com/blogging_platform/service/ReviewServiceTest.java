@@ -1,144 +1,102 @@
-// package com.blogging_platform.service;
+package com.blogging_platform.service;
 
-// import static org.junit.jupiter.api.Assertions.assertEquals;
-// import static org.junit.jupiter.api.Assertions.assertThrows;
-// import static org.mockito.Mockito.verify;
-// import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-// import java.time.LocalDateTime;
-// import java.util.List;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.UUID;
 
-// import org.junit.jupiter.api.BeforeEach;
-// import org.junit.jupiter.api.Test;
-// import org.mockito.Mock;
-// import org.mockito.MockitoAnnotations;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
-// import com.blogging_platform.classes.ReviewRecord;
-// import com.blogging_platform.dao.interfaces.ReviewDAO;
-// import com.blogging_platform.exceptions.DatabaseQueryException;
-// import com.blogging_platform.exceptions.DuplicateResourceException;
-// import com.blogging_platform.model.Review;
+import com.blogging_platform.classes.ReviewRecord;
+import com.blogging_platform.exceptions.DatabaseQueryException;
+import com.blogging_platform.exceptions.DuplicateResourceException;
+import com.blogging_platform.model.Review;
+import com.blogging_platform.repository.ReviewRepository;
 
-// /**
-//  * Unit tests for {@link ReviewService}.
-//  */
-// class ReviewServiceTest {
+class ReviewServiceTest {
 
-//     @Mock
-//     private ReviewDAO reviewDAO;
+    @Mock
+    private ReviewRepository reviewRepository;
 
-//     private ReviewService reviewService;
+    @InjectMocks
+    private ReviewService reviewService;
 
-//     @BeforeEach
-//     void setUp() {
-//         MockitoAnnotations.openMocks(this);
-//         reviewService = new ReviewService(reviewDAO);
-//     }
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+    }
 
-//     @Test
-//     void createReview_delegatesToDao() throws DatabaseQueryException, DuplicateResourceException {
-//         Review review = new Review();
+    @Test
+    void createReview_savesEntity() throws DatabaseQueryException, DuplicateResourceException {
+        Review review = new Review();
 
-//         reviewService.createReview(review);
+        reviewService.createReview(review);
 
-//         verify(reviewDAO).create(review);
-//     }
+        verify(reviewRepository).save(review);
+    }
 
-//     @Test
-//     void createReview_propagatesExceptions() throws DatabaseQueryException, DuplicateResourceException {
-//         Review review = new Review();
-//         DuplicateResourceException ex = new DuplicateResourceException("Already reviewed");
-//         org.mockito.Mockito.doThrow(ex).when(reviewDAO).create(review);
+    @Test
+    void createReview_wrapsDataIntegrityAsDuplicateResource() {
+        Review review = new Review();
+        org.springframework.dao.DataIntegrityViolationException ex =
+                new org.springframework.dao.DataIntegrityViolationException("duplicate");
+        when(reviewRepository.save(review)).thenThrow(ex);
 
-//         assertThrows(DuplicateResourceException.class, () -> reviewService.createReview(review));
-//     }
+        assertThrows(DuplicateResourceException.class, () -> reviewService.createReview(review));
+    }
 
-//     @Test
-//     void getReviewsByPostId_delegatesToDao() throws DatabaseQueryException {
-//         String postId = "post-1";
-//         ReviewRecord record = new ReviewRecord("r1", postId, "user-1", "Author", 5, "Great", LocalDateTime.now());
-//         when(reviewDAO.getReviewsByPostId(postId)).thenReturn(List.of(record));
+    @Test
+    void getReviewsByPostId_mapsEntitiesToRecords() throws DatabaseQueryException {
+        UUID postId = UUID.randomUUID();
+        Review entity = new Review();
+        entity.setId(UUID.randomUUID());
+        entity.setPostId(postId);
+        entity.setUserId(UUID.randomUUID());
+        entity.setRating(5);
+        entity.setMessage("Great");
+        entity.setCreatedAt(LocalDateTime.now());
 
-//         List<ReviewRecord> result = reviewService.getReviewsByPostId(postId);
+        when(reviewRepository.findByPost_Id(postId)).thenReturn(List.of(entity));
 
-//         assertEquals(List.of(record), result);
-//         verify(reviewDAO).getReviewsByPostId(postId);
-//     }
+        List<ReviewRecord> records = reviewService.getReviewsByPostId(postId.toString());
 
-//     @Test
-//     void getReviews_delegatesToDao() throws DatabaseQueryException {
-//         ReviewRecord record = new ReviewRecord("r1", "post-1", "user-1", "Author", 5, "Great", LocalDateTime.now());
-//         when(reviewDAO.getReviews()).thenReturn(List.of(record));
+        assertEquals(1, records.size());
+        assertEquals(5, records.get(0).rating());
+    }
 
-//         List<ReviewRecord> result = reviewService.getReviews();
+    @Test
+    void getAverageRating_returnsZeroWhenNoReviews() throws DatabaseQueryException {
+        UUID postId = UUID.randomUUID();
+        when(reviewRepository.findByPost_Id(postId)).thenReturn(List.of());
 
-//         assertEquals(List.of(record), result);
-//         verify(reviewDAO).getReviews();
-//     }
+        double avg = reviewService.getAverageRating(postId.toString());
 
-//     @Test
-//     void getReviewById_delegatesToDao() throws DatabaseQueryException {
-//         String reviewId = "r1";
-//         ReviewRecord record = new ReviewRecord(reviewId, "post-1", "user-1", "Author", 5, "Great", LocalDateTime.now());
-//         when(reviewDAO.getReviewById(reviewId)).thenReturn(record);
+        assertEquals(0.0, avg);
+    }
 
-//         ReviewRecord result = reviewService.getReviewById(reviewId);
+    @Test
+    void getAverageRating_calculatesMean() throws DatabaseQueryException {
+        UUID postId = UUID.randomUUID();
+        Review r1 = new Review();
+        r1.setPostId(postId);
+        r1.setRating(4);
+        Review r2 = new Review();
+        r2.setPostId(postId);
+        r2.setRating(2);
 
-//         assertEquals(record, result);
-//         verify(reviewDAO).getReviewById(reviewId);
-//     }
+        when(reviewRepository.findByPost_Id(postId)).thenReturn(List.of(r1, r2));
 
-//     @Test
-//     void updateReview_delegatesToDao() throws DatabaseQueryException {
-//         Review review = new Review();
+        double avg = reviewService.getAverageRating(postId.toString());
 
-//         reviewService.updateReview(review);
-
-//         verify(reviewDAO).update(review);
-//     }
-
-//     @Test
-//     void deleteReview_delegatesToDao() throws DatabaseQueryException {
-//         String reviewId = "r1";
-//         String userId = "user-1";
-
-//         reviewService.deleteReview(reviewId, userId);
-
-//         verify(reviewDAO).delete(reviewId, userId);
-//     }
-
-//     @Test
-//     void getAverageRating_returnsZero_whenNoReviews() throws DatabaseQueryException {
-//         String postId = "post-1";
-//         when(reviewDAO.getReviewsByPostId(postId)).thenReturn(List.of());
-
-//         double avg = reviewService.getAverageRating(postId);
-
-//         assertEquals(0.0, avg);
-//     }
-
-//     @Test
-//     void getAverageRating_calculatesMeanOfRatings() throws DatabaseQueryException {
-//         String postId = "post-1";
-//         ReviewRecord r1 = new ReviewRecord("r1", postId, "user-1", "A", 4, "Good", LocalDateTime.now());
-//         ReviewRecord r2 = new ReviewRecord("r2", postId, "user-2", "B", 2, "Ok", LocalDateTime.now());
-//         when(reviewDAO.getReviewsByPostId(postId)).thenReturn(List.of(r1, r2));
-
-//         double avg = reviewService.getAverageRating(postId);
-
-//         assertEquals(3.0, avg);
-//     }
-
-//     @Test
-//     void getAverageRating_treatsNullRatingsAsZero() throws DatabaseQueryException {
-//         String postId = "post-1";
-//         ReviewRecord r1 = new ReviewRecord("r1", postId, "user-1", "A", null, "No rating", LocalDateTime.now());
-//         ReviewRecord r2 = new ReviewRecord("r2", postId, "user-2", "B", 4, "Good", LocalDateTime.now());
-//         when(reviewDAO.getReviewsByPostId(postId)).thenReturn(List.of(r1, r2));
-
-//         double avg = reviewService.getAverageRating(postId);
-
-//         assertEquals(2.0, avg);
-//     }
-// }
+        assertEquals(3.0, avg);
+    }
+}
 

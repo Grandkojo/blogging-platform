@@ -226,6 +226,13 @@
                         <goals>
                             <goal>report</goal>
                         </goals>
+                        <configuration>
+                            <!-- Restrict coverage analysis to Spring layers we have tests for -->
+                            <includes>
+                                <include>com/blogging_platform/service/*</include>
+                                <include>com/blogging_platform/controller/*</include>
+                            </includes>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>

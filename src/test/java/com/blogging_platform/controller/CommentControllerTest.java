@@ -1,3 +1,132 @@
+package com.blogging_platform.controller;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.util.List;
+import java.util.UUID;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+
+import com.blogging_platform.ApiResponse;
+import com.blogging_platform.classes.CommentRecord;
+import com.blogging_platform.model.Comment;
+import com.blogging_platform.service.CommentService;
+
+class CommentControllerTest {
+
+    @Mock
+    private CommentService commentService;
+
+    @InjectMocks
+    private CommentController controller;
+
+    private CommentRecord sampleComment;
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+        sampleComment = new CommentRecord(
+            UUID.randomUUID().toString(),
+            UUID.randomUUID().toString(),
+            UUID.randomUUID().toString(),
+            "Author",
+            "Nice post",
+            java.time.LocalDateTime.now()
+        );
+    }
+
+    @Test
+    void getComments_rest_returnsPagedComments() {
+        Pageable pageable = PageRequest.of(0, 10);
+        when(commentService.getComments(any(Pageable.class))).thenReturn(List.of(sampleComment));
+
+        ResponseEntity<ApiResponse<Object>> response =
+            controller.getComments(0, 10, "datetime", "DESC");
+
+        assertEquals(HttpStatus.OK.value(), response.getBody().getStatus());
+        assertEquals("Comments Fetched Successfully", response.getBody().getMessage());
+        @SuppressWarnings("unchecked")
+        List<CommentRecord> data = (List<CommentRecord>) response.getBody().getData();
+        assertEquals(1, data.size());
+        verify(commentService).getComments(any(Pageable.class));
+    }
+
+    @Test
+    void getComment_rest_returnsSingleComment() {
+        when(commentService.getComment("id")).thenReturn(sampleComment);
+
+        ResponseEntity<ApiResponse<Object>> response = controller.getComment("id");
+
+        assertEquals(HttpStatus.OK.value(), response.getBody().getStatus());
+        assertEquals("Comment Found Successfully", response.getBody().getMessage());
+        assertEquals(sampleComment, response.getBody().getData());
+        verify(commentService).getComment("id");
+    }
+
+    @Test
+    void getPostComments_rest_returnsCommentsForPost() {
+        when(commentService.getComments("post-id")).thenReturn(List.of(sampleComment));
+
+        ResponseEntity<ApiResponse<Object>> response = controller.getPostComments("post-id");
+
+        assertEquals(HttpStatus.OK.value(), response.getBody().getStatus());
+        assertEquals("Post Comments Found Successfully", response.getBody().getMessage());
+        @SuppressWarnings("unchecked")
+        List<CommentRecord> data = (List<CommentRecord>) response.getBody().getData();
+        assertEquals(1, data.size());
+        verify(commentService).getComments("post-id");
+    }
+
+    @Test
+    void createComment_rest_callsServiceAndReturnsCreated() {
+        Comment comment = Comment.forCreate(
+            "Nice post",
+            UUID.randomUUID().toString(),
+            UUID.randomUUID().toString());
+
+        ResponseEntity<ApiResponse<Object>> response = controller.createComment(comment);
+
+        verify(commentService).addComment(comment);
+        assertEquals(HttpStatus.CREATED.value(), response.getBody().getStatus());
+        assertEquals("Comment Added Successfully", response.getBody().getMessage());
+    }
+
+    @Test
+    void editComment_rest_callsServiceAndReturnsUpdated() {
+        Comment comment = Comment.forEdit(
+            UUID.randomUUID().toString(),
+            UUID.randomUUID().toString(),
+            "Updated");
+        String id = UUID.randomUUID().toString();
+
+        ResponseEntity<ApiResponse<Object>> response = controller.editPost(id, comment);
+
+        verify(commentService).editComment(comment);
+        assertEquals(HttpStatus.CREATED.value(), response.getBody().getStatus());
+        assertEquals("Comment Updated Successfully", response.getBody().getMessage());
+    }
+
+    @Test
+    void deleteComment_rest_callsServiceAndReturnsAccepted() {
+        ResponseEntity<ApiResponse<Object>> response = controller.deletePost("user-id", "comment-id");
+
+        verify(commentService).deleteComment("comment-id", "user-id");
+        assertEquals(HttpStatus.ACCEPTED.value(), response.getBody().getStatus());
+        assertEquals("Comment Deleted Successfully", response.getBody().getMessage());
+    }
+}
+
 // package com.blogging_platform.controller;
 
 // import static org.junit.jupiter.api.Assertions.assertEquals;

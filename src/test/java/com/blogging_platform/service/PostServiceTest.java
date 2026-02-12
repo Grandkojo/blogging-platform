@@ -1,193 +1,228 @@
-// package com.blogging_platform.service;
+package com.blogging_platform.service;
 
-// import static org.junit.jupiter.api.Assertions.assertEquals;
-// import static org.junit.jupiter.api.Assertions.assertThrows;
-// import static org.mockito.ArgumentMatchers.any;
-// import static org.mockito.Mockito.never;
-// import static org.mockito.Mockito.verify;
-// import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-// import java.util.List;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
-// import org.junit.jupiter.api.BeforeEach;
-// import org.junit.jupiter.api.Test;
-// import org.mockito.ArgumentCaptor;
-// import org.mockito.Mock;
-// import org.mockito.MockitoAnnotations;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
-// import com.blogging_platform.classes.PostRecord;
-// import com.blogging_platform.dao.interfaces.PostDAO;
-// import com.blogging_platform.dao.interfaces.UserDAO;
-// import com.blogging_platform.exceptions.DatabaseQueryException;
-// import com.blogging_platform.exceptions.PostNotFoundException;
-// import com.blogging_platform.model.Post;
+import com.blogging_platform.classes.PostRecord;
+import com.blogging_platform.exceptions.DatabaseQueryException;
+import com.blogging_platform.exceptions.PostNotFoundException;
+import com.blogging_platform.model.Post;
+import com.blogging_platform.model.User;
+import com.blogging_platform.repository.CommentRepository;
+import com.blogging_platform.repository.PostRepository;
+import com.blogging_platform.repository.UserRepository;
 
-// /**
-//  * Unit tests for {@link PostService}.
-//  */
-// class PostServiceTest {
+class PostServiceTest {
 
-//     @Mock
-//     private PostDAO postDAO;
+    @Mock
+    private PostRepository postRepository;
 
-//     @Mock
-//     private UserDAO userDAO;
+    @Mock
+    private UserRepository userRepository;
 
-//     private PostService postService;
+    @Mock
+    private CommentRepository commentRepository;
 
-//     @BeforeEach
-//     void setUp() {
-//         MockitoAnnotations.openMocks(this);
-//         postService = new PostService(postDAO, userDAO);
-//     }
+    @Mock
+    private TagService tagService;
 
-//     @Test
-//     void createPost_setsPublishFields_whenUserExistsAndStatusPublish() throws DatabaseQueryException {
-//         Post post = new Post("user-1", "Title", "Content", "PUBLISH");
-//         when(userDAO.existsById("user-1")).thenReturn(true);
-//         when(postDAO.create(any(Post.class))).thenReturn("post-1");
+    @InjectMocks
+    private PostService postService;
 
-//         String id = postService.createPost(post);
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+    }
 
-//         assertEquals("post-1", id);
+    @Test
+    void createPost_setsPublishFields_whenUserExistsAndStatusPublish() throws DatabaseQueryException {
+        UUID userId = UUID.randomUUID();
+        Post post = new Post();
+        post.setUserId(userId);
+        post.setStatus("PUBLISH");
 
-//         ArgumentCaptor<Post> captor = ArgumentCaptor.forClass(Post.class);
-//         verify(postDAO).create(captor.capture());
-//         Post saved = captor.getValue();
-//         assertEquals("PUBLISHED", saved.getStatus());
-//         assertEquals(true, saved.getIsPublish());
-//     }
+        when(userRepository.existsById(userId)).thenReturn(true);
 
-//     @Test
-//     void createPost_setsDraftFields_whenUserExistsAndStatusNotPublish() throws DatabaseQueryException {
-//         Post post = new Post("user-1", "Title", "Content", "draft");
-//         when(userDAO.existsById("user-1")).thenReturn(true);
-//         when(postDAO.create(any(Post.class))).thenReturn("post-1");
+        postService.createPost(post);
 
-//         postService.createPost(post);
+        ArgumentCaptor<Post> captor = ArgumentCaptor.forClass(Post.class);
+        verify(postRepository).save(captor.capture());
+        Post saved = captor.getValue();
 
-//         ArgumentCaptor<Post> captor = ArgumentCaptor.forClass(Post.class);
-//         verify(postDAO).create(captor.capture());
-//         Post saved = captor.getValue();
-//         assertEquals("DRAFT", saved.getStatus());
-//         assertEquals(false, saved.getIsPublish());
-//     }
+        assertEquals("PUBLISHED", saved.getStatus());
+        assertEquals(true, saved.getIsPublish());
+    }
 
-//     @Test
-//     void createPost_doesNotChangeStatus_whenUserDoesNotExist() throws DatabaseQueryException {
-//         Post post = new Post("user-1", "Title", "Content", "UNKNOWN");
-//         when(userDAO.existsById("user-1")).thenReturn(false);
-//         when(postDAO.create(any(Post.class))).thenReturn("post-1");
+    @Test
+    void createPost_keepsStatusWhenUserDoesNotExist() throws DatabaseQueryException {
+        UUID userId = UUID.randomUUID();
+        Post post = new Post();
+        post.setUserId(userId);
+        post.setStatus("UNKNOWN");
 
-//         postService.createPost(post);
+        when(userRepository.existsById(userId)).thenReturn(false);
 
-//         ArgumentCaptor<Post> captor = ArgumentCaptor.forClass(Post.class);
-//         verify(postDAO).create(captor.capture());
-//         Post saved = captor.getValue();
-//         // status and publish flag should remain as originally set
-//         assertEquals("UNKNOWN", saved.getStatus());
-//     }
+        postService.createPost(post);
 
-//     @Test
-//     void getPostWithUser_delegatesToDao() throws DatabaseQueryException, PostNotFoundException {
-//         String postId = "post-1";
-//         String userId = "user-1";
-//         PostRecord record = new PostRecord(postId, "Title", "Content", "PUBLISHED", "Author", null, null, userId);
-//         when(postDAO.getByID(postId, userId)).thenReturn(record);
+        ArgumentCaptor<Post> captor = ArgumentCaptor.forClass(Post.class);
+        verify(postRepository).save(captor.capture());
+        Post saved = captor.getValue();
 
-//         PostRecord result = postService.getPost(postId, userId);
+        assertEquals("UNKNOWN", saved.getStatus());
+    }
 
-//         assertEquals(record, result);
-//         verify(postDAO).getByID(postId, userId);
-//     }
+    @Test
+    void getPostById_mapsEntityToRecord() throws DatabaseQueryException, PostNotFoundException {
+        UUID postId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
 
-//     @Test
-//     void getPostById_delegatesToDao() throws DatabaseQueryException, PostNotFoundException {
-//         String postId = "post-1";
-//         PostRecord record = new PostRecord(postId, "Title", "Content", "PUBLISHED", "Author", null, null);
-//         when(postDAO.getByID(postId)).thenReturn(record);
+        User user = new User();
+        user.setId(userId);
+        user.setName("Author");
 
-//         PostRecord result = postService.getPost(postId);
+        Post entity = new Post();
+        entity.setId(postId);
+        entity.setTitle("Title");
+        entity.setContent("Content");
+        entity.setStatus("PUBLISHED");
+        entity.setUser(user);
 
-//         assertEquals(record, result);
-//         verify(postDAO).getByID(postId);
-//     }
+        when(postRepository.findById(postId)).thenReturn(Optional.of(entity));
+        when(commentRepository.countByPost_Id(postId)).thenReturn(3L);
 
-//     @Test
-//     void existsById_delegatesToDao() {
-//         String postId = "post-1";
-//         when(postDAO.existsById(postId)).thenReturn(true);
+        PostRecord record = postService.getPost(postId.toString());
 
-//         boolean result = postService.existsById(postId);
+        assertEquals(postId.toString(), record.id());
+        assertEquals("Title", record.title());
+        assertEquals("Author", record.author());
+        assertEquals(3, record.commentCount());
+    }
 
-//         assertEquals(true, result);
-//         verify(postDAO).existsById(postId);
-//     }
+    @Test
+    void getPostById_throwsWhenMissing() {
+        UUID postId = UUID.randomUUID();
+        when(postRepository.findById(postId)).thenReturn(Optional.empty());
 
-//     @Test
-//     void getPosts_delegatesToDao() throws DatabaseQueryException {
-//         List<PostRecord> records = List.of(
-//             new PostRecord("post-1", "Title", "Content", "PUBLISHED", "Author", null, null)
-//         );
-//         when(postDAO.getAll()).thenReturn(records);
+        assertThrows(PostNotFoundException.class, () -> postService.getPost(postId.toString()));
+    }
 
-//         List<PostRecord> result = postService.getPosts();
+    @Test
+    void getPosts_returnsMappedRecords() throws DatabaseQueryException {
+        UUID postId = UUID.randomUUID();
+        Post entity = new Post();
+        entity.setId(postId);
+        entity.setTitle("Title");
+        entity.setContent("Content");
+        entity.setStatus("PUBLISHED");
 
-//         assertEquals(records, result);
-//         verify(postDAO).getAll();
-//     }
+        when(postRepository.findAll()).thenReturn(List.of(entity));
+        when(commentRepository.countByPost_Id(postId)).thenReturn(0L);
 
-//     @Test
-//     void updatePost_updatesWhenPostAndUserExist() throws DatabaseQueryException, PostNotFoundException {
-//         String postId = "post-1";
-//         Post post = new Post("user-1", "Title", "Content", "PUBLISH");
-//         when(postDAO.existsById(postId)).thenReturn(true);
-//         when(userDAO.existsById("user-1")).thenReturn(true);
+        List<PostRecord> records = postService.getPosts();
 
-//         postService.updatePost(post, postId);
+        assertEquals(1, records.size());
+        assertEquals(postId.toString(), records.get(0).id());
+    }
 
-//         ArgumentCaptor<Post> captor = ArgumentCaptor.forClass(Post.class);
-//         verify(postDAO).edit(captor.capture());
-//         Post saved = captor.getValue();
-//         assertEquals(postId, saved.getId());
-//         assertEquals("PUBLISHED", saved.getStatus());
-//         assertEquals(true, saved.getIsPublish());
-//     }
+    @Test
+    void getPosts_withPageable_usesRepositoryAndMaps() throws DatabaseQueryException {
+        UUID postId = UUID.randomUUID();
+        Post entity = new Post();
+        entity.setId(postId);
+        entity.setTitle("Title");
+        entity.setContent("Content");
+        entity.setStatus("PUBLISHED");
 
-//     @Test
-//     void updatePost_throwsWhenPostOrUserDoesNotExist() throws DatabaseQueryException {
-//         String postId = "post-1";
-//         Post post = new Post("user-1", "Title", "Content", "PUBLISH");
-//         when(postDAO.existsById(postId)).thenReturn(false);
-//         when(userDAO.existsById("user-1")).thenReturn(true);
+        Pageable pageable = PageRequest.of(0, 10);
+        when(postRepository.findAll(pageable)).thenReturn(new PageImpl<>(List.of(entity)));
+        when(commentRepository.countByPost_Id(postId)).thenReturn(1L);
 
-//         assertThrows(PostNotFoundException.class, () -> postService.updatePost(post, postId));
+        List<PostRecord> records = postService.getPosts(pageable);
 
-//         verify(postDAO, never()).edit(any(Post.class));
-//     }
+        assertEquals(1, records.size());
+        assertEquals(1, records.get(0).commentCount());
+    }
 
-//     @Test
-//     void deletePost_deletesWhenPostAndUserExist() throws DatabaseQueryException, PostNotFoundException {
-//         String postId = "post-1";
-//         String userId = "user-1";
-//         when(postDAO.existsById(postId)).thenReturn(true);
-//         when(userDAO.existsById(userId)).thenReturn(true);
+    @Test
+    void updatePost_updatesWhenPostAndUserExist() throws DatabaseQueryException, PostNotFoundException {
+        UUID postId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        Post post = new Post();
+        post.setUserId(userId);
+        post.setStatus("PUBLISH");
 
-//         postService.deletePost(postId, userId);
+        when(postRepository.existsById(postId)).thenReturn(true);
+        when(userRepository.existsById(userId)).thenReturn(true);
 
-//         verify(postDAO).delete(postId, userId);
-//     }
+        postService.updatePost(post, postId.toString());
 
-//     @Test
-//     void deletePost_throwsWhenPostOrUserDoesNotExist() throws DatabaseQueryException {
-//         String postId = "post-1";
-//         String userId = "user-1";
-//         when(postDAO.existsById(postId)).thenReturn(false);
-//         when(userDAO.existsById(userId)).thenReturn(true);
+        ArgumentCaptor<Post> captor = ArgumentCaptor.forClass(Post.class);
+        verify(postRepository).save(captor.capture());
+        Post saved = captor.getValue();
 
-//         assertThrows(PostNotFoundException.class, () -> postService.deletePost(postId, userId));
+        assertEquals(postId, saved.getId());
+        assertEquals("PUBLISHED", saved.getStatus());
+    }
 
-//         verify(postDAO, never()).delete(postId, userId);
-//     }
-// }
+    @Test
+    void updatePost_throwsWhenPostOrUserMissing() throws DatabaseQueryException {
+        UUID postId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        Post post = new Post();
+        post.setUserId(userId);
+
+        when(postRepository.existsById(postId)).thenReturn(false);
+        when(userRepository.existsById(userId)).thenReturn(true);
+
+        assertThrows(PostNotFoundException.class, () -> postService.updatePost(post, postId.toString()));
+        verify(postRepository, never()).save(any(Post.class));
+    }
+
+    @Test
+    void deletePost_deletesWhenPostAndUserExist() throws DatabaseQueryException, PostNotFoundException {
+        UUID postId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+
+        Post entity = new Post();
+        entity.setId(postId);
+
+        when(postRepository.existsById(postId)).thenReturn(true);
+        when(userRepository.existsById(userId)).thenReturn(true);
+        when(postRepository.findById(postId)).thenReturn(Optional.of(entity));
+
+        postService.deletePost(postId.toString(), userId.toString());
+
+        verify(postRepository).delete(entity);
+    }
+
+    @Test
+    void deletePost_throwsWhenPostOrUserMissing() throws DatabaseQueryException {
+        UUID postId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+
+        when(postRepository.existsById(postId)).thenReturn(false);
+        when(userRepository.existsById(userId)).thenReturn(true);
+
+        assertThrows(PostNotFoundException.class, () -> postService.deletePost(postId.toString(), userId.toString()));
+        verify(postRepository, never()).delete(any(Post.class));
+    }
+}
 

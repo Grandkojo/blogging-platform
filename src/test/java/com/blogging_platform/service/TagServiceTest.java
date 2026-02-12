@@ -1,111 +1,92 @@
-// package com.blogging_platform.service;
+package com.blogging_platform.service;
 
-// import static org.junit.jupiter.api.Assertions.assertEquals;
-// import static org.mockito.Mockito.verify;
-// import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-// import java.util.List;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
-// import org.junit.jupiter.api.BeforeEach;
-// import org.junit.jupiter.api.Test;
-// import org.mockito.Mock;
-// import org.mockito.MockitoAnnotations;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
-// import com.blogging_platform.classes.TagRecord;
-// import com.blogging_platform.dao.interfaces.TagDAO;
-// import com.blogging_platform.exceptions.DatabaseQueryException;
-// import com.blogging_platform.exceptions.DuplicateResourceException;
-// import com.blogging_platform.model.Tag;
+import com.blogging_platform.classes.TagRecord;
+import com.blogging_platform.exceptions.DatabaseQueryException;
+import com.blogging_platform.exceptions.DuplicateResourceException;
+import com.blogging_platform.model.Post;
+import com.blogging_platform.model.Tag;
+import com.blogging_platform.repository.PostRepository;
+import com.blogging_platform.repository.TagRepository;
 
-// /**
-//  * Unit tests for {@link TagService}.
-//  */
-// class TagServiceTest {
+class TagServiceTest {
 
-//     @Mock
-//     private TagDAO tagDAO;
+    @Mock
+    private TagRepository tagRepository;
 
-//     private TagService tagService;
+    @Mock
+    private PostRepository postRepository;
 
-//     @BeforeEach
-//     void setUp() {
-//         MockitoAnnotations.openMocks(this);
-//         tagService = new TagService(tagDAO);
-//     }
+    @InjectMocks
+    private TagService tagService;
 
-//     @Test
-//     void createTag_delegatesToDao() throws DatabaseQueryException, DuplicateResourceException {
-//         Tag tag = new Tag();
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+    }
 
-//         tagService.createTag(tag);
+    @Test
+    void createTag_savesTag() throws DatabaseQueryException, DuplicateResourceException {
+        Tag tag = new Tag("tech");
 
-//         verify(tagDAO).create(tag);
-//     }
+        tagService.createTag(tag);
 
-//     @Test
-//     void getAllTags_delegatesToDao() throws DatabaseQueryException {
-//         List<TagRecord> records = List.of(new TagRecord("t1", "Tech"));
-//         when(tagDAO.getAll()).thenReturn(records);
+        verify(tagRepository).save(tag);
+    }
 
-//         List<TagRecord> result = tagService.getAllTags();
+    @Test
+    void getAllTags_mapsEntitiesToRecords() throws DatabaseQueryException {
+        Tag tag = new Tag(UUID.randomUUID(), "tech");
+        when(tagRepository.findAll()).thenReturn(List.of(tag));
 
-//         assertEquals(records, result);
-//         verify(tagDAO).getAll();
-//     }
+        List<TagRecord> records = tagService.getAllTags();
 
-//     @Test
-//     void getTagById_delegatesToDao() throws DatabaseQueryException {
-//         String tagId = "t1";
-//         TagRecord record = new TagRecord(tagId, "Tech");
-//         when(tagDAO.getById(tagId)).thenReturn(record);
+        assertEquals(1, records.size());
+        assertEquals("tech", records.get(0).tag());
+    }
 
-//         TagRecord result = tagService.getTagById(tagId);
+    @Test
+    void linkTagToPost_addsTagToPost() throws DatabaseQueryException {
+        UUID postId = UUID.randomUUID();
+        UUID tagId = UUID.randomUUID();
 
-//         assertEquals(record, result);
-//         verify(tagDAO).getById(tagId);
-//     }
+        Post post = new Post();
+        post.setId(postId);
+        Tag tag = new Tag();
+        tag.setId(tagId);
 
-//     @Test
-//     void getTagByTagName_delegatesToDao() throws DatabaseQueryException {
-//         String tagName = "Tech";
-//         TagRecord record = new TagRecord("t1", tagName);
-//         when(tagDAO.getByTagName(tagName)).thenReturn(record);
+        when(postRepository.findById(postId)).thenReturn(Optional.of(post));
+        when(tagRepository.findById(tagId)).thenReturn(Optional.of(tag));
 
-//         TagRecord result = tagService.getTagByTagName(tagName);
+        tagService.linkTagToPost(postId.toString(), tagId.toString());
 
-//         assertEquals(record, result);
-//         verify(tagDAO).getByTagName(tagName);
-//     }
+        verify(postRepository).save(post);
+        assertEquals(1, post.getTags().size());
+    }
 
-//     @Test
-//     void linkTagToPost_delegatesToDao() throws DatabaseQueryException {
-//         String postId = "post-1";
-//         String tagId = "t1";
+    @Test
+    void getTagsByPostId_mapsEntitiesToRecords() throws DatabaseQueryException {
+        UUID postId = UUID.randomUUID();
+        Tag tag = new Tag(UUID.randomUUID(), "spring");
+        when(tagRepository.findByPosts_Id(postId)).thenReturn(List.of(tag));
 
-//         tagService.linkTagToPost(postId, tagId);
+        List<TagRecord> records = tagService.getTagsByPostId(postId.toString());
 
-//         verify(tagDAO).linkTagToPost(postId, tagId);
-//     }
-
-//     @Test
-//     void unlinkAllTagsFromPost_delegatesToDao() throws DatabaseQueryException {
-//         String postId = "post-1";
-
-//         tagService.unlinkAllTagsFromPost(postId);
-
-//         verify(tagDAO).unlinkAllTagsFromPost(postId);
-//     }
-
-//     @Test
-//     void getTagsByPostId_delegatesToDao() throws DatabaseQueryException {
-//         String postId = "post-1";
-//         List<TagRecord> records = List.of(new TagRecord("t1", "Tech"));
-//         when(tagDAO.getTagsByPostId(postId)).thenReturn(records);
-
-//         List<TagRecord> result = tagService.getTagsByPostId(postId);
-
-//         assertEquals(records, result);
-//         verify(tagDAO).getTagsByPostId(postId);
-//     }
-// }
+        assertEquals(1, records.size());
+        assertEquals("spring", records.get(0).tag());
+    }
+}
 

@@ -1,22 +1,26 @@
 # Blogging Platform
 
-A Spring Boot blogging backend with REST and GraphQL APIs, backed by MySQL, featuring user authentication, post management with tags, review system (ratings), commenting, and advanced in-memory search/sort capabilities using data structures and algorithms (hashing, caching, QuickSort).
+A Spring Boot blogging backend with REST and GraphQL APIs, backed by MySQL and Spring Data JPA.  
+It provides user authentication, post management with tags, reviews and comments, transactional write operations, JPQL-based search with pagination/sorting, and application-level caching using Spring Cache.
 
 ## Features
 
 - **User Management**: Registration and authentication with role-based access (Admin/Regular)
 - **Post Management**: Create, edit, delete, and publish blog posts with draft/published status
 - **Tag System**: Categorize posts with tags; create tags (Admin only); link tags to posts
-- **Review System**: Rate posts (1-5 stars) with messages; view average ratings; edit/delete reviews (author or admin post-owner)
+- **Review System**: Rate posts (1–5 stars) with messages; view average ratings; edit/delete reviews (author or admin post-owner)
 - **Comment System**: Add, edit, and delete comments on posts (author-only edit/delete)
-- **Advanced Search & Sort**: 
-  - In-memory search by title, author, or tag (cache-based, no DB queries)
-  - QuickSort-based sorting by date, title, or author (ascending/descending)
-  - Search and sort on home page and admin post list
-- **Caching**: In-memory cache with hash index (O(1) lookup) and tag index for fast search
-- **Session Management**: Secure session handling for authenticated users
-- **Custom Exception Handling**: Comprehensive exception hierarchy for error management
-- **DAO/Service Architecture**: Clean separation with DAO interfaces, JDBC implementations, and service layer
+- **Advanced Search & Sort**:
+  - JPQL query (`PostRepository.searchByTitleAuthorOrTag`) searches by title, author name, or tag name
+  - Pagination and sorting implemented via Spring Data `Pageable` and `Sort` on both REST and GraphQL endpoints
+- **Caching (Spring Cache)**:
+  - Frequently accessed posts (single post by id, all posts, paged lists)
+  - Users list
+  - Tag lists and tags-by-post
+  - Cache entries invalidated automatically on create/update/delete operations
+- **Transaction Management**: Service write operations use `@Transactional` with rollback rules for domain-specific exceptions
+- **Custom Exception Handling**: Central REST and GraphQL exception handlers with domain-specific exception types
+- **Repository/Service Architecture**: Spring Data JPA repositories with a thin service layer encapsulating business logic
 
 ## Prerequisites
 
@@ -28,22 +32,16 @@ A Spring Boot blogging backend with REST and GraphQL APIs, backed by MySQL, feat
 
 The application uses a MySQL database with the following structure:
 
-### Entity-Relationship Diagram
-See the complete ERD diagram at: [`docs/blogging_platform_erd.png`](docs/blogging_platform_erd.png)
-
-### Database Tables
-
 - **users**: Stores user accounts with name, email, role, and hashed password
 - **posts**: Stores blog posts with title, content, status (DRAFT/PUBLISHED/DELETED), and publication date
 - **comments**: Stores user comments on posts with metadata support
 - **tags**: Stores available tags for categorizing posts
 - **post_tags**: Junction table for many-to-many relationship between posts and tags
-- **reviews**: Stores post reviews with rating (1-5), message, and timestamps (one review per user per post)
-
-### SQL Scripts
+- **reviews**: Stores post reviews with rating (1–5), message, and timestamps (one review per user per post)
 
 The complete database schema and setup scripts are available at:
-- [`docs/blogging_platform.sql`](docs/blogging_platform.sql) - MySQL schema with indexes and foreign keys
+
+- `docs/blogging_platform.sql` – MySQL schema with indexes and foreign keys
 
 ## Setup Instructions
 
@@ -62,8 +60,6 @@ cd blogging_platform
    sudo systemctl start mysql
    # Or
    sudo service mysql start
-   
-   # On Windows, start MySQL service from Services panel
    ```
 
 2. **Create the Database**
@@ -79,7 +75,6 @@ cd blogging_platform
    ```bash
    mysql -u root -p blogging_platform < docs/blogging_platform.sql
    ```
-   Or execute the SQL file contents directly in your MySQL client.
 
 ### 3. Configuration
 
@@ -108,81 +103,47 @@ mvn clean install
 The project uses the following key dependencies (managed via Maven):
 
 ### Core Dependencies
+
 - **Spring Boot**:
   - `spring-boot-starter-web` – REST API
   - `spring-boot-starter-graphql` – GraphQL endpoint on `/graphql`
-  - `spring-boot-starter-data-jpa` and `spring-boot-starter-jdbc` – data access
+  - `spring-boot-starter-data-jpa` – JPA/Hibernate data access
+  - `spring-boot-starter-jdbc` – JDBC support where needed
   - `spring-boot-starter-validation` – Bean validation (Jakarta Validation)
   - `spring-boot-starter-aop` – cross-cutting logging and performance monitoring
+  - `spring-boot-starter-cache` – Spring Cache abstraction (posts, users, tags)
 - **springdoc-openapi** – interactive REST docs at `/swagger-ui.html`
 - **MySQL Connector/J** – MySQL database driver
 - **jBCrypt 0.4** – Password hashing library
 
 ### Test Dependencies
-- **JUnit Jupiter 5.10.0**: Unit testing framework
-- **Mockito 5.7.0**: Mocking framework for tests
-- **TestFX 4.0.18**: JavaFX testing utilities
 
-All dependencies are defined in [`pom.xml`](pom.xml) and will be automatically resolved by Maven.
+- **JUnit Jupiter** – Unit testing framework
+- **Mockito** – Mocking framework for tests
+
+All dependencies are defined in `pom.xml` and will be automatically resolved by Maven.
 
 ## Execution Instructions
 
 ### Running the Application
 
-#### Option 1: Using Maven (Recommended)
+#### Using Maven (Recommended)
 
 ```bash
-mvn javafx:run
+mvn spring-boot:run
 ```
 
-#### Option 2: Using Java directly
+#### Using IDE
 
-1. **Compile the project:**
-   ```bash
-   mvn clean compile
-   ```
+- Import the project as a Maven project.
+- Run the `com.blogging_platform.Main` class (Spring Boot entry point with `@EnableCaching`).
 
-2. **Run the application:**
-   ```bash
-   java --module-path <path-to-javafx-libs> --add-modules javafx.controls,javafx.fxml --enable-native-access=javafx.graphics -cp target/classes com.blogging_platform.App
-   ```
+## API Overview
 
-#### Option 3: Using IDE
-
-1. **IntelliJ IDEA / Eclipse:**
-   - Import the project as a Maven project
-   - Set the main class to `com.blogging_platform.App`
-   - Add VM options: `--enable-native-access=javafx.graphics`
-   - Run the `App` class
-
-2. **VS Code:**
-   - Use the Java Extension Pack
-   - Open the project folder
-   - Run the "Launch Blogging Platform" configuration from `.vscode/launch.json`
-
-### Application Flow
-
-1. **Login Screen**: The application starts at the login screen
-2. **Registration**: New users can register with name, email, role (Admin/Regular), and password
-3. **Post Home**: After login, users see published posts with:
-   - Search by title, author, or tag (in-memory, cache-based)
-   - Sort by date (newest/oldest), title (A-Z/Z-A), or author (A-Z/Z-A)
-   - Post cards showing tags, comment count, and average rating
-4. **Post Management**: 
-   - Admins can access "My Posts" to create, edit, and delete posts
-   - Posts can be saved as Draft or Published
-   - Tags can be assigned when creating or editing posts
-   - Admin can create new tags
-5. **Post Viewing**: Click on any post to view:
-   - Full content, tags, and average rating
-   - Comments (add, edit, delete - author only)
-   - Click rating to view all reviews
-6. **Review Page**: View and manage reviews for a post:
-   - See all reviews with author, rating, and message
-   - Add a review (one per user per post)
-   - Edit/delete your own review
-   - Admin post-owner can delete any review on their post
-7. **Commenting**: Authenticated users can add, edit (author only), and delete (author only) comments
+- **REST APIs** under `server.servlet.context-path` (e.g. `/api/v1/posts`, `/api/v1/users`, `/api/v1/comments`, etc.).
+- **GraphQL endpoint** at `/graphql` with schema defined in `src/main/resources/graphql/schema.graphqls`.
+- Authentication and user management handled via REST controllers and `UserService`.
+- Posts, comments, reviews, and tags are all backed by JPA entities and repositories.
 
 ## Testing
 
@@ -194,31 +155,11 @@ Execute all tests using Maven:
 mvn test
 ```
 
-### Test Structure
-
-Tests are located in `src/test/java/com/blogging_platform/`:
-
-- **Controller Tests**: Validation and business logic tests for each controller
-  - `LoginUserControllerTest.java`
-  - `RegisterUserControllerTest.java`
-  - `AddPostControllerTest.java`
-  - `EditPostControllerTest.java`
-  - `PostListControllerTest.java`
-  - `SinglePostControllerTest.java`
-  - `PostHomeControllerTest.java`
-
-- **Exception Tests**: Tests for custom exception hierarchy
-  - Located in `src/test/java/com/blogging_platform/exceptions/`
-
-### Test Requirements
-
-- JavaFX Platform must be initialized for controller tests
-- Tests use reflection to initialize FXML fields
-- Database connection is not required for unit tests (they test validation and business logic)
+Tests are located in `src/test/java/com/blogging_platform/` and cover controllers, services, and exceptions using JUnit and Mockito.
 
 ## Project Structure
 
-```
+```text
 blogging_platform/
 ├── docs/
 │   ├── blogging_platform_erd.png      # Entity-Relationship Diagram
@@ -232,41 +173,29 @@ blogging_platform/
 ├── src/
 │   ├── main/
 │   │   ├── java/com/blogging_platform/
-│   │   │   ├── Main.java              # Spring Boot entry point
+│   │   │   ├── Main.java              # Spring Boot entry point (@EnableCaching)
 │   │   │   ├── ApiResponse.java       # Standard API response wrapper
 │   │   │   ├── aop/                   # Cross‑cutting concerns
 │   │   │   │   └── ServiceLoggingAspect.java
 │   │   │   ├── classes/               # Data records and utilities
-│   │   │   │   ├── CacheManager.java
 │   │   │   │   ├── PagedResult.java
 │   │   │   │   ├── PostRecord.java
 │   │   │   │   ├── CommentRecord.java
 │   │   │   │   ├── ReviewRecord.java
 │   │   │   │   ├── TagRecord.java
 │   │   │   │   └── UserRecord.java
-│   │   │   ├── config/                # Infrastructure configuration
-│   │   │   │   ├── Config.java        # .env loader (legacy support)
-│   │   │   │   ├── DBConnection.java  # JDBC connection helper using Spring DataSource
-│   │   │   │   └── DatabaseConfig.java# Wires Spring DataSource into DBConnection
-│   │   │   ├── controller/            # REST + GraphQL controllers (BEM‑05 Web & GraphQL)
+│   │   │   ├── controller/            # REST + GraphQL controllers
 │   │   │   │   ├── PostController.java
 │   │   │   │   ├── UserController.java
 │   │   │   │   ├── CommentController.java
 │   │   │   │   ├── ReviewController.java
 │   │   │   │   └── TagController.java
-│   │   │   ├── dao/                   # Data Access Layer
-│   │   │   │   ├── interfaces/        # DAO interfaces
-│   │   │   │   │   ├── PostDAO.java
-│   │   │   │   │   ├── UserDAO.java
-│   │   │   │   │   ├── CommentDAO.java
-│   │   │   │   │   ├── TagDAO.java
-│   │   │   │   │   └── ReviewDAO.java
-│   │   │   │   └── implementation/    # JDBC implementations
-│   │   │   │       ├── JdbcPostDAO.java
-│   │   │   │       ├── JdbcUserDAO.java
-│   │   │   │       ├── JdbcCommentDAO.java
-│   │   │   │       ├── JdbcTagDAO.java
-│   │   │   │       └── JdbcReviewDAO.java
+│   │   │   ├── repository/            # Spring Data JPA repositories (BEM‑06)
+│   │   │   │   ├── PostRepository.java
+│   │   │   │   ├── UserRepository.java
+│   │   │   │   ├── CommentRepository.java
+│   │   │   │   ├── TagRepository.java
+│   │   │   │   └── ReviewRepository.java
 │   │   │   ├── service/               # Business logic layer
 │   │   │   │   ├── PostService.java
 │   │   │   │   ├── UserService.java
@@ -279,14 +208,11 @@ blogging_platform/
 │   │   │   │   ├── Comment.java
 │   │   │   │   ├── Review.java
 │   │   │   │   └── Tag.java
-│   │   │   ├── exceptions/            # Custom exception hierarchy
-│   │   │   │   ├── BloggingPlatformException.java
-│   │   │   │   ├── DatabaseException.java
-│   │   │   │   ├── GlobalExceptionHandler.java      # REST error handling
-│   │   │   │   └── GraphQLExceptionHandler.java     # GraphQL error handling
-│   │   │   └── validation/            # Bean validation helpers
-│   │   │       ├── UniqueEmail.java
-│   │   │       └── UniqueEmailValidator.java
+│   │   │   └── exceptions/            # Custom exception hierarchy
+│   │   │       ├── BloggingPlatformException.java
+│   │   │       ├── DatabaseException.java
+│   │   │       ├── GlobalExceptionHandler.java      # REST error handling
+│   │   │       └── GraphQLExceptionHandler.java     # GraphQL error handling
 │   │   └── resources/
 │   │       ├── application.properties             # Default Spring Boot config
 │   │       ├── application-dev.properties         # Dev profile config
@@ -294,8 +220,7 @@ blogging_platform/
 │   │       ├── application-prod.properties        # Prod profile config
 │   │       └── graphql/schema.graphqls            # GraphQL schema (queries + mutations)
 │   └── test/
-│       └── java/com/blogging_platform/
-│           └── exceptions/                        # Exception tests (existing)
+│       └── java/com/blogging_platform/            # Unit and integration tests
 ├── pom.xml                            # Maven configuration
 ├── README.md                          # This file
 └── .env                               # Optional environment configuration (legacy)
@@ -308,104 +233,51 @@ blogging_platform/
 The service layer is instrumented with Spring AOP to provide centralized logging and performance monitoring (Epic **BEM‑05 AOP Logging & Monitoring**):
 
 - A `ServiceLoggingAspect` applies `@Before`, `@AfterReturning`, and `@Around` advice to all public methods in `com.blogging_platform.service.*`.
-- Each service call logs method name, arguments, and either the returned object or (for collections) the collection size for easier debugging.
-- The `@Around` advice measures execution time and logs slow calls (over 500 ms) as warnings; all calls log their duration in milliseconds.
-- Example log output is illustrated in `docs/aop_logging.png`:  
-  ![AOP logging and timing](docs/aop_logging.png)
+- The `@Around` advice measures execution time and logs slow calls as warnings; all calls log their duration in milliseconds.
 
-### Data Structures & Algorithms Integration
+### Persistence, Search & Caching
 
-The application implements several D&S concepts:
-
-- **Hashing/Caching**: 
-  - `CacheManager` uses `ConcurrentHashMap` for O(1) post lookup by id (hash index)
-  - In-memory cache stores published posts and tag associations
-  - Cache invalidation after comment/review create/update/delete
-
-- **Sorting**: 
-  - QuickSort algorithm implemented in `CacheManager.sortPosts()` for O(n log n) average performance
-  - Supports sorting by date, title, or author (ascending/descending)
-
-- **Searching**: 
-  - In-memory linear search on cached posts (filters by title, author, or tag)
-  - No database queries for search - all filtering happens in memory
-  - Tag index (`postIdToTagNames`) enables fast tag-based search
-
-- **Indexing Concept**: 
-  - Hash index (`postByIdCache`) analogous to database primary key index
-  - Tag index (`postIdToTagNames`) for efficient tag lookups
-  - In-memory structures mirror database indexing principles
-
-### Search & Sort Implementation
-
-- **Home Page & Post List**: Search and sort run entirely in memory using cached data
-- **No Database Queries**: Search filters cached posts; sort uses QuickSort on filtered results
-- **Performance**: O(n) search + O(n log n) sort = efficient for typical post counts
-
-### Legacy MySQL FULLTEXT Search
-
-The application previously used MySQL FULLTEXT search (still available in `MySQLDriver`):
-
-- FULLTEXT indexes on `posts.title` and `users.name`
-- Uses `MATCH() AGAINST()` in NATURAL LANGUAGE MODE
-- Relevance-based sorting
-- Expected 10-100x faster on large datasets (1000+ posts)
-
-See [`docs/performance_review.sql`](docs/performance_review.sql) for optimization details.
-
-**Note**: Current implementation prefers cache-based in-memory search/sort for better responsiveness.
+- **Repositories**: All entities (`Post`, `User`, `Comment`, `Review`, `Tag`) use Spring Data JPA repositories for CRUD and derived queries.
+- **Search**:
+  - `PostRepository` exposes a JPQL query (`searchByTitleAuthorOrTag`) that joins `user` and `tags` to search by title, author name, or tag.
+  - `PostService.getPosts(query, Pageable)` uses this query and returns `PostRecord` DTOs.
+  - Pagination and sorting are handled via Spring Data’s `Pageable` and `Sort`.
+- **Transactions**:
+  - Write methods in services (`PostService`, `CommentService`, `ReviewService`, `TagService`) are annotated with `@Transactional` and class-level rollback rules for domain exceptions to ensure atomic create/update/delete operations.
+- **Spring Cache**:
+  - `PostService` caches:
+    - Single posts by id (`postsById`)
+    - All posts and paged lists (`posts`)
+  - `TagService` caches:
+    - All tags (`tags`)
+    - Tags by post (`tagsByPost`)
+  - `UserService` caches:
+    - The user list (`users`)
+  - Cache entries are automatically evicted on relevant create/update/delete operations.
 
 ## Recent Updates
 
 ### Latest Changes (2026)
 
-- **Documentation**: Comprehensive Javadocs added to all classes, methods, and interfaces
-- **Code Cleanup**: Removed commented-out code and debug statements
-- **Cache-Based Search & Sort**: In-memory search by title/author/tag with QuickSort (D&S integration)
-- **Tags & Reviews**: Full tag management and review system (ratings 1-5) with authorization
-- **Cache Invalidation**: Automatic cache refresh after comment/review create/update/delete
-- **Edit Post Tags**: Tag field added to edit post screen
-- **Architecture**: Migrated to DAO/Service layer pattern for better separation of concerns
-- **BEM‑05 Web & GraphQL**: Introduced Spring Boot REST controllers and GraphQL mappings for posts, users, comments, reviews, and tags (see screenshots in `docs/graphql1.png` and `docs/graphql2.png`).
-- **BEM‑05 Validation & Exceptions**: Centralized validation and error handling via `GlobalExceptionHandler` and `GraphQLExceptionHandler`, with field‑level constraints (see `docs/custom_validation.png`).  
-  ![Custom validation and error handling](docs/custom_validation.png)
-- **BEM‑05 AOP Logging & Monitoring**: Added `ServiceLoggingAspect` for request tracing and performance metrics on service methods (see `docs/aop_logging.png`).
-
-See git log for detailed commit history.
-
-## Troubleshooting
-
-### Database Connection Issues
-
-1. **Check MySQL is running:**
-   ```bash
-   sudo systemctl status mysql
-   ```
-
-2. **Verify database exists:**
-   ```sql
-   SHOW DATABASES;
-   ```
-
-3. **Check credentials in `.env` file:**
-   - Ensure `DB_NAME`, `USERNAME`, and `PASSWORD` are correct
-   - Remove any quotes around values
-
-### JavaFX Runtime Issues
-
-- Ensure JavaFX dependencies are properly downloaded: `mvn dependency:resolve`
-- For Java 21+, ensure `--enable-native-access=javafx.graphics` VM option is set
-- Check that JavaFX modules are accessible in module path
-
-### Build Issues
-
-- Clean and rebuild: `mvn clean install`
-- Check Java version: `java -version` (should be 21+)
-- Verify Maven installation: `mvn -version`
+- **BEM‑05 Web & GraphQL**: Spring Boot REST controllers and GraphQL mappings for posts, users, comments, reviews, and tags.
+- **BEM‑05 Validation & Exceptions**: Centralized validation and error handling via `GlobalExceptionHandler` and `GraphQLExceptionHandler`, with bean validation constraints.
+- **BEM‑05 AOP Logging & Monitoring**: `ServiceLoggingAspect` for request tracing and performance metrics on service methods.
+- **BEM‑06 Spring Data JPA Integration**:
+  - Introduced Spring Data JPA repositories for User, Post, Comment, Tag, and Review.
+  - Updated entities to use UUID primary keys with proper column mappings.
+  - Controllers and services now delegate all persistence to repositories.
+- **BEM‑06 Pagination, Sorting, and JPQL Queries**:
+  - Implemented pageable `/posts` endpoint (and GraphQL `getPosts`) using `Pageable` and `Sort`.
+  - Added JPQL query to search posts by title, author name, or tag name.
+- **BEM‑06 Transactions & Rollback**:
+  - Service classes use `@Transactional` with rollback rules for domain-specific exceptions.
+- **BEM‑06 Caching & Performance**:
+  - Replaced the custom in‑memory `CacheManager` with Spring Cache.
+  - Added caches for popular posts, users, and tags, with automatic eviction on writes.
 
 ## Documentation
 
-All classes, methods, and interfaces are fully documented with Javadoc comments following Java best practices. Generate documentation using:
+All classes, methods, and interfaces are documented with Javadoc comments following Java best practices. Generate documentation using:
 
 ```bash
 mvn javadoc:javadoc
@@ -416,3 +288,4 @@ The generated documentation will be available in `target/site/apidocs/`.
 ## License
 
 [Add your license information here]
+

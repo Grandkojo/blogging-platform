@@ -88,8 +88,9 @@ class ReviewControllerTest {
     @Test
     void editReview_rest_callsServiceAndReturnsUpdated() {
         Review review = new Review();
+        String reviewId = java.util.UUID.randomUUID().toString();
 
-        ResponseEntity<ApiResponse<Object>> response = controller.editReview("r1", review);
+        ResponseEntity<ApiResponse<Object>> response = controller.editReview(reviewId, review);
 
         verify(reviewService).updateReview(review);
         assertEquals(HttpStatus.CREATED.value(), response.getBody().getStatus());
@@ -120,7 +121,10 @@ class ReviewControllerTest {
 
     @Test
     void createReview_graphql_callsServiceAndReturnsTrue() {
-        Boolean result = controller.createReviewMutation("p1", "u1", 5, "Great");
+        String postId = java.util.UUID.randomUUID().toString();
+        String userId = java.util.UUID.randomUUID().toString();
+
+        Boolean result = controller.createReviewMutation(postId, userId, 5, "Great");
 
         verify(reviewService).createReview(org.mockito.Mockito.any(Review.class));
         assertEquals(true, result);
@@ -128,7 +132,11 @@ class ReviewControllerTest {
 
     @Test
     void updateReview_graphql_callsServiceAndReturnsTrue() {
-        Boolean result = controller.updateReviewMutation("r1", "p1", "u1", 4, "Good");
+        String reviewId = java.util.UUID.randomUUID().toString();
+        String postId = java.util.UUID.randomUUID().toString();
+        String userId = java.util.UUID.randomUUID().toString();
+
+        Boolean result = controller.updateReviewMutation(reviewId, postId, userId, 4, "Good");
 
         verify(reviewService).updateReview(org.mockito.Mockito.any(Review.class));
         assertEquals(true, result);
