@@ -4,11 +4,11 @@ import java.util.List;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import com.blogging_platform.classes.PostRecord;
-import com.blogging_platform.classes.PagedResult;
 import com.blogging_platform.classes.TagRecord;
 import com.blogging_platform.exceptions.DatabaseQueryException;
 import com.blogging_platform.exceptions.PostNotFoundException;
@@ -25,6 +25,7 @@ import jakarta.transaction.Transactional;
  * publish status (PUBLISHED vs DRAFT) when creating or updating posts.
  */
 @Service
+@Transactional(rollbackOn = { DatabaseQueryException.class, PostNotFoundException.class })
 public class PostService {
 
     private final PostRepository postRepository;
@@ -43,6 +44,8 @@ public class PostService {
 
     /**
      * Creates a new post and returns its id. Sets isPublish from status.
+     * Wrapped in a transaction to ensure the insert and any related changes
+     * are committed atomically.
      *
      * @param post the post to create
      * @return the new post's id
@@ -140,41 +143,33 @@ public class PostService {
      * @throws DatabaseQueryException if the query fails
      */
     public List<PostRecord> getPosts() throws DatabaseQueryException {
-        return postRepository.findAll().stream()
-                .map(p -> new PostRecord(
-                        p.getId() != null ? p.getId().toString() : null,
-                        p.getTitle(),
-                        p.getContent(),
-                        p.getStatus(),
-                        p.getUser() != null ? p.getUser().getName() : null,
-                        p.getCreatedAt(),
-                        p.getPublishedDatetime(),
-                        (int) commentRepository.countByPost_Id(p.getId()),
-                        p.getUser() != null && p.getUser().getId() != null ? p.getUser().getId().toString() : null,
-                        null))
-                .toList();
+        return mapToRecords(postRepository.findAll());
     }
 
     /**
-     * Returns all published posts paginated.
+     * Returns published posts paginated and optionally filtered by a free-text query
+     * matching title, author name, or tag name.
      *
+     * @param query     optional search string; if null/blank all posts are returned
+     * @param pageable  pagination and sorting information
      * @return list of published post records
      * @throws DatabaseQueryException if the query fails
      */
+    public List<PostRecord> getPosts(String query, Pageable pageable) throws DatabaseQueryException {
+        Page<Post> page;
+        if (query == null || query.trim().isEmpty()) {
+            page = postRepository.findAll(pageable);
+        } else {
+            page = postRepository.searchByTitleAuthorOrTag(query.trim(), pageable);
+        }
+        return mapToRecords(page.getContent());
+    }
+
+    /**
+     * Convenience overload used by callers that do not provide a query.
+     */
     public List<PostRecord> getPosts(Pageable pageable) throws DatabaseQueryException {
-        return postRepository.findAll(pageable).stream()
-                .map(p -> new PostRecord(
-                        p.getId() != null ? p.getId().toString() : null,
-                        p.getTitle(),
-                        p.getContent(),
-                        p.getStatus(),
-                        p.getUser() != null ? p.getUser().getName() : null,
-                        p.getCreatedAt(),
-                        p.getPublishedDatetime(),
-                        (int) commentRepository.countByPost_Id(p.getId()),
-                        p.getUser() != null && p.getUser().getId() != null ? p.getUser().getId().toString() : null,
-                        null))
-                .toList();
+        return getPosts(null, pageable);
     }
 
     /**
@@ -184,7 +179,6 @@ public class PostService {
      * @throws PostNotFoundException  if the post does not exist
      * @throws DatabaseQueryException if the update fails
      */
-    @Transactional
     public void updatePost(Post post, String postId) throws DatabaseQueryException, PostNotFoundException {
         UUID postUuid = UUID.fromString(postId);
         UUID userUuid = post.getUserId();
@@ -259,5 +253,21 @@ public class PostService {
             // On error, return empty tags list rather than failing the whole request
             return List.of();
         }
+    }
+
+    private List<PostRecord> mapToRecords(List<Post> posts) {
+        return posts.stream()
+                .map(p -> new PostRecord(
+                        p.getId() != null ? p.getId().toString() : null,
+                        p.getTitle(),
+                        p.getContent(),
+                        p.getStatus(),
+                        p.getUser() != null ? p.getUser().getName() : null,
+                        p.getCreatedAt(),
+                        p.getPublishedDatetime(),
+                        (int) commentRepository.countByPost_Id(p.getId()),
+                        p.getUser() != null && p.getUser().getId() != null ? p.getUser().getId().toString() : null,
+                        null))
+                .toList();
     }
 }

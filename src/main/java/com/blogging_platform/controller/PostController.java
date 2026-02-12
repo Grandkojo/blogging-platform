@@ -76,10 +76,10 @@ public class PostController {
 
         Sort sort = Sort.by(
             Sort.Direction.fromString(direction),
-            sortBy
+            sortBy != null ? sortBy : "createdAt"
         );
         Pageable pagination = PageRequest.of(p, s, sort);
-        List<PostRecord> posts = postService.getPosts(pagination);
+        List<PostRecord> posts = postService.getPosts(query, pagination);
         List<PostRecord> dto = posts.stream()
             .map(postService::toPostWithTags)
             .toList();
@@ -139,7 +139,7 @@ public class PostController {
             sortBy
         );
         Pageable pagination = PageRequest.of(page, size, sort);
-        List<PostRecord> posts = postService.getPosts(pagination);
+        List<PostRecord> posts = postService.getPosts(query, pagination);
         List<PostRecord> dto = posts.stream()
             .map(postService::toPostWithTags)
             .toList();

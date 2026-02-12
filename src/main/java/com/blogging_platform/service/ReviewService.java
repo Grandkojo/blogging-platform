@@ -11,11 +11,14 @@ import com.blogging_platform.exceptions.DuplicateResourceException;
 import com.blogging_platform.model.Review;
 import com.blogging_platform.repository.ReviewRepository;
 
+import jakarta.transaction.Transactional;
+
 /**
  * Application service for post reviews (ratings and messages). Delegates to {@link ReviewDAO}
  * and provides average rating calculation.
  */
 @Service
+@Transactional(rollbackOn = { DatabaseQueryException.class, DuplicateResourceException.class })
 public class ReviewService {
     private final ReviewRepository reviewRepository;
 
