@@ -1,27 +1,30 @@
 package com.blogging_platform.service;
 
 import java.util.List;
+import java.util.UUID;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.blogging_platform.classes.TagRecord;
-import com.blogging_platform.dao.interfaces.TagDAO;
 import com.blogging_platform.exceptions.DatabaseQueryException;
 import com.blogging_platform.exceptions.DuplicateResourceException;
 import com.blogging_platform.model.Tag;
+import com.blogging_platform.model.Post;
+import com.blogging_platform.repository.TagRepository;
+import com.blogging_platform.repository.PostRepository;
 
 /**
  * Application service for tags and post–tag associations. Delegates to {@link TagDAO}.
  */
 @Service
 public class TagService {
-    @Autowired
-    private TagDAO tagDAO;
+    private final TagRepository tagRepository;
+    private final PostRepository postRepository;
 
-    /** Creates a tag service with the given DAO. */
-    public TagService(TagDAO tagDAO) {
-        this.tagDAO = tagDAO;
+    /** Creates a tag service with the repositories. */
+    public TagService(TagRepository tagRepository, PostRepository postRepository) {
+        this.tagRepository = tagRepository;
+        this.postRepository = postRepository;
     }
 
     /**
@@ -32,7 +35,11 @@ public class TagService {
      * @throws DatabaseQueryException if the insert fails
      */
     public void createTag(Tag tag) throws DatabaseQueryException, DuplicateResourceException {
-        tagDAO.create(tag);
+        try {
+            tagRepository.save(tag);
+        } catch (org.springframework.dao.DataIntegrityViolationException e) {
+            throw new DuplicateResourceException("Tag already exists: " + tag.getTag());
+        }
     }
 
     /**
@@ -42,7 +49,11 @@ public class TagService {
      * @throws DatabaseQueryException if the query fails
      */
     public List<TagRecord> getAllTags() throws DatabaseQueryException {
-        return tagDAO.getAll();
+        return tagRepository.findAll().stream()
+                .map(t -> new TagRecord(
+                        t.getId() != null ? t.getId().toString() : null,
+                        t.getTag()))
+                .toList();
     }
 
     /**
@@ -53,7 +64,12 @@ public class TagService {
      * @throws DatabaseQueryException if the query fails
      */
     public TagRecord getTagById(String tagId) throws DatabaseQueryException {
-        return tagDAO.getById(tagId);
+        UUID id = UUID.fromString(tagId);
+        return tagRepository.findById(id)
+                .map(t -> new TagRecord(
+                        t.getId() != null ? t.getId().toString() : null,
+                        t.getTag()))
+                .orElse(null);
     }
 
     /**
@@ -64,7 +80,11 @@ public class TagService {
      * @throws DatabaseQueryException if the query fails
      */
     public TagRecord getTagByTagName(String tagName) throws DatabaseQueryException {
-        return tagDAO.getByTagName(tagName);
+        return tagRepository.findByTag(tagName)
+                .map(t -> new TagRecord(
+                        t.getId() != null ? t.getId().toString() : null,
+                        t.getTag()))
+                .orElse(null);
     }
 
     /**
@@ -75,7 +95,12 @@ public class TagService {
      * @throws DatabaseQueryException if the insert fails
      */
     public void linkTagToPost(String postId, String tagId) throws DatabaseQueryException {
-        tagDAO.linkTagToPost(postId, tagId);
+        UUID postUuid = UUID.fromString(postId);
+        UUID tagUuid = UUID.fromString(tagId);
+        Post post = postRepository.findById(postUuid).orElseThrow();
+        Tag tag = tagRepository.findById(tagUuid).orElseThrow();
+        post.getTags().add(tag);
+        postRepository.save(post);
     }
 
     /**
@@ -85,7 +110,10 @@ public class TagService {
      * @throws DatabaseQueryException if the delete fails
      */
     public void unlinkAllTagsFromPost(String postId) throws DatabaseQueryException {
-        tagDAO.unlinkAllTagsFromPost(postId);
+        UUID postUuid = UUID.fromString(postId);
+        Post post = postRepository.findById(postUuid).orElseThrow();
+        post.getTags().clear();
+        postRepository.save(post);
     }
 
     /**
@@ -96,6 +124,11 @@ public class TagService {
      * @throws DatabaseQueryException if the query fails
      */
     public List<TagRecord> getTagsByPostId(String postId) throws DatabaseQueryException {
-        return tagDAO.getTagsByPostId(postId);
+        UUID postUuid = UUID.fromString(postId);
+        return tagRepository.findByPosts_Id(postUuid).stream()
+                .map(t -> new TagRecord(
+                        t.getId() != null ? t.getId().toString() : null,
+                        t.getTag()))
+                .toList();
     }
 }

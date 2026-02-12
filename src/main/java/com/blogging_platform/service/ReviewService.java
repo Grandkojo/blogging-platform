@@ -1,14 +1,15 @@
 package com.blogging_platform.service;
 
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 
 import com.blogging_platform.classes.ReviewRecord;
-import com.blogging_platform.dao.interfaces.ReviewDAO;
 import com.blogging_platform.exceptions.DatabaseQueryException;
 import com.blogging_platform.exceptions.DuplicateResourceException;
 import com.blogging_platform.model.Review;
+import com.blogging_platform.repository.ReviewRepository;
 
 /**
  * Application service for post reviews (ratings and messages). Delegates to {@link ReviewDAO}
@@ -16,11 +17,11 @@ import com.blogging_platform.model.Review;
  */
 @Service
 public class ReviewService {
-    private ReviewDAO reviewDAO;
+    private final ReviewRepository reviewRepository;
 
-    /** Creates a review service with the given DAO. */
-    public ReviewService(ReviewDAO reviewDAO) {
-        this.reviewDAO = reviewDAO;
+    /** Creates a review service with the repository. */
+    public ReviewService(ReviewRepository reviewRepository) {
+        this.reviewRepository = reviewRepository;
     }
 
     /**
@@ -31,7 +32,12 @@ public class ReviewService {
      * @throws DatabaseQueryException if the insert fails
      */
     public void createReview(Review review) throws DatabaseQueryException, DuplicateResourceException {
-        reviewDAO.create(review);
+        try {
+            reviewRepository.save(review);
+        } catch (org.springframework.dao.DataIntegrityViolationException e) {
+            // Preserve existing behavior where duplicate review (one per user per post) throws DuplicateResourceException
+            throw new DuplicateResourceException("User has already reviewed this post");
+        }
     }
 
     /**
@@ -42,7 +48,10 @@ public class ReviewService {
      * @throws DatabaseQueryException if the query fails
      */
     public List<ReviewRecord> getReviewsByPostId(String postId) throws DatabaseQueryException {
-        return reviewDAO.getReviewsByPostId(postId);
+        UUID postUuid = UUID.fromString(postId);
+        return reviewRepository.findByPost_Id(postUuid).stream()
+                .map(this::toRecord)
+                .toList();
     }
 
     /**
@@ -52,7 +61,9 @@ public class ReviewService {
      * @throws DatabaseQueryException if the query fails
      */
     public List<ReviewRecord> getReviews() throws DatabaseQueryException {
-        return reviewDAO.getReviews();
+        return reviewRepository.findAll().stream()
+                .map(this::toRecord)
+                .toList();
     }
 
     /**
@@ -63,7 +74,10 @@ public class ReviewService {
      * @throws DatabaseQueryException if the query fails
      */
     public ReviewRecord getReviewById(String reviewId) throws DatabaseQueryException {
-        return reviewDAO.getReviewById(reviewId);
+        UUID id = UUID.fromString(reviewId);
+        return reviewRepository.findById(id)
+                .map(this::toRecord)
+                .orElse(null);
     }
 
     /**
@@ -73,7 +87,7 @@ public class ReviewService {
      * @throws DatabaseQueryException if the update fails
      */
     public void updateReview(Review review) throws DatabaseQueryException {
-        reviewDAO.update(review);
+        reviewRepository.save(review);
     }
 
     /**
@@ -84,7 +98,8 @@ public class ReviewService {
      * @throws DatabaseQueryException if the delete fails
      */
     public void deleteReview(String reviewId, String userId) throws DatabaseQueryException {
-        reviewDAO.delete(reviewId, userId);
+        UUID id = UUID.fromString(reviewId);
+        reviewRepository.deleteById(id);
     }
 
     /**
@@ -95,7 +110,7 @@ public class ReviewService {
      * @throws DatabaseQueryException if the query fails
      */
     public double getAverageRating(String postId) throws DatabaseQueryException {
-        List<ReviewRecord> reviews = reviewDAO.getReviewsByPostId(postId);
+        List<ReviewRecord> reviews = getReviewsByPostId(postId);
         if (reviews == null || reviews.isEmpty()) {
             return 0.0;
         }
@@ -104,5 +119,22 @@ public class ReviewService {
             sum += r.rating() != null ? r.rating() : 0;
         }
         return (double) sum / reviews.size();
+    }
+
+    /**
+     * Maps a {@link Review} entity to a {@link ReviewRecord} DTO.
+     */
+    private ReviewRecord toRecord(Review r) {
+        if (r == null) {
+            return null;
+        }
+        return new ReviewRecord(
+                r.getId() != null ? r.getId().toString() : null,
+                r.getPostId() != null ? r.getPostId().toString() : null,
+                r.getUserId() != null ? r.getUserId().toString() : null,
+                r.getUser() != null ? r.getUser().getName() : null,
+                r.getRating(),
+                r.getMessage(),
+                r.getCreatedAt());
     }
 }

@@ -10,10 +10,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import com.blogging_platform.dao.interfaces.PostDAO;
-import com.blogging_platform.dao.interfaces.implementation.JdbcPostDAO;
 import com.blogging_platform.exceptions.DatabaseException;
 import com.blogging_platform.exceptions.DatabaseQueryException;
+import com.blogging_platform.repository.PostRepository;
 import com.blogging_platform.service.PostService;
 import com.blogging_platform.service.TagService;
 
@@ -30,8 +29,10 @@ import com.blogging_platform.service.TagService;
 public class CacheManager {
     private long lastRefresh = 0;
     private static final long REFRESH_INTERVAL_MS = 5 * 60 * 1000;
-    private PostDAO postDAO = new JdbcPostDAO();
-    private PostService postService = new PostService(postDAO, null);
+    @Autowired
+    private PostRepository postRepository;
+    @Autowired
+    private PostService postService = new PostService(postRepository, null, null);
 
     private static final CacheManager instance = new CacheManager();
 

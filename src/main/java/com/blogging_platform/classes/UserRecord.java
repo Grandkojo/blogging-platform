@@ -5,9 +5,8 @@ package com.blogging_platform.classes;
  * Contains id, name, email, and role.
  */
 public record UserRecord(
-    String id,
-    String name,
-    String email,
-    String role
-) {}
-
+        String id,
+        String name,
+        String email,
+        String role) {
+}

@@ -1,38 +1,44 @@
 package com.blogging_platform.service;
 
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import com.blogging_platform.classes.PostRecord;
 import com.blogging_platform.classes.PagedResult;
 import com.blogging_platform.classes.TagRecord;
-import com.blogging_platform.dao.interfaces.PostDAO;
-import com.blogging_platform.dao.interfaces.UserDAO;
 import com.blogging_platform.exceptions.DatabaseQueryException;
 import com.blogging_platform.exceptions.PostNotFoundException;
 import com.blogging_platform.model.Post;
+import com.blogging_platform.repository.CommentRepository;
+import com.blogging_platform.repository.PostRepository;
+import com.blogging_platform.repository.UserRepository;
+
+import jakarta.transaction.Transactional;
 
 /**
- * Application service for blog posts. Delegates to {@link PostDAO} and
+ * Application service for blog posts.
  * normalizes
  * publish status (PUBLISHED vs DRAFT) when creating or updating posts.
  */
 @Service
 public class PostService {
 
+    private final PostRepository postRepository;
+    private final UserRepository userRepository;
+    private final CommentRepository commentRepository;
     @Autowired
-    private PostDAO postDAO;
-    @Autowired
-    private UserDAO userDAO;
-    @Autowired
-    private com.blogging_platform.service.TagService tagService;
+    private TagService tagService;
 
     /** Creates a post service with the given DAO. */
-    public PostService(PostDAO postDAO, UserDAO userDAO) {
-        this.postDAO = postDAO;
-        this.userDAO = userDAO;
+    public PostService(PostRepository postRepository, UserRepository userRepository,
+            CommentRepository commentRepository) {
+        this.postRepository = postRepository;
+        this.userRepository = userRepository;
+        this.commentRepository = commentRepository;
     }
 
     /**
@@ -42,8 +48,9 @@ public class PostService {
      * @return the new post's id
      * @throws DatabaseQueryException if the insert fails
      */
-    public String createPost(Post post) throws DatabaseQueryException {
-        if (userDAO.existsById(post.getUserId())) {
+    public void createPost(Post post) throws DatabaseQueryException {
+        UUID userUuid = post.getUserId();
+        if (userRepository.existsById(userUuid)) {
             if ("PUBLISH".equalsIgnoreCase(post.getStatus())) {
                 post.setIsPublish(true);
                 post.setStatus("PUBLISHED");
@@ -52,7 +59,7 @@ public class PostService {
                 post.setStatus("DRAFT");
             }
         }
-        return postDAO.create(post);
+        postRepository.save(post);
     }
 
     /**
@@ -62,8 +69,9 @@ public class PostService {
      * @return list of post records
      * @throws DatabaseQueryException if the query fails
      */
-    // public List<PostRecord> getUserPosts(String userId) throws DatabaseQueryException {
-    //     return postDAO.getAll(userId);
+    // public List<PostRecord> getUserPosts(String userId) throws
+    // DatabaseQueryException {
+    // return postDAO.getAll(userId);
     // }
 
     /**
@@ -77,7 +85,21 @@ public class PostService {
      * @throws DatabaseQueryException if the query fails
      */
     public PostRecord getPost(String postId, String userId) throws DatabaseQueryException, PostNotFoundException {
-        return postDAO.getByID(postId, userId);
+        UUID ownerId = UUID.fromString(userId);
+        UUID postUuid = UUID.fromString(postId);
+        Post post = postRepository.findByIdAndUser_Id(postUuid, ownerId)
+                .orElseThrow(() -> new PostNotFoundException(postId));
+        return new PostRecord(
+                post.getId() != null ? post.getId().toString() : null,
+                post.getTitle(),
+                post.getContent(),
+                post.getStatus(),
+                post.getUser() != null ? post.getUser().getName() : null,
+                post.getCreatedAt(),
+                post.getPublishedDatetime(),
+                (int) commentRepository.countByPost_Id(postUuid),
+                post.getUser() != null && post.getUser().getId() != null ? post.getUser().getId().toString() : null,
+                null);
     }
 
     /**
@@ -89,11 +111,26 @@ public class PostService {
      * @throws DatabaseQueryException if the query fails
      */
     public PostRecord getPost(String postId) throws DatabaseQueryException, PostNotFoundException {
-        return postDAO.getByID(postId);
+        UUID postUuid = UUID.fromString(postId);
+        PostRecord post = postRepository.findById(postUuid)
+                .map(p -> new PostRecord(
+                        p.getId() != null ? p.getId().toString() : null,
+                        p.getTitle(),
+                        p.getContent(),
+                        p.getStatus(),
+                        p.getUser() != null ? p.getUser().getName() : null,
+                        p.getCreatedAt(),
+                        p.getPublishedDatetime(),
+                        (int) commentRepository.countByPost_Id(postUuid),
+                        p.getUser() != null && p.getUser().getId() != null ? p.getUser().getId().toString() : null,
+                        null))
+                .orElseThrow(() -> new PostNotFoundException(postId));
+
+        return post;
     }
 
     public boolean existsById(String postId) {
-        return postDAO.existsById(postId);
+        return postRepository.existsById(UUID.fromString(postId));
     }
 
     /**
@@ -103,7 +140,41 @@ public class PostService {
      * @throws DatabaseQueryException if the query fails
      */
     public List<PostRecord> getPosts() throws DatabaseQueryException {
-        return postDAO.getAll();
+        return postRepository.findAll().stream()
+                .map(p -> new PostRecord(
+                        p.getId() != null ? p.getId().toString() : null,
+                        p.getTitle(),
+                        p.getContent(),
+                        p.getStatus(),
+                        p.getUser() != null ? p.getUser().getName() : null,
+                        p.getCreatedAt(),
+                        p.getPublishedDatetime(),
+                        (int) commentRepository.countByPost_Id(p.getId()),
+                        p.getUser() != null && p.getUser().getId() != null ? p.getUser().getId().toString() : null,
+                        null))
+                .toList();
+    }
+
+    /**
+     * Returns all published posts paginated.
+     *
+     * @return list of published post records
+     * @throws DatabaseQueryException if the query fails
+     */
+    public List<PostRecord> getPosts(Pageable pageable) throws DatabaseQueryException {
+        return postRepository.findAll(pageable).stream()
+                .map(p -> new PostRecord(
+                        p.getId() != null ? p.getId().toString() : null,
+                        p.getTitle(),
+                        p.getContent(),
+                        p.getStatus(),
+                        p.getUser() != null ? p.getUser().getName() : null,
+                        p.getCreatedAt(),
+                        p.getPublishedDatetime(),
+                        (int) commentRepository.countByPost_Id(p.getId()),
+                        p.getUser() != null && p.getUser().getId() != null ? p.getUser().getId().toString() : null,
+                        null))
+                .toList();
     }
 
     /**
@@ -113,8 +184,11 @@ public class PostService {
      * @throws PostNotFoundException  if the post does not exist
      * @throws DatabaseQueryException if the update fails
      */
+    @Transactional
     public void updatePost(Post post, String postId) throws DatabaseQueryException, PostNotFoundException {
-        if (postDAO.existsById(postId) && userDAO.existsById(post.getUserId())) {
+        UUID postUuid = UUID.fromString(postId);
+        UUID userUuid = post.getUserId();
+        if (postRepository.existsById(postUuid) && userRepository.existsById(userUuid)) {
             if ("PUBLISH".equalsIgnoreCase(post.getStatus())) {
                 post.setIsPublish(true);
                 post.setStatus("PUBLISHED");
@@ -122,8 +196,8 @@ public class PostService {
                 post.setIsPublish(false);
                 post.setStatus("DRAFT");
             }
-            post.setId(postId);
-            postDAO.edit(post);
+            post.setId(postUuid);
+            postRepository.save(post);
         } else {
             throw new PostNotFoundException("Post not found");
         }
@@ -139,27 +213,15 @@ public class PostService {
      * @throws DatabaseQueryException if the delete fails
      */
     public void deletePost(String postId, String userId) throws DatabaseQueryException, PostNotFoundException {
-        if (postDAO.existsById(postId) && userDAO.existsById(userId)) {
-            postDAO.delete(postId, userId);
+        UUID postUuid = UUID.fromString(postId);
+        UUID userUuid = UUID.fromString(userId);
+        if (postRepository.existsById(postUuid) && userRepository.existsById(userUuid)) {
+            postRepository.delete(postRepository.findById(postUuid).get());
         } else {
             throw new PostNotFoundException("Post not found");
         }
     }
 
-    /**
-     * Enriches a paged result of posts with their tags.
-     */
-    public PagedResult<PostRecord> mapToPostWithTags(PagedResult<PostRecord> source) {
-        List<PostRecord> content = source.content().stream()
-            .map(this::toPostWithTags)
-            .toList();
-        return new PagedResult<>(
-            content,
-            source.page(),
-            source.size(),
-            source.totalElements()
-        );
-    }
 
     /**
      * Enriches a single post record with its tags.
@@ -169,17 +231,16 @@ public class PostService {
             return null;
         }
         return new PostRecord(
-            post.id(),
-            post.title(),
-            post.content(),
-            post.status(),
-            post.author(),
-            post.createdAt(),
-            post.publishedDate(),
-            post.commentCount(),
-            post.userId(),
-            resolveTagsForPost(post.id())
-        );
+                post.id(),
+                post.title(),
+                post.content(),
+                post.status(),
+                post.author(),
+                post.createdAt(),
+                post.publishedDate(),
+                post.commentCount(),
+                post.userId(),
+                resolveTagsForPost(post.id()));
     }
 
     /**
@@ -192,8 +253,8 @@ public class PostService {
                 return List.of();
             }
             return tags.stream()
-                .map(TagRecord::tag)
-                .toList();
+                    .map(TagRecord::tag)
+                    .toList();
         } catch (DatabaseQueryException e) {
             // On error, return empty tags list rather than failing the whole request
             return List.of();

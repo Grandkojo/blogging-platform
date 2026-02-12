@@ -1,27 +1,28 @@
 package com.blogging_platform.service;
 
 import java.util.List;
+import java.util.UUID;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import com.blogging_platform.classes.CommentRecord;
-import com.blogging_platform.dao.interfaces.CommentDAO;
 import com.blogging_platform.exceptions.CommentNotFoundException;
 import com.blogging_platform.exceptions.DatabaseQueryException;
 import com.blogging_platform.model.Comment;
+import com.blogging_platform.repository.CommentRepository;
 
 /**
- * Application service for comments on posts. Delegates to {@link CommentDAO}.
+ * Application service for comments on posts. Uses JPA repositories and maps entities
+ * to {@link CommentRecord} DTOs.
  */
 @Service
 public class CommentService {
-    @Autowired
-    private CommentDAO commentDAO;
 
-    /** Creates a comment service with the given DAO. */
-    public CommentService(CommentDAO commentDAO) {
-        this.commentDAO = commentDAO;
+    private final CommentRepository commentRepository;
+
+    public CommentService(CommentRepository commentRepository) {
+        this.commentRepository = commentRepository;
     }
 
     /**
@@ -31,7 +32,7 @@ public class CommentService {
      * @throws DatabaseQueryException if the insert fails
      */
     public void addComment(Comment comment) throws DatabaseQueryException {
-        commentDAO.create(comment);
+        commentRepository.save(comment);
     }
 
     /**
@@ -42,7 +43,10 @@ public class CommentService {
      * @throws DatabaseQueryException if the query fails
      */
     public List<CommentRecord> getComments(String postId) throws DatabaseQueryException {
-        return commentDAO.getComments(postId);
+        UUID postUuid = UUID.fromString(postId);
+        return commentRepository.findByPost_IdOrderByDatetimeDesc(postUuid).stream()
+                .map(this::toRecord)
+                .toList();
     }
 
     /**
@@ -51,8 +55,10 @@ public class CommentService {
      * @return list of comment records
      * @throws DatabaseQueryException if the query fails
      */
-    public List<CommentRecord> getComments() throws DatabaseQueryException {
-        return commentDAO.getComments();
+    public List<CommentRecord> getComments(Pageable pageable) throws DatabaseQueryException {
+        return commentRepository.findAll(pageable).stream()
+                .map(this::toRecord)
+                .toList();
     }
 
     /**
@@ -64,18 +70,30 @@ public class CommentService {
      * @throws DatabaseQueryException if the query fails
      */
     public CommentRecord getComment(String commentId) throws DatabaseQueryException, CommentNotFoundException {
-        return commentDAO.getComment(commentId);
+        UUID id = UUID.fromString(commentId);
+        return commentRepository.findById(id)
+                .map(this::toRecord)
+                .orElseThrow(() -> new CommentNotFoundException(commentId));
     }
 
     /**
      * Updates an existing comment. Only the author may update.
      *
      * @param comment the comment with updated content
-     * @throws CommentNotFoundException if the comment does not exist
+     * @throws CommentNotFoundException if the comment does not exist or user mismatch
      * @throws DatabaseQueryException if the update fails
      */
     public void editComment(Comment comment) throws DatabaseQueryException, CommentNotFoundException {
-        commentDAO.edit(comment);
+        if (comment.getId() == null || comment.getUserId() == null) {
+            throw new CommentNotFoundException("Comment id and user id are required");
+        }
+        UUID id = comment.getId();
+        UUID userId = comment.getUserId();
+        Comment existing = commentRepository.findByIdAndUser_Id(id, userId)
+                .orElseThrow(() -> new CommentNotFoundException(id.toString()));
+
+        existing.setComment(comment.getComment());
+        commentRepository.save(existing);
     }
 
     /**
@@ -87,6 +105,23 @@ public class CommentService {
      * @throws DatabaseQueryException if the delete fails
      */
     public void deleteComment(String commentId, String userId) throws DatabaseQueryException, CommentNotFoundException {
-        commentDAO.delete(commentId, userId);
+        UUID id = UUID.fromString(commentId);
+        UUID userUuid = UUID.fromString(userId);
+        Comment existing = commentRepository.findByIdAndUser_Id(id, userUuid)
+                .orElseThrow(() -> new CommentNotFoundException(commentId));
+        commentRepository.delete(existing);
+    }
+
+    private CommentRecord toRecord(Comment c) {
+        if (c == null) {
+            return null;
+        }
+        return new CommentRecord(
+                c.getId() != null ? c.getId().toString() : null,
+                c.getPostId() != null ? c.getPostId().toString() : null,
+                c.getUserId() != null ? c.getUserId().toString() : null,
+                c.getUser() != null ? c.getUser().getName() : null,
+                c.getComment(),
+                c.getDatetime());
     }
 }
