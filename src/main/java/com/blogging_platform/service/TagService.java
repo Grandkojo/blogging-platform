@@ -3,6 +3,8 @@ package com.blogging_platform.service;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import com.blogging_platform.classes.TagRecord;
@@ -34,6 +36,7 @@ public class TagService {
      * @throws DuplicateResourceException if a tag with the same name exists
      * @throws DatabaseQueryException if the insert fails
      */
+    @CacheEvict(cacheNames = { "tags", "tagsByPost" }, allEntries = true)
     public void createTag(Tag tag) throws DatabaseQueryException, DuplicateResourceException {
         try {
             tagRepository.save(tag);
@@ -48,6 +51,7 @@ public class TagService {
      * @return list of tag records
      * @throws DatabaseQueryException if the query fails
      */
+    @Cacheable(cacheNames = "tags")
     public List<TagRecord> getAllTags() throws DatabaseQueryException {
         return tagRepository.findAll().stream()
                 .map(t -> new TagRecord(
@@ -94,6 +98,7 @@ public class TagService {
      * @param tagId  tag id
      * @throws DatabaseQueryException if the insert fails
      */
+    @CacheEvict(cacheNames = { "tagsByPost", "tags" }, allEntries = true)
     public void linkTagToPost(String postId, String tagId) throws DatabaseQueryException {
         UUID postUuid = UUID.fromString(postId);
         UUID tagUuid = UUID.fromString(tagId);
@@ -109,6 +114,7 @@ public class TagService {
      * @param postId post id
      * @throws DatabaseQueryException if the delete fails
      */
+    @CacheEvict(cacheNames = { "tagsByPost", "tags" }, allEntries = true)
     public void unlinkAllTagsFromPost(String postId) throws DatabaseQueryException {
         UUID postUuid = UUID.fromString(postId);
         Post post = postRepository.findById(postUuid).orElseThrow();
@@ -123,6 +129,7 @@ public class TagService {
      * @return list of tag records
      * @throws DatabaseQueryException if the query fails
      */
+    @Cacheable(cacheNames = "tagsByPost", key = "#postId")
     public List<TagRecord> getTagsByPostId(String postId) throws DatabaseQueryException {
         UUID postUuid = UUID.fromString(postId);
         return tagRepository.findByPosts_Id(postUuid).stream()

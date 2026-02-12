@@ -6,6 +6,8 @@ import java.util.UUID;
 
 import org.mindrot.jbcrypt.BCrypt;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import com.blogging_platform.classes.SessionManager;
@@ -36,6 +38,7 @@ public class UserService {
      * @param user the user (name, email, password, role)
      * @throws DuplicateEmailException if the email is already registered
      */
+    @CacheEvict(cacheNames = "users", allEntries = true)
     public void registerUser(User user) throws DuplicateEmailException {
         if(userRepository.existsByEmail(user.getEmail())){
             throw new DuplicateEmailException("An account with this email already exists");
@@ -67,6 +70,7 @@ public class UserService {
         throw new AuthenticationException("Invalid email or password");
     }
 
+    @Cacheable(cacheNames = "users")
     public List<UserRecord> getUsers() {
         return userRepository.findAll().stream()
         .map(u -> new UserRecord(

@@ -3,7 +3,6 @@ package com.blogging_platform.controller;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.blogging_platform.ApiResponse;
-import com.blogging_platform.classes.CacheManager;
 import com.blogging_platform.classes.PostRecord;
 import com.blogging_platform.model.Post;
 import com.blogging_platform.service.PostService;
@@ -45,16 +44,12 @@ import org.springframework.web.bind.annotation.PathVariable;
 public class PostController {
 
     private final PostService postService;
-    private final CacheManager cacheManager;
-    private final TagService tagService;
 
     /**
-     * Creates a controller with the required {@link PostService} and {@link CacheManager}.
+     * Creates a controller with the required {@link PostService}.
      */
-    public PostController(PostService postService, CacheManager cacheManager, TagService tagService) {
+    public PostController(PostService postService, TagService tagService) {
         this.postService = postService;
-        this.cacheManager = cacheManager;
-        this.tagService = tagService;
     }
 
     /**

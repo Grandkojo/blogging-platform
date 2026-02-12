@@ -4,11 +4,12 @@ import java.util.List;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import com.blogging_platform.classes.PostRecord;
-import com.blogging_platform.classes.PagedResult;
 import com.blogging_platform.classes.TagRecord;
 import com.blogging_platform.exceptions.DatabaseQueryException;
 import com.blogging_platform.exceptions.PostNotFoundException;
@@ -48,6 +49,7 @@ public class PostService {
      * @return the new post's id
      * @throws DatabaseQueryException if the insert fails
      */
+    @CacheEvict(cacheNames = { "posts", "postsById" }, allEntries = true)
     public void createPost(Post post) throws DatabaseQueryException {
         UUID userUuid = post.getUserId();
         if (userRepository.existsById(userUuid)) {
@@ -110,6 +112,7 @@ public class PostService {
      * @throws PostNotFoundException  if the post does not exist
      * @throws DatabaseQueryException if the query fails
      */
+    @Cacheable(cacheNames = "postsById", key = "#postId")
     public PostRecord getPost(String postId) throws DatabaseQueryException, PostNotFoundException {
         UUID postUuid = UUID.fromString(postId);
         PostRecord post = postRepository.findById(postUuid)
@@ -139,6 +142,7 @@ public class PostService {
      * @return list of published post records
      * @throws DatabaseQueryException if the query fails
      */
+    @Cacheable(cacheNames = "posts", key = "'all'")
     public List<PostRecord> getPosts() throws DatabaseQueryException {
         return postRepository.findAll().stream()
                 .map(p -> new PostRecord(
@@ -161,6 +165,7 @@ public class PostService {
      * @return list of published post records
      * @throws DatabaseQueryException if the query fails
      */
+    @Cacheable(cacheNames = "posts", key = "T(java.util.Objects).hash(#pageable.pageNumber, #pageable.pageSize, #pageable.sort)")
     public List<PostRecord> getPosts(Pageable pageable) throws DatabaseQueryException {
         return postRepository.findAll(pageable).stream()
                 .map(p -> new PostRecord(
@@ -185,6 +190,7 @@ public class PostService {
      * @throws DatabaseQueryException if the update fails
      */
     @Transactional
+    @CacheEvict(cacheNames = { "posts", "postsById" }, allEntries = true)
     public void updatePost(Post post, String postId) throws DatabaseQueryException, PostNotFoundException {
         UUID postUuid = UUID.fromString(postId);
         UUID userUuid = post.getUserId();
@@ -212,6 +218,7 @@ public class PostService {
      *                                own it
      * @throws DatabaseQueryException if the delete fails
      */
+    @CacheEvict(cacheNames = { "posts", "postsById" }, allEntries = true)
     public void deletePost(String postId, String userId) throws DatabaseQueryException, PostNotFoundException {
         UUID postUuid = UUID.fromString(postId);
         UUID userUuid = UUID.fromString(userId);
