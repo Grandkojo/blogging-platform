@@ -1,7 +1,11 @@
 package com.blogging_platform.controller;
 
 import java.util.List;
+import java.util.UUID;
 
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
 import org.springframework.graphql.data.method.annotation.MutationMapping;
@@ -13,6 +17,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.blogging_platform.ApiResponse;
@@ -48,8 +53,22 @@ public class CommentController {
      * GraphQL query that returns all comments.
      */
     @QueryMapping
-    public List<CommentRecord> getCommentss() {
-        return commentService.getComments();
+    public List<CommentRecord> getCommentss(
+        @Argument Integer page,
+        @Argument Integer size,
+        @Argument String sortBy,
+        @Argument String dir
+    ) {
+        int p = page != null ? page : 0;
+        int s = size != null ? size : 10;
+        String direction = dir != null ? dir : "DESC";
+
+        Sort sort = Sort.by(
+            Sort.Direction.fromString(direction),
+            sortBy
+        );
+        Pageable pagination = PageRequest.of(p, s, sort);
+        return commentService.getComments(pagination);
     }
 
     @Operation(
@@ -61,8 +80,19 @@ public class CommentController {
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Unexpected server error")
     })
     @GetMapping("/comments")
-    public ResponseEntity<ApiResponse<Object>> getComments() {
-        List<CommentRecord> comments = commentService.getComments();
+    public ResponseEntity<ApiResponse<Object>> getComments(
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "10") int size,
+        @RequestParam(required = false, defaultValue = "datetime") String sortBy,
+        @RequestParam(required = false, defaultValue = "DESC") String dir
+
+    ) {
+        Sort sort = Sort.by(
+            Sort.Direction.fromString(dir),
+            sortBy
+        );
+        Pageable pagination = PageRequest.of(page, size, sort);
+        List<CommentRecord> comments = commentService.getComments(pagination);
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK, comments, "Comments Fetched Successfully"));
     }
 
@@ -180,7 +210,7 @@ public class CommentController {
     })
     @PutMapping("comments/{id}")
     public ResponseEntity<ApiResponse<Object>> editPost(@PathVariable String id, @RequestBody Comment comment) {
-        comment.setId(id);
+        comment.setId(UUID.fromString(id));
         commentService.editComment(comment);
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.CREATED, null, "Comment Updated Successfully"));
 

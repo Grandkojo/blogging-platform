@@ -4,23 +4,24 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.blogging_platform.ApiResponse;
 import com.blogging_platform.classes.CacheManager;
-import com.blogging_platform.classes.PagedResult;
 import com.blogging_platform.classes.PostRecord;
 import com.blogging_platform.model.Post;
 import com.blogging_platform.service.PostService;
 import com.blogging_platform.service.TagService;
 
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.graphql.data.method.annotation.QueryMapping;
 import org.springframework.graphql.data.method.annotation.MutationMapping;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -65,12 +66,34 @@ public class PostController {
         @Argument String query,
         @Argument Integer page,
         @Argument Integer size,
-        @Argument String sortBy
+        @Argument String sortBy,
+        @Argument String dir
+
     ) {
         int p = page != null ? page : 0;
         int s = size != null ? size : 10;
-        PagedResult<PostRecord> posts = cacheManager.getPaginatedPublishedPosts(p, s, query, sortBy);
-        return postService.mapToPostWithTags(posts).content();
+        String direction = dir != null ? dir : "DESC";
+
+        Sort sort = Sort.by(
+            Sort.Direction.fromString(direction),
+            sortBy
+        );
+        Pageable pagination = PageRequest.of(p, s, sort);
+        List<PostRecord> posts = postService.getPosts(pagination);
+        List<PostRecord> dto = posts.stream()
+            .map(postService::toPostWithTags)
+            .toList();
+        return dto;
+    }
+
+    @QueryMapping
+    public List<PostRecord> getPostss(
+    ) {
+        List<PostRecord> posts = postService.getPosts();
+        List<PostRecord> dto = posts.stream()
+            .map(postService::toPostWithTags)
+            .toList();
+        return dto;
     }
 
     /**
@@ -83,35 +106,43 @@ public class PostController {
         return postService.toPostWithTags(postService.getPost(id));
     }
 
-    @Operation(
-        summary = "List posts (paginated)",
-        description = "Returns a paginated list of published posts, optionally filtered by search query (title, author, or tag) and sorted."
-    )
-    @ApiResponses({
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(
-            responseCode = "200",
-            description = "Posts fetched successfully",
-            content = @Content(schema = @Schema(implementation = ApiResponse.class))
-        ),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(
-            responseCode = "400",
-            description = "Invalid pagination parameters"
-        ),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(
-            responseCode = "500",
-            description = "Unexpected server error"
-        )
-    })
+    // @Operation(
+    //     summary = "List posts (paginated)",
+    //     description = "Returns a paginated list of published posts, optionally filtered by search query (title, author, or tag) and sorted."
+    // )
+    // @ApiResponses({
+    //     @io.swagger.v3.oas.annotations.responses.ApiResponse(
+    //         responseCode = "200",
+    //         description = "Posts fetched successfully",
+    //         content = @Content(schema = @Schema(implementation = ApiResponse.class))
+    //     ),
+    //     @io.swagger.v3.oas.annotations.responses.ApiResponse(
+    //         responseCode = "400",
+    //         description = "Invalid pagination parameters"
+    //     ),
+    //     @io.swagger.v3.oas.annotations.responses.ApiResponse(
+    //         responseCode = "500",
+    //         description = "Unexpected server error"
+    //     )
+    // })
     @GetMapping("/posts")
-    public ResponseEntity<ApiResponse<PagedResult<PostRecord>>> getPosts(
+    public ResponseEntity<ApiResponse<List<PostRecord>>> getPosts(
         @RequestParam(defaultValue = "0") int page,
         @RequestParam(defaultValue = "10") int size,
         @RequestParam(required = false) String query,
-        @RequestParam(required = false) String sortBy
+        @RequestParam(required = false, defaultValue = "createdAt") String sortBy,
+        @RequestParam(required = false, defaultValue = "DESC") String dir
+
     ) {
-        
-        PagedResult<PostRecord> posts = cacheManager.getPaginatedPublishedPosts(page, size, query, sortBy);
-        PagedResult<PostRecord> dto = postService.mapToPostWithTags(posts);
+        Sort sort = Sort.by(
+            Sort.Direction.fromString(dir),
+            sortBy
+        );
+        Pageable pagination = PageRequest.of(page, size, sort);
+        List<PostRecord> posts = postService.getPosts(pagination);
+        List<PostRecord> dto = posts.stream()
+            .map(postService::toPostWithTags)
+            .toList();
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK, dto, "Posts Fetched Successfully"));
     }
 
@@ -130,7 +161,7 @@ public class PostController {
         )
     })
     @GetMapping("/postss")
-    public ResponseEntity<ApiResponse<Object>> getPostsFull() {
+    public ResponseEntity<ApiResponse<List<PostRecord>>> getPostsFull() {
         List<PostRecord> posts = postService.getPosts();
         List<PostRecord> dto = posts.stream()
             .map(postService::toPostWithTags)
@@ -188,8 +219,8 @@ public class PostController {
     })
     @PostMapping("/posts")
     public ResponseEntity<ApiResponse<Object>> createPost(@Valid @RequestBody Post post) {
-        String postId = postService.createPost(post);  
-        return ResponseEntity.ok(ApiResponse.success(HttpStatus.CREATED, postId, "Post Created Successfully"));
+        postService.createPost(post);  
+        return ResponseEntity.ok(ApiResponse.success(HttpStatus.CREATED, null, "Post Created Successfully"));
       
     }
 
@@ -250,14 +281,18 @@ public class PostController {
      * GraphQL mutation to create a new post.
      */
     @MutationMapping(name = "createPost")
-    public String createPostMutation(
+    public void createPostMutation(
         @Argument String userId,
         @Argument String title,
         @Argument String content,
         @Argument String status
     ) {
-        Post post = new Post(userId, title, content, status);
-        return postService.createPost(post);
+        Post post = new Post();
+        post.setUserId(UUID.fromString(userId));
+        post.setTitle(title);
+        post.setContent(content);
+        post.setStatus(status);
+        postService.createPost(post);
     }
 
     /**
@@ -271,7 +306,11 @@ public class PostController {
         @Argument String content,
         @Argument String status
     ) {
-        Post post = new Post(userId, title, content, status);
+        Post post = new Post();
+        post.setUserId(UUID.fromString(userId));
+        post.setTitle(title);
+        post.setContent(content);
+        post.setStatus(status);
         postService.updatePost(post, id);
         return true;
     }

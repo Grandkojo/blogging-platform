@@ -40,6 +40,7 @@ type Review {
 
 type Query {
     getPosts(query: String, page: Int, size: Int, sortBy: String): [Post]
+    getPostss: [Post]
     getUserss: [User]
     getCommentss: [Comment]
     getCommentt(id: ID!): Comment

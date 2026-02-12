@@ -15,6 +15,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.graphql.data.method.annotation.QueryMapping;
 import org.springframework.graphql.data.method.annotation.MutationMapping;
@@ -100,14 +101,8 @@ public class UserController {
     })
     @PostMapping("/users/login")
     public ResponseEntity<ApiResponse<Object>> loginUser(@RequestBody User user) {
-        try {
-            UserRecord lUser = userService.loginUser(user.getEmail(), user.getPassword());
+            Optional<UserRecord> lUser = userService.login(user.getEmail(), user.getPassword());
             return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK, lUser, "User Login Successful"));
-        } catch (com.blogging_platform.exceptions.AuthenticationException ex) {
-            return ResponseEntity
-                .status(HttpStatus.UNAUTHORIZED)
-                .body(ApiResponse.error(HttpStatus.UNAUTHORIZED, ex.getMessage()));
-        }
     }
 
     @Operation(
@@ -119,11 +114,12 @@ public class UserController {
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "No active session"),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Unexpected server error")
     })
-    @PostMapping("/users/logout")
-    public ResponseEntity<ApiResponse<Object>> logoutUser() {
-        userService.logoutUser();
-        return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK, null, "User Logout Successful"));
-    }
+    
+    // @PostMapping("/users/logout")
+    // public ResponseEntity<ApiResponse<Object>> logoutUser() {
+    //     userService.logoutUser();
+    //     return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK, null, "User Logout Successful"));
+    // }
 
     /**
      * GraphQL mutation to register a new user.
@@ -144,20 +140,20 @@ public class UserController {
      * GraphQL mutation to authenticate a user and return their profile.
      */
     @MutationMapping
-    public UserRecord loginUser(
+    public Optional<UserRecord> loginUser(
         @Argument String email,
         @Argument String password
     ) {
-        return userService.loginUser(email, password);
+        return userService.login(email, password);
     }
 
     /**
      * GraphQL mutation to log out the current user.
      */
-    @MutationMapping
-    public Boolean logoutUserMutation() {
-        userService.logoutUser();
-        return true;
-    }
+    // @MutationMapping
+    // public Boolean logoutUserMutation() {
+    //     userService.logoutUser();
+    //     return true;
+    // }
     
 }

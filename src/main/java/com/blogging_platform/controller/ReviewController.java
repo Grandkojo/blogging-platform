@@ -1,6 +1,7 @@
 package com.blogging_platform.controller;
 
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.graphql.data.method.annotation.QueryMapping;
 import org.springframework.graphql.data.method.annotation.MutationMapping;
@@ -59,7 +60,7 @@ public class ReviewController {
         @Argument Integer rating,
         @Argument String message
     ) {
-        Review review = new Review(postId, userId, rating, message);
+        Review review = new Review(UUID.fromString(postId), UUID.fromString(userId), rating, message);
         reviewService.createReview(review);
         return true;
     }
@@ -75,7 +76,7 @@ public class ReviewController {
         @Argument Integer rating,
         @Argument String message
     ) {
-        Review review = new Review(id, postId, userId, rating, message);
+        Review review = new Review(id, UUID.fromString(postId), UUID.fromString(userId), rating, message);
         reviewService.updateReview(review);
         return true;
     }
@@ -166,7 +167,7 @@ public class ReviewController {
     })
     @PutMapping("reviews/{id}")
     public ResponseEntity<ApiResponse<Object>> editReview(@PathVariable String id, @RequestBody Review review) {
-        review.setId(id);
+        review.setId(UUID.fromString(id));
         reviewService.updateReview(review);
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.CREATED, null, "Review Updated Successfully"));
 
