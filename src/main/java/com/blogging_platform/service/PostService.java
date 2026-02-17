@@ -1,6 +1,7 @@
 package com.blogging_platform.service;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +14,7 @@ import com.blogging_platform.classes.PostRecord;
 import com.blogging_platform.classes.TagRecord;
 import com.blogging_platform.exceptions.DatabaseQueryException;
 import com.blogging_platform.exceptions.PostNotFoundException;
+import com.blogging_platform.exceptions.ValidationException;
 import com.blogging_platform.model.Post;
 import com.blogging_platform.repository.CommentRepository;
 import com.blogging_platform.repository.PostRepository;
@@ -55,7 +57,10 @@ public class PostService {
     @CacheEvict(cacheNames = { "posts", "postsById" }, allEntries = true)
     public void createPost(Post post) throws DatabaseQueryException {
         UUID userUuid = post.getUserId();
-        if (userRepository.existsById(userUuid)) {
+        if (userUuid == null) {
+            throw new ValidationException("userId is required");
+        }
+        if (userRepository.existsById(Objects.requireNonNull(userUuid, "userId is required"))) {
             if ("PUBLISH".equalsIgnoreCase(post.getStatus())) {
                 post.setIsPublish(true);
                 post.setStatus("PUBLISHED");
@@ -90,8 +95,11 @@ public class PostService {
      * @throws DatabaseQueryException if the query fails
      */
     public PostRecord getPost(String postId, String userId) throws DatabaseQueryException, PostNotFoundException {
-        UUID ownerId = UUID.fromString(userId);
-        UUID postUuid = UUID.fromString(postId);
+        if (postId == null || userId == null) {
+            throw new ValidationException("postId and userId are required");
+        }
+        UUID ownerId = Objects.requireNonNull(UUID.fromString(userId), "userId is required");
+        UUID postUuid = Objects.requireNonNull(UUID.fromString(postId), "postId is required");
         Post post = postRepository.findByIdAndUser_Id(postUuid, ownerId)
                 .orElseThrow(() -> new PostNotFoundException(postId));
         return new PostRecord(
@@ -117,7 +125,10 @@ public class PostService {
      */
     @Cacheable(cacheNames = "postsById", key = "#postId")
     public PostRecord getPost(String postId) throws DatabaseQueryException, PostNotFoundException {
-        UUID postUuid = UUID.fromString(postId);
+        if (postId == null) {
+            throw new ValidationException("postId is required");
+        }
+        UUID postUuid = Objects.requireNonNull(UUID.fromString(postId), "postId is required");
         PostRecord post = postRepository.findById(postUuid)
                 .map(p -> new PostRecord(
                         p.getId() != null ? p.getId().toString() : null,
@@ -136,7 +147,10 @@ public class PostService {
     }
 
     public boolean existsById(String postId) {
-        return postRepository.existsById(UUID.fromString(postId));
+        if (postId == null) {
+            throw new ValidationException("postId is required");
+        }
+        return postRepository.existsById(Objects.requireNonNull(UUID.fromString(postId), "postId is required"));
     }
 
     /**
@@ -149,7 +163,31 @@ public class PostService {
      */
     @Cacheable(cacheNames = "posts", key = "'all'")
     public List<PostRecord> getPosts(String query, Pageable pagination) throws DatabaseQueryException {
-        return mapToRecords(postRepository.findAll());
+        if (pagination == null) {
+            // Unpaged query
+            if (query == null || query.isBlank()) {
+                return mapToRecords(postRepository.findAll());
+            }
+            return mapToRecords(postRepository.searchByTitleAuthorOrTag(query, Pageable.unpaged()).getContent());
+        }
+
+        // Paged query
+        if (query == null || query.isBlank()) {
+            return mapToRecords(postRepository.findAll(pagination).getContent());
+        }
+        return mapToRecords(postRepository.searchByTitleAuthorOrTag(query, pagination).getContent());
+    }
+
+    /**
+     * Returns all published posts without pagination.
+     *
+     * <p>This convenience overload exists for legacy call sites and tests.</p>
+     *
+     * @return list of published post records
+     * @throws DatabaseQueryException if the query fails
+     */
+    public List<PostRecord> getPosts() throws DatabaseQueryException {
+        return getPosts((Pageable) null);
     }
 
     /**
@@ -176,9 +214,15 @@ public class PostService {
     @Transactional
     @CacheEvict(cacheNames = { "posts", "postsById" }, allEntries = true)
     public void updatePost(Post post, String postId) throws DatabaseQueryException, PostNotFoundException {
-        UUID postUuid = UUID.fromString(postId);
         UUID userUuid = post.getUserId();
-        if (postRepository.existsById(postUuid) && userRepository.existsById(userUuid)) {
+        if (postId == null) {
+            throw new ValidationException("postId is required");
+        }
+        if (userUuid == null) {
+            throw new ValidationException("userId is required");
+        }
+        UUID postUuid = Objects.requireNonNull(UUID.fromString(postId), "postId is required");
+        if (postRepository.existsById(postUuid) && userRepository.existsById(Objects.requireNonNull(userUuid, "userId is required"))) {
             if ("PUBLISH".equalsIgnoreCase(post.getStatus())) {
                 post.setIsPublish(true);
                 post.setStatus("PUBLISHED");
@@ -204,10 +248,18 @@ public class PostService {
      */
     @CacheEvict(cacheNames = { "posts", "postsById" }, allEntries = true)
     public void deletePost(String postId, String userId) throws DatabaseQueryException, PostNotFoundException {
-        UUID postUuid = UUID.fromString(postId);
-        UUID userUuid = UUID.fromString(userId);
+        if (postId == null || userId == null) {
+            throw new ValidationException("postId and userId are required");
+        }
+        UUID postUuid = Objects.requireNonNull(UUID.fromString(postId), "postId is required");
+        UUID userUuid = Objects.requireNonNull(UUID.fromString(userId), "userId is required");
         if (postRepository.existsById(postUuid) && userRepository.existsById(userUuid)) {
-            postRepository.delete(postRepository.findById(postUuid).get());
+            Post post = Objects.requireNonNull(
+                    postRepository.findById(postUuid)
+                            .orElseThrow(() -> new PostNotFoundException("Post not found")),
+                    "post must not be null"
+            );
+            postRepository.delete(post);
         } else {
             throw new PostNotFoundException("Post not found");
         }
@@ -254,17 +306,24 @@ public class PostService {
 
     private List<PostRecord> mapToRecords(List<Post> posts) {
         return posts.stream()
-                .map(p -> new PostRecord(
-                        p.getId() != null ? p.getId().toString() : null,
-                        p.getTitle(),
-                        p.getContent(),
-                        p.getStatus(),
-                        p.getUser() != null ? p.getUser().getName() : null,
-                        p.getCreatedAt(),
-                        p.getPublishedDatetime(),
-                        (int) commentRepository.countByPost_Id(p.getId()),
-                        p.getUser() != null && p.getUser().getId() != null ? p.getUser().getId().toString() : null,
-                        null))
+                .filter(Objects::nonNull)
+                .map(p -> {
+                    UUID postId = p.getId();
+                    int commentCount = postId != null
+                        ? (int) commentRepository.countByPost_Id(postId)
+                        : 0;
+                    return new PostRecord(
+                            postId != null ? postId.toString() : null,
+                            p.getTitle(),
+                            p.getContent(),
+                            p.getStatus(),
+                            p.getUser() != null ? p.getUser().getName() : null,
+                            p.getCreatedAt(),
+                            p.getPublishedDatetime(),
+                            commentCount,
+                            p.getUser() != null && p.getUser().getId() != null ? p.getUser().getId().toString() : null,
+                            null);
+                })
                 .toList();
     }
 }
