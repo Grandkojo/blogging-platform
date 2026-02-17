@@ -74,7 +74,9 @@ public class PostController {
             sortBy != null ? sortBy : "createdAt"
         );
         Pageable pagination = PageRequest.of(p, s, sort);
-        List<PostRecord> posts = postService.getPosts(query, pagination);
+        List<PostRecord> posts = (query == null || query.isBlank())
+            ? postService.getPosts(pagination)
+            : postService.getPosts(query, pagination);
         List<PostRecord> dto = posts.stream()
             .map(postService::toPostWithTags)
             .toList();
@@ -84,7 +86,7 @@ public class PostController {
     @QueryMapping
     public List<PostRecord> getPostss(
     ) {
-        List<PostRecord> posts = postService.getPosts(null);
+        List<PostRecord> posts = postService.getPosts();
         List<PostRecord> dto = posts.stream()
             .map(postService::toPostWithTags)
             .toList();
@@ -129,12 +131,16 @@ public class PostController {
         @RequestParam(required = false, defaultValue = "DESC") String dir
 
     ) {
+        String safeDir = dir != null ? dir : "DESC";
+        String safeSortBy = sortBy != null ? sortBy : "createdAt";
         Sort sort = Sort.by(
-            Sort.Direction.fromString(dir),
-            sortBy
+            Sort.Direction.fromString(safeDir),
+            safeSortBy
         );
         Pageable pagination = PageRequest.of(page, size, sort);
-        List<PostRecord> posts = postService.getPosts(query, pagination);
+        List<PostRecord> posts = (query == null || query.isBlank())
+            ? postService.getPosts(pagination)
+            : postService.getPosts(query, pagination);
         List<PostRecord> dto = posts.stream()
             .map(postService::toPostWithTags)
             .toList();
@@ -157,7 +163,7 @@ public class PostController {
     })
     @GetMapping("/postss")
     public ResponseEntity<ApiResponse<List<PostRecord>>> getPostsFull() {
-        List<PostRecord> posts = postService.getPosts(null);
+        List<PostRecord> posts = postService.getPosts();
         List<PostRecord> dto = posts.stream()
             .map(postService::toPostWithTags)
             .toList();
