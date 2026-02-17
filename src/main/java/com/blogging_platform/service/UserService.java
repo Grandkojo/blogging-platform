@@ -4,13 +4,11 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import org.mindrot.jbcrypt.BCrypt;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import com.blogging_platform.classes.SessionManager;
 import com.blogging_platform.classes.UserRecord;
 import com.blogging_platform.exceptions.AuthenticationException;
 import com.blogging_platform.exceptions.DuplicateEmailException;
@@ -24,12 +22,13 @@ import com.blogging_platform.repository.UserRepository;
 @Service
 public class UserService {
 
-    @Autowired
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
     /** Creates a user service with the repository. */
-    public UserService(UserRepository userRepository) {
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     /**
@@ -44,9 +43,8 @@ public class UserService {
             throw new DuplicateEmailException("An account with this email already exists");
         }
 
-        String hashed = BCrypt.hashpw(user.getPassword(), BCrypt.gensalt());
         user.setId(UUID.randomUUID());
-        user.setPassword(hashed);
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
         userRepository.save(user);
     }
 
@@ -63,7 +61,7 @@ public class UserService {
         Optional<User> userEntity = userRepository.findByEmail(email);
         if (userEntity.isPresent()) {
             User user = userEntity.get();
-            if(BCrypt.checkpw(password, user.getPassword())){
+            if(passwordEncoder.matches(password, user.getPassword())){
                 return Optional.of(new UserRecord(user.getId().toString(), user.getName(), user.getEmail(), user.getRole()));
             }
         } 

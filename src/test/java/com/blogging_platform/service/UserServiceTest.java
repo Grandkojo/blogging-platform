@@ -2,7 +2,6 @@ package com.blogging_platform.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -13,13 +12,11 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mindrot.jbcrypt.BCrypt;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
-import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.blogging_platform.classes.UserRecord;
 import com.blogging_platform.exceptions.AuthenticationException;
@@ -31,6 +28,9 @@ class UserServiceTest {
 
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private PasswordEncoder passwordEncoder;
 
     @InjectMocks
     private UserService userService;
@@ -45,17 +45,13 @@ class UserServiceTest {
         User user = new User("John Doe", "john@example.com", "plainPassword", "USER");
 
         when(userRepository.existsByEmail(user.getEmail())).thenReturn(false);
+        when(passwordEncoder.encode("plainPassword")).thenReturn("hashedPassword");
 
-        try (MockedStatic<BCrypt> bCryptMock = Mockito.mockStatic(BCrypt.class)) {
-            bCryptMock.when(() -> BCrypt.gensalt()).thenReturn("salt");
-            bCryptMock.when(() -> BCrypt.hashpw("plainPassword", "salt")).thenReturn("hashedPassword");
-
-            userService.registerUser(user);
-        }
+        userService.registerUser(user);
 
         ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
         verify(userRepository).save(captor.capture());
-        User saved = captor.getValue();
+        User saved = java.util.Objects.requireNonNull(captor.getValue(), "saved user must not be null");
 
         assertEquals("hashedPassword", saved.getPassword());
     }
@@ -67,7 +63,7 @@ class UserServiceTest {
 
         assertThrows(DuplicateEmailException.class, () -> userService.registerUser(user));
 
-        verify(userRepository, never()).save(any(User.class));
+        verify(userRepository, never()).save(org.mockito.ArgumentMatchers.any(User.class));
     }
 
     @Test
@@ -80,15 +76,12 @@ class UserServiceTest {
         user.setId(id);
 
         when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches(password, "hashed")).thenReturn(true);
 
-        try (MockedStatic<BCrypt> bCryptMock = Mockito.mockStatic(BCrypt.class)) {
-            bCryptMock.when(() -> BCrypt.checkpw(password, "hashed")).thenReturn(true);
+        Optional<UserRecord> result = userService.login(email, password);
 
-            Optional<UserRecord> result = userService.login(email, password);
-
-            assertEquals(true, result.isPresent());
-            assertEquals(email, result.get().email());
-        }
+        assertEquals(true, result.isPresent());
+        assertEquals(email, result.get().email());
     }
 
     @Test

@@ -38,6 +38,15 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error(HttpStatus.UNAUTHORIZED, ex.getMessage()));
     }
 
+    @ExceptionHandler(org.springframework.security.core.AuthenticationException.class)
+    public ResponseEntity<ApiResponse<Object>> handleSpringSecurityAuthenticationException(
+            org.springframework.security.core.AuthenticationException ex
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(ApiResponse.error(HttpStatus.UNAUTHORIZED, "Invalid credentials"));
+    }
+
     @ExceptionHandler(DatabaseQueryException.class)
     public ResponseEntity<ApiResponse<Object>> handleDatabaseQueryException(DatabaseQueryException ex) {
         // Server-side database error

@@ -5,7 +5,7 @@ It provides user authentication, post management with tags, reviews and comments
 
 ## Features
 
-- **User Management**: Registration and authentication with role-based access (Admin/Regular)
+- **User Management**: Registration and authentication with JWT-based login and role-based access (Admin/Regular)
 - **Post Management**: Create, edit, delete, and publish blog posts with draft/published status
 - **Tag System**: Categorize posts with tags; create tags (Admin only); link tags to posts
 - **Review System**: Rate posts (1–5 stars) with messages; view average ratings; edit/delete reviews (author or admin post-owner)
@@ -110,11 +110,14 @@ The project uses the following key dependencies (managed via Maven):
   - `spring-boot-starter-data-jpa` – JPA/Hibernate data access
   - `spring-boot-starter-jdbc` – JDBC support where needed
   - `spring-boot-starter-validation` – Bean validation (Jakarta Validation)
-  - `spring-boot-starter-aop` – cross-cutting logging and performance monitoring
+  - `spring-boot-starter-aspectj` – cross-cutting logging and performance monitoring
   - `spring-boot-starter-cache` – Spring Cache abstraction (posts, users, tags)
+  - `spring-boot-starter-security` – authentication/authorization infrastructure
+  - `spring-boot-starter-oauth2-resource-server` – JWT validation for Bearer tokens
+  - `spring-boot-starter-oauth2-client` – OAuth2 client support (for Google login in BEM‑07)
 - **springdoc-openapi** – interactive REST docs at `/swagger-ui.html`
 - **MySQL Connector/J** – MySQL database driver
-- **jBCrypt 0.4** – Password hashing library
+- **BCrypt (Spring Security)** – Password hashing via `BCryptPasswordEncoder`
 
 ### Test Dependencies
 
@@ -144,6 +147,31 @@ mvn spring-boot:run
 - **GraphQL endpoint** at `/graphql` with schema defined in `src/main/resources/graphql/schema.graphqls`.
 - Authentication and user management handled via REST controllers and `UserService`.
 - Posts, comments, reviews, and tags are all backed by JPA entities and repositories.
+
+### Security (BEM‑07 Spring Security)
+
+- **JWT Authentication**:
+  - `POST /api/v1/auth/register` – register a new user (name, email, password, role).
+  - `POST /api/v1/auth/login` – authenticate and receive a signed JWT:
+    - Claims include subject (email), issuer, issue/expiry times, `jti`, and `roles`.
+  - `POST /api/v1/auth/logout` – revoke the current JWT (in‑memory blacklist by `jti` until expiry).
+  - All protected endpoints (e.g. `GET /api/v1/posts`) require `Authorization: Bearer <token>`.
+- **Password Hashing**:
+  - All stored passwords are hashed using `BCryptPasswordEncoder` from Spring Security.
+- **Error Handling**:
+  - Spring Security authentication failures are mapped to `401 Unauthorized` with a consistent JSON payload via `GlobalExceptionHandler`.
+
+#### Testing JWT with Postman/Insomnia
+
+1. `POST /api/v1/auth/register` with JSON body:
+   ```json
+   { "name": "Jane Doe", "email": "jane@example.com", "password": "password123", "role": "READER" }
+   ```
+2. `POST /api/v1/auth/login` with the same email/password to obtain the `accessToken`.
+3. Call a protected endpoint such as:
+   - `GET /api/v1/posts`
+   - Header: `Authorization: Bearer <accessToken>`
+4. Without the header (or with a tampered/expired token) the API responds with `401 Unauthorized`.
 
 ## Testing
 
