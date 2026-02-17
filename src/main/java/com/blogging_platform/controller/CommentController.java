@@ -29,6 +29,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 /**
  * REST and GraphQL controller for comments on posts.
@@ -146,6 +147,7 @@ public class CommentController {
      * GraphQL mutation to create a new comment on a post.
      */
     @MutationMapping(name = "createComment")
+    @PreAuthorize("hasAnyRole('ADMIN','READER')")
     public Boolean createCommentMutation(
         @Argument String userId,
         @Argument String postId,
@@ -160,6 +162,7 @@ public class CommentController {
      * GraphQL mutation to update an existing comment.
      */
     @MutationMapping(name = "updateComment")
+    @PreAuthorize("hasAnyRole('ADMIN','READER')")
     public Boolean updateCommentMutation(
         @Argument String id,
         @Argument String userId,
@@ -174,6 +177,7 @@ public class CommentController {
      * GraphQL mutation to delete a comment for a given user.
      */
     @MutationMapping(name = "deleteComment")
+    @PreAuthorize("hasAnyRole('ADMIN','READER')")
     public Boolean deleteCommentMutation(
         @Argument String userId,
         @Argument String id
@@ -193,6 +197,7 @@ public class CommentController {
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Unexpected server error")
     })
     @PostMapping("/comments")
+    @PreAuthorize("hasAnyRole('ADMIN','READER')")
     public ResponseEntity<ApiResponse<Object>> createComment(@Valid @RequestBody Comment comment) {
         commentService.addComment(comment);  
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.CREATED, null, "Comment Added Successfully"));
@@ -205,10 +210,13 @@ public class CommentController {
     )
     @ApiResponses({
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Comment updated successfully"),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Comment not found or user not author"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Post does not match comment or missing required fields"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "User is not the author of this comment"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Comment with id not found"),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Unexpected server error")
     })
     @PutMapping("comments/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN','READER')")
     public ResponseEntity<ApiResponse<Object>> editPost(@PathVariable String id, @RequestBody Comment comment) {
         comment.setId(UUID.fromString(id));
         commentService.editComment(comment);
@@ -222,10 +230,12 @@ public class CommentController {
     )
     @ApiResponses({
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "202", description = "Comment deleted successfully"),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Comment not found or user not author"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "User is not the author of this comment"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Comment with id not found"),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Unexpected server error")
     })
     @DeleteMapping("/{userId}/comments/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN','READER')")
     public ResponseEntity<ApiResponse<Object>> deletePost(@PathVariable String userId, @PathVariable String id) {
         commentService.deleteComment(id, userId);
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.ACCEPTED, null, "Comment Deleted Successfully"));

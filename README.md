@@ -160,6 +160,12 @@ mvn spring-boot:run
   - All stored passwords are hashed using `BCryptPasswordEncoder` from Spring Security.
 - **Error Handling**:
   - Spring Security authentication failures are mapped to `401 Unauthorized` with a consistent JSON payload via `GlobalExceptionHandler`.
+- **Update/Delete error responses** (comments, posts, reviews):
+  - **404 Not Found** – The resource (comment/post/review) with the given id does not exist, or (for post update/delete) the user id does not exist. Message examples: `"Comment with id '...' not found."`, `"Post with id '...' not found."`, `"User with id '...' not found."`, `"Review with id '...' not found."`
+  - **403 Forbidden** – The authenticated user is not the author of the resource. Message examples: `"User is not the author of this comment."`, `"User is not the author of this post."`, `"User is not the author of this review."`
+  - **400 Bad Request** – Validation failed (e.g. post id in body does not match the comment/review, or required fields missing). Message examples: `"Post does not match this comment."`, `"Comment id and user id are required."`
+
+Interactive REST API documentation (including these response codes per endpoint) is available at `/swagger-ui.html` when the application is running.
 
 #### Testing JWT with Postman/Insomnia
 
@@ -287,6 +293,8 @@ The service layer is instrumented with Spring AOP to provide centralized logging
 
 ### Latest Changes (2026)
 
+- **Update/Delete error clarity (comments, posts, reviews)**:
+  - Comment, post, and review update/delete now return distinct HTTP status and messages: **404** when the resource or user is not found, **403** when the user is not the author, **400** when the body is invalid (e.g. post id does not match). OpenAPI annotations and this README document these responses.
 - **BEM‑05 Web & GraphQL**: Spring Boot REST controllers and GraphQL mappings for posts, users, comments, reviews, and tags.
 - **BEM‑05 Validation & Exceptions**: Centralized validation and error handling via `GlobalExceptionHandler` and `GraphQLExceptionHandler`, with bean validation constraints.
 - **BEM‑05 AOP Logging & Monitoring**: `ServiceLoggingAspect` for request tracing and performance metrics on service methods.

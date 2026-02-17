@@ -17,6 +17,7 @@ import java.util.List;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 
 
@@ -40,6 +41,7 @@ public class UserController {
      * GraphQL query that returns all users.
      */
     @QueryMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public List<UserRecord> getUserss() {
         return userService.getUsers();
     }
@@ -60,6 +62,7 @@ public class UserController {
         )
     })
     @GetMapping("/users")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Object>> getUsers() {
         List<UserRecord> users = userService.getUsers();
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK, users, "Users Fetched Successfully"));

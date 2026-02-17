@@ -6,8 +6,11 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 
 import com.blogging_platform.classes.ReviewRecord;
+import com.blogging_platform.exceptions.AuthorizationException;
 import com.blogging_platform.exceptions.DatabaseQueryException;
 import com.blogging_platform.exceptions.DuplicateResourceException;
+import com.blogging_platform.exceptions.ReviewNotFoundException;
+import com.blogging_platform.exceptions.ValidationException;
 import com.blogging_platform.model.Review;
 import com.blogging_platform.repository.ReviewRepository;
 
@@ -84,25 +87,50 @@ public class ReviewService {
     }
 
     /**
-     * Updates an existing review.
+     * Updates an existing review. Only the author may update.
      *
-     * @param review the review with updated rating/message
+     * @param review the review with id, userId, and updated rating/message
+     * @throws ReviewNotFoundException if the review does not exist
+     * @throws AuthorizationException if the user is not the author of the review
+     * @throws ValidationException if postId in body does not match the review's post
      * @throws DatabaseQueryException if the update fails
      */
-    public void updateReview(Review review) throws DatabaseQueryException {
-        reviewRepository.save(review);
+    public void updateReview(Review review) throws DatabaseQueryException, ReviewNotFoundException, AuthorizationException, ValidationException {
+        if (review.getId() == null) {
+            throw new ValidationException("Review id is required");
+        }
+        if (review.getUserId() == null) {
+            throw new ValidationException("User id is required");
+        }
+        Review existing = reviewRepository.findById(review.getId())
+                .orElseThrow(() -> new ReviewNotFoundException("Review with id '" + review.getId() + "' not found.", null));
+        if (!existing.getUserId().equals(review.getUserId())) {
+            throw new AuthorizationException("User is not the author of this review.");
+        }
+        if (review.getPostId() != null && !review.getPostId().equals(existing.getPostId())) {
+            throw new ValidationException("Post does not match this review.");
+        }
+        existing.setRating(review.getRating());
+        existing.setMessage(review.getMessage());
+        reviewRepository.save(existing);
     }
 
     /**
      * Deletes a review by id for a given user.
      *
+     * <p>Only the author of the review may delete it; admins are expected to be
+     * enforced at a higher layer (e.g. method security).</p>
+     *
      * @param reviewId review id
-     * @param userId   user id requesting the delete (ownership/authorization enforced in DAO)
+     * @param userId   user id requesting the delete
      * @throws DatabaseQueryException if the delete fails
      */
     public void deleteReview(String reviewId, String userId) throws DatabaseQueryException {
         UUID id = UUID.fromString(reviewId);
-        reviewRepository.deleteById(id);
+        UUID userUuid = UUID.fromString(userId);
+        reviewRepository.findById(id)
+                .filter(r -> userUuid.equals(r.getUserId()))
+                .ifPresent(reviewRepository::delete);
     }
 
     /**

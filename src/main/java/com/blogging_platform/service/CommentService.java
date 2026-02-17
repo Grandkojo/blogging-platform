@@ -1,5 +1,6 @@
 package com.blogging_platform.service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -7,8 +8,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import com.blogging_platform.classes.CommentRecord;
+import com.blogging_platform.exceptions.AuthorizationException;
 import com.blogging_platform.exceptions.CommentNotFoundException;
 import com.blogging_platform.exceptions.DatabaseQueryException;
+import com.blogging_platform.exceptions.ValidationException;
 import com.blogging_platform.model.Comment;
 import com.blogging_platform.repository.CommentRepository;
 
@@ -29,12 +32,15 @@ public class CommentService {
     }
 
     /**
-     * Adds a new comment to a post.
+     * Adds a new comment to a post. Sets creation datetime if not already set.
      *
      * @param comment the comment (content, user id, post id)
      * @throws DatabaseQueryException if the insert fails
      */
     public void addComment(Comment comment) throws DatabaseQueryException {
+        if (comment.getDatetime() == null) {
+            comment.setDatetime(LocalDateTime.now());
+        }
         commentRepository.save(comment);
     }
 
@@ -83,18 +89,25 @@ public class CommentService {
      * Updates an existing comment. Only the author may update.
      *
      * @param comment the comment with updated content
-     * @throws CommentNotFoundException if the comment does not exist or user mismatch
+     * @throws CommentNotFoundException if the comment does not exist
+     * @throws AuthorizationException if the user is not the author of the comment
+     * @throws ValidationException if postId in body does not match the comment's post
      * @throws DatabaseQueryException if the update fails
      */
-    public void editComment(Comment comment) throws DatabaseQueryException, CommentNotFoundException {
+    public void editComment(Comment comment) throws DatabaseQueryException, CommentNotFoundException, AuthorizationException, ValidationException {
         if (comment.getId() == null || comment.getUserId() == null) {
-            throw new CommentNotFoundException("Comment id and user id are required");
+            throw new ValidationException("Comment id and user id are required");
         }
         UUID id = comment.getId();
         UUID userId = comment.getUserId();
-        Comment existing = commentRepository.findByIdAndUser_Id(id, userId)
-                .orElseThrow(() -> new CommentNotFoundException(id.toString()));
-
+        Comment existing = commentRepository.findById(id)
+                .orElseThrow(() -> new CommentNotFoundException("Comment with id '" + id + "' not found.", null));
+        if (!existing.getUserId().equals(userId)) {
+            throw new AuthorizationException("User is not the author of this comment.");
+        }
+        if (comment.getPostId() != null && !comment.getPostId().equals(existing.getPostId())) {
+            throw new ValidationException("Post does not match this comment.");
+        }
         existing.setComment(comment.getComment());
         commentRepository.save(existing);
     }

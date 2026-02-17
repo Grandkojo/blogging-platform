@@ -7,6 +7,7 @@ import org.springframework.graphql.data.method.annotation.MutationMapping;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -50,6 +51,7 @@ public class TagController {
      * GraphQL mutation to create a new tag.
      */
     @MutationMapping(name = "createTag")
+    @PreAuthorize("hasRole('ADMIN')")
     public Boolean createTagMutation(@Argument String tag) {
         Tag t = new Tag(tag);
         tagService.createTag(t);
@@ -60,6 +62,7 @@ public class TagController {
      * GraphQL mutation to link an existing tag to a post.
      */
     @MutationMapping(name = "linkTagToPost")
+    @PreAuthorize("hasRole('ADMIN')")
     public Boolean linkTagToPostMutation(
         @Argument String tagId,
         @Argument String postId
@@ -72,6 +75,7 @@ public class TagController {
      * GraphQL mutation to unlink all tags from a post.
      */
     @MutationMapping(name = "unlinkTagsFromPost")
+    @PreAuthorize("hasRole('ADMIN')")
     public Boolean unlinkTagsFromPostMutation(@Argument String postId) {
         tagService.unlinkAllTagsFromPost(postId);
         return true;
@@ -148,6 +152,7 @@ public class TagController {
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Unexpected server error")
     })
     @PostMapping("/tags")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Object>> createPost(@Valid @RequestBody Tag tag) {
         tagService.createTag(tag);  
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.CREATED, null, "Tag Created Successfully"));
@@ -164,6 +169,7 @@ public class TagController {
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Unexpected server error")
     })
     @GetMapping("tags/{tagId}/link-to-post/{postId}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Object>> linkTagToPost(@PathVariable String tagId, @PathVariable String postId) {
         tagService.linkTagToPost(postId, tagId);
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.ACCEPTED, null, "Tag Linked to Post Successfully"));
@@ -179,6 +185,7 @@ public class TagController {
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Unexpected server error")
     })
     @GetMapping("tags/unlink-from-post/{postId}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Object>> unlinkTagsFromPost(@PathVariable String postId) {
         tagService.unlinkAllTagsFromPost(postId);
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.ACCEPTED, null, "All Tags Unlinked from Post Successfully"));

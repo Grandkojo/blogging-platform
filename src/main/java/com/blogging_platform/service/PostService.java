@@ -12,8 +12,10 @@ import org.springframework.stereotype.Service;
 
 import com.blogging_platform.classes.PostRecord;
 import com.blogging_platform.classes.TagRecord;
+import com.blogging_platform.exceptions.AuthorizationException;
 import com.blogging_platform.exceptions.DatabaseQueryException;
 import com.blogging_platform.exceptions.PostNotFoundException;
+import com.blogging_platform.exceptions.UserNotFoundException;
 import com.blogging_platform.exceptions.ValidationException;
 import com.blogging_platform.model.Post;
 import com.blogging_platform.repository.CommentRepository;
@@ -213,7 +215,7 @@ public class PostService {
      */
     @Transactional
     @CacheEvict(cacheNames = { "posts", "postsById" }, allEntries = true)
-    public void updatePost(Post post, String postId) throws DatabaseQueryException, PostNotFoundException {
+    public void updatePost(Post post, String postId) throws DatabaseQueryException, PostNotFoundException, UserNotFoundException, AuthorizationException {
         UUID userUuid = post.getUserId();
         if (postId == null) {
             throw new ValidationException("postId is required");
@@ -222,19 +224,26 @@ public class PostService {
             throw new ValidationException("userId is required");
         }
         UUID postUuid = Objects.requireNonNull(UUID.fromString(postId), "postId is required");
-        if (postRepository.existsById(postUuid) && userRepository.existsById(Objects.requireNonNull(userUuid, "userId is required"))) {
-            if ("PUBLISH".equalsIgnoreCase(post.getStatus())) {
-                post.setIsPublish(true);
-                post.setStatus("PUBLISHED");
-            } else {
-                post.setIsPublish(false);
-                post.setStatus("DRAFT");
-            }
-            post.setId(postUuid);
-            postRepository.save(post);
-        } else {
-            throw new PostNotFoundException("Post not found");
+        if (!postRepository.existsById(postUuid)) {
+            throw new PostNotFoundException("Post with id '" + postId + "' not found.", null);
         }
+        if (!userRepository.existsById(userUuid)) {
+            throw new UserNotFoundException("User with id '" + userUuid + "' not found.", null);
+        }
+        Post existing = postRepository.findById(postUuid)
+                .orElseThrow(() -> new PostNotFoundException("Post with id '" + postId + "' not found.", null));
+        if (!existing.getUserId().equals(userUuid)) {
+            throw new AuthorizationException("User is not the author of this post.");
+        }
+        if ("PUBLISH".equalsIgnoreCase(post.getStatus())) {
+            post.setIsPublish(true);
+            post.setStatus("PUBLISHED");
+        } else {
+            post.setIsPublish(false);
+            post.setStatus("DRAFT");
+        }
+        post.setId(postUuid);
+        postRepository.save(post);
     }
 
     /**
@@ -247,22 +256,24 @@ public class PostService {
      * @throws DatabaseQueryException if the delete fails
      */
     @CacheEvict(cacheNames = { "posts", "postsById" }, allEntries = true)
-    public void deletePost(String postId, String userId) throws DatabaseQueryException, PostNotFoundException {
+    public void deletePost(String postId, String userId) throws DatabaseQueryException, PostNotFoundException, UserNotFoundException, AuthorizationException {
         if (postId == null || userId == null) {
             throw new ValidationException("postId and userId are required");
         }
         UUID postUuid = Objects.requireNonNull(UUID.fromString(postId), "postId is required");
         UUID userUuid = Objects.requireNonNull(UUID.fromString(userId), "userId is required");
-        if (postRepository.existsById(postUuid) && userRepository.existsById(userUuid)) {
-            Post post = Objects.requireNonNull(
-                    postRepository.findById(postUuid)
-                            .orElseThrow(() -> new PostNotFoundException("Post not found")),
-                    "post must not be null"
-            );
-            postRepository.delete(post);
-        } else {
-            throw new PostNotFoundException("Post not found");
+        if (!postRepository.existsById(postUuid)) {
+            throw new PostNotFoundException("Post with id '" + postId + "' not found.", null);
         }
+        if (!userRepository.existsById(userUuid)) {
+            throw new UserNotFoundException("User with id '" + userUuid + "' not found.", null);
+        }
+        Post post = postRepository.findById(postUuid)
+                .orElseThrow(() -> new PostNotFoundException("Post with id '" + postId + "' not found.", null));
+        if (!post.getUserId().equals(userUuid)) {
+            throw new AuthorizationException("User is not the author of this post.");
+        }
+        postRepository.delete(post);
     }
 
 

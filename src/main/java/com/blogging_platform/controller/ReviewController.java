@@ -25,6 +25,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 /**
  * REST and GraphQL controller for reviews (ratings and messages) on posts.
@@ -54,6 +55,7 @@ public class ReviewController {
      * GraphQL mutation to create a new review for a post.
      */
     @MutationMapping(name = "createReview")
+    @PreAuthorize("hasAnyRole('ADMIN','READER')")
     public Boolean createReviewMutation(
         @Argument String postId,
         @Argument String userId,
@@ -69,6 +71,7 @@ public class ReviewController {
      * GraphQL mutation to update an existing review.
      */
     @MutationMapping(name = "updateReview")
+    @PreAuthorize("hasAnyRole('ADMIN','READER')")
     public Boolean updateReviewMutation(
         @Argument String id,
         @Argument String postId,
@@ -85,6 +88,7 @@ public class ReviewController {
      * GraphQL mutation to delete a review for a given user.
      */
     @MutationMapping(name = "deleteReview")
+    @PreAuthorize("hasAnyRole('ADMIN','READER')")
     public Boolean deleteReviewMutation(
         @Argument String userId,
         @Argument String id
@@ -150,6 +154,7 @@ public class ReviewController {
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Unexpected server error")
     })
     @PostMapping("/reviews")
+    @PreAuthorize("hasAnyRole('ADMIN','READER')")
     public ResponseEntity<ApiResponse<Object>> createReview(@Valid @RequestBody Review review) {
         reviewService.createReview(review);  
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.CREATED, null, "Review Added Successfully"));
@@ -162,10 +167,13 @@ public class ReviewController {
     )
     @ApiResponses({
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Review updated successfully"),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Review not found"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Post does not match review or missing required fields"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "User is not the author of this review"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Review with id not found"),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Unexpected server error")
     })
     @PutMapping("reviews/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN','READER')")
     public ResponseEntity<ApiResponse<Object>> editReview(@PathVariable String id, @RequestBody Review review) {
         review.setId(UUID.fromString(id));
         reviewService.updateReview(review);
@@ -183,6 +191,7 @@ public class ReviewController {
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Unexpected server error")
     })
     @DeleteMapping("/{userId}/reviews/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN','READER')")
     public ResponseEntity<ApiResponse<Object>> deleteReview(@PathVariable String userId, @PathVariable String id) {
         reviewService.deleteReview(id, userId);
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.ACCEPTED, null, "Review Deleted Successfully"));
