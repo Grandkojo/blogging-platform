@@ -12,11 +12,14 @@ import com.blogging_platform.exceptions.DatabaseQueryException;
 import com.blogging_platform.model.Comment;
 import com.blogging_platform.repository.CommentRepository;
 
+import jakarta.transaction.Transactional;
+
 /**
  * Application service for comments on posts. Uses JPA repositories and maps entities
  * to {@link CommentRecord} DTOs.
  */
 @Service
+@Transactional(rollbackOn = { DatabaseQueryException.class, CommentNotFoundException.class })
 public class CommentService {
 
     private final CommentRepository commentRepository;

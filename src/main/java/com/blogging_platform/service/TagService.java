@@ -15,10 +15,13 @@ import com.blogging_platform.model.Post;
 import com.blogging_platform.repository.TagRepository;
 import com.blogging_platform.repository.PostRepository;
 
+import jakarta.transaction.Transactional;
+
 /**
  * Application service for tags and post–tag associations. Delegates to {@link TagDAO}.
  */
 @Service
+@Transactional(rollbackOn = { DatabaseQueryException.class, DuplicateResourceException.class })
 public class TagService {
     private final TagRepository tagRepository;
     private final PostRepository postRepository;

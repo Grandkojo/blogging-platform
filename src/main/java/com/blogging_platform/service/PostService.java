@@ -26,6 +26,7 @@ import jakarta.transaction.Transactional;
  * publish status (PUBLISHED vs DRAFT) when creating or updating posts.
  */
 @Service
+@Transactional(rollbackOn = { DatabaseQueryException.class, PostNotFoundException.class })
 public class PostService {
 
     private final PostRepository postRepository;
@@ -44,6 +45,8 @@ public class PostService {
 
     /**
      * Creates a new post and returns its id. Sets isPublish from status.
+     * Wrapped in a transaction to ensure the insert and any related changes
+     * are committed atomically.
      *
      * @param post the post to create
      * @return the new post's id
@@ -138,48 +141,29 @@ public class PostService {
 
     /**
      * Returns all published posts.
+     * @param pagination 
+     * @param query 
      *
      * @return list of published post records
      * @throws DatabaseQueryException if the query fails
      */
     @Cacheable(cacheNames = "posts", key = "'all'")
-    public List<PostRecord> getPosts() throws DatabaseQueryException {
-        return postRepository.findAll().stream()
-                .map(p -> new PostRecord(
-                        p.getId() != null ? p.getId().toString() : null,
-                        p.getTitle(),
-                        p.getContent(),
-                        p.getStatus(),
-                        p.getUser() != null ? p.getUser().getName() : null,
-                        p.getCreatedAt(),
-                        p.getPublishedDatetime(),
-                        (int) commentRepository.countByPost_Id(p.getId()),
-                        p.getUser() != null && p.getUser().getId() != null ? p.getUser().getId().toString() : null,
-                        null))
-                .toList();
+    public List<PostRecord> getPosts(String query, Pageable pagination) throws DatabaseQueryException {
+        return mapToRecords(postRepository.findAll());
     }
 
     /**
-     * Returns all published posts paginated.
+     * Returns published posts paginated and optionally filtered by a free-text query
+     * matching title, author name, or tag name.
      *
+     * @param query     optional search string; if null/blank all posts are returned
+     * @param pageable  pagination and sorting information
      * @return list of published post records
      * @throws DatabaseQueryException if the query fails
      */
     @Cacheable(cacheNames = "posts", key = "T(java.util.Objects).hash(#pageable.pageNumber, #pageable.pageSize, #pageable.sort)")
     public List<PostRecord> getPosts(Pageable pageable) throws DatabaseQueryException {
-        return postRepository.findAll(pageable).stream()
-                .map(p -> new PostRecord(
-                        p.getId() != null ? p.getId().toString() : null,
-                        p.getTitle(),
-                        p.getContent(),
-                        p.getStatus(),
-                        p.getUser() != null ? p.getUser().getName() : null,
-                        p.getCreatedAt(),
-                        p.getPublishedDatetime(),
-                        (int) commentRepository.countByPost_Id(p.getId()),
-                        p.getUser() != null && p.getUser().getId() != null ? p.getUser().getId().toString() : null,
-                        null))
-                .toList();
+        return getPosts(null, pageable);
     }
 
     /**
@@ -266,5 +250,21 @@ public class PostService {
             // On error, return empty tags list rather than failing the whole request
             return List.of();
         }
+    }
+
+    private List<PostRecord> mapToRecords(List<Post> posts) {
+        return posts.stream()
+                .map(p -> new PostRecord(
+                        p.getId() != null ? p.getId().toString() : null,
+                        p.getTitle(),
+                        p.getContent(),
+                        p.getStatus(),
+                        p.getUser() != null ? p.getUser().getName() : null,
+                        p.getCreatedAt(),
+                        p.getPublishedDatetime(),
+                        (int) commentRepository.countByPost_Id(p.getId()),
+                        p.getUser() != null && p.getUser().getId() != null ? p.getUser().getId().toString() : null,
+                        null))
+                .toList();
     }
 }

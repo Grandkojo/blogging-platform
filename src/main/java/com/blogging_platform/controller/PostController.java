@@ -71,10 +71,10 @@ public class PostController {
 
         Sort sort = Sort.by(
             Sort.Direction.fromString(direction),
-            sortBy
+            sortBy != null ? sortBy : "createdAt"
         );
         Pageable pagination = PageRequest.of(p, s, sort);
-        List<PostRecord> posts = postService.getPosts(pagination);
+        List<PostRecord> posts = postService.getPosts(query, pagination);
         List<PostRecord> dto = posts.stream()
             .map(postService::toPostWithTags)
             .toList();
@@ -84,7 +84,7 @@ public class PostController {
     @QueryMapping
     public List<PostRecord> getPostss(
     ) {
-        List<PostRecord> posts = postService.getPosts();
+        List<PostRecord> posts = postService.getPosts(null);
         List<PostRecord> dto = posts.stream()
             .map(postService::toPostWithTags)
             .toList();
@@ -96,10 +96,10 @@ public class PostController {
      *
      * @param id post identifier (UUID as string)
      */
-    @QueryMapping(name = "getPost")
-    public PostRecord getPostById(@Argument String id) {
-        return postService.toPostWithTags(postService.getPost(id));
-    }
+    // @QueryMapping(name = "getPost")
+    // public PostRecord getPostById(@Argument String id) {
+    //     return postService.toPostWithTags(postService.getPost(id));
+    // }
 
     // @Operation(
     //     summary = "List posts (paginated)",
@@ -134,7 +134,7 @@ public class PostController {
             sortBy
         );
         Pageable pagination = PageRequest.of(page, size, sort);
-        List<PostRecord> posts = postService.getPosts(pagination);
+        List<PostRecord> posts = postService.getPosts(query, pagination);
         List<PostRecord> dto = posts.stream()
             .map(postService::toPostWithTags)
             .toList();
@@ -157,7 +157,7 @@ public class PostController {
     })
     @GetMapping("/postss")
     public ResponseEntity<ApiResponse<List<PostRecord>>> getPostsFull() {
-        List<PostRecord> posts = postService.getPosts();
+        List<PostRecord> posts = postService.getPosts(null);
         List<PostRecord> dto = posts.stream()
             .map(postService::toPostWithTags)
             .toList();
