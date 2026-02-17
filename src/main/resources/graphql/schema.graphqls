@@ -72,21 +72,6 @@ type Mutation {
         id: ID!
     ): Boolean
 
-    # User mutations
-    registerUser(
-        name: String!,
-        email: String!,
-        password: String!,
-        role: String!
-    ): Boolean
-
-    loginUser(
-        email: String!,
-        password: String!
-    ): User
-
-    logoutUser: Boolean
-
     # Comment mutations
     createComment(
         userId: ID!,

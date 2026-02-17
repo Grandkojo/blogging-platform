@@ -1,0 +1,22 @@
+{
+  "properties": [
+    {
+      "name": "security.jwt.secret",
+      "type": "java.lang.String",
+      "description": "HMAC secret used to sign JWTs."
+    },
+    {
+      "name": "security.jwt.ttl",
+      "type": "java.time.Duration",
+      "defaultValue": "PT1H",
+      "description": "JWT time-to-live."
+    },
+    {
+      "name": "security.jwt.issuer",
+      "type": "java.lang.String",
+      "defaultValue": "https://blogging-platform",
+      "description": "JWT issuer claim (should be a valid URL string)."
+    }
+  ]
+}
+

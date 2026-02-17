@@ -6,9 +6,11 @@ import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 
 /**
  * Spring Security baseline configuration.
@@ -20,6 +22,12 @@ import org.springframework.security.web.SecurityFilterChain;
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
+
+    private final JwtAuthenticationConverter jwtAuthenticationConverter;
+
+    public SecurityConfig(JwtAuthenticationConverter jwtAuthenticationConverter) {
+        this.jwtAuthenticationConverter = jwtAuthenticationConverter;
+    }
 
     /**
      * Password encoder for hashing user passwords using BCrypt.
@@ -39,24 +47,32 @@ public class SecurityConfig {
             // JWT-based APIs will be stateless; CSRF will be configured properly later.
             .csrf(csrf -> csrf.disable())
             .cors(Customizer.withDefaults())
+            .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                // Existing user auth endpoints (temporary public access)
-                .requestMatchers(HttpMethod.POST, "/api/v1/users/register", "/api/v1/users/login").permitAll()
+                /*
+                 * IMPORTANT: the application uses server.servlet.context-path=/api/v1.
+                 * Spring Security request matchers see the path *without* the context path,
+                 * so external "/api/v1/auth/login" is matched here as "/auth/login".
+                 */
+                // Auth endpoints (JWT login/register)
+                .requestMatchers(HttpMethod.POST, "/auth/login", "/auth/register").permitAll()
+                .requestMatchers(HttpMethod.POST, "/auth/logout").authenticated()
                 // OpenAPI / Swagger UI
                 .requestMatchers(
-                    "/api/v1/swagger-ui.html",
-                    "/api/v1/swagger-ui/**",
-                    "/api/v1/v3/api-docs/**"
+                    "/swagger-ui.html",
+                    "/swagger-ui/**",
+                    "/v3/api-docs/**"
                 ).permitAll()
                 // Actuator (keep health/info open for now)
-                .requestMatchers("/api/v1/actuator/health/**", "/api/v1/actuator/info").permitAll()
+                .requestMatchers("/actuator/health/**", "/actuator/info").permitAll()
                 // GraphQL UI in dev (GraphiQL is served under /graphiql by spring-graphql)
-                .requestMatchers("/api/v1/graphiql", "/api/v1/graphiql/**").permitAll()
-                // Everything else is temporarily permitted until JWT/OAuth2 is wired
-                .anyRequest().permitAll()
+                .requestMatchers("/graphiql", "/graphiql/**").permitAll()
+                // GraphQL endpoint and all other APIs require authentication
+                .requestMatchers("/graphql").authenticated()
+                .anyRequest().authenticated()
             )
-            // Keep defaults off (we'll add JWT and OAuth2 later)
-            .httpBasic(Customizer.withDefaults());
+            // JWT validation happens via OAuth2 Resource Server support (wired in JwtConfig)
+            .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter)));
 
         return http.build();
     }
