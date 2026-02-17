@@ -16,6 +16,29 @@
       "type": "java.lang.String",
       "defaultValue": "https://blogging-platform",
       "description": "JWT issuer claim (should be a valid URL string)."
+    },
+    {
+      "name": "security.cors.allowed-origins",
+      "type": "java.lang.String",
+      "description": "Comma-separated allowed CORS origins. Empty = no cross-origin access."
+    },
+    {
+      "name": "security.cors.allowed-methods",
+      "type": "java.lang.String",
+      "defaultValue": "GET,POST,PUT,PATCH,DELETE,OPTIONS",
+      "description": "Allowed HTTP methods for CORS."
+    },
+    {
+      "name": "security.cors.allowed-headers",
+      "type": "java.lang.String",
+      "defaultValue": "Authorization,Content-Type,Accept",
+      "description": "Allowed request headers for CORS."
+    },
+    {
+      "name": "security.cors.max-age",
+      "type": "java.lang.Long",
+      "defaultValue": 3600,
+      "description": "Max age in seconds for CORS preflight cache."
     }
   ]
 }

@@ -164,6 +164,41 @@ mvn spring-boot:run
   - **404 Not Found** – The resource (comment/post/review) with the given id does not exist, or (for post update/delete) the user id does not exist. Message examples: `"Comment with id '...' not found."`, `"Post with id '...' not found."`, `"User with id '...' not found."`, `"Review with id '...' not found."`
   - **403 Forbidden** – The authenticated user is not the author of the resource. Message examples: `"User is not the author of this comment."`, `"User is not the author of this post."`, `"User is not the author of this review."`
   - **400 Bad Request** – Validation failed (e.g. post id in body does not match the comment/review, or required fields missing). Message examples: `"Post does not match this comment."`, `"Comment id and user id are required."`
+- **CORS (Cross-Origin Resource Sharing)**:
+  - Global CORS is configured via `security.cors.*` properties. Allowed origins, methods, and headers are explicit; requests from other origins do not receive `Access-Control-Allow-Origin` and are blocked by the browser.
+  - **Dev profile**: allows `http://localhost:3000`, `http://localhost:5173`, `http://127.0.0.1:3000`, `http://127.0.0.1:5173`, `http://localhost:8080`, `http://127.0.0.1:8080` (for React, Vite, Swagger, etc.).
+  - **Prod**: set `security.cors.allowed-origins` (comma-separated) or `CORS_ALLOWED_ORIGINS`; if empty, cross-origin browser requests are blocked.
+  - Allowed methods: GET, POST, PUT, PATCH, DELETE, OPTIONS. Allowed headers: Authorization, Content-Type, Accept. Test with Postman (no CORS restriction) and from a web frontend to verify allowed vs blocked origins.
+- **CSRF (Cross-Site Request Forgery)**:
+  - **Disabled for the main API** because authentication is stateless JWT in the `Authorization` header (no cookies). CSRF targets cookie-based sessions: a malicious site cannot send the JWT from the victim’s browser without the victim’s code, so the main API does not require CSRF tokens.
+  - **When to enable CSRF**: enable it for stateful session authentication (e.g. cookie-based login) or for any form submissions that rely on session cookies. Then use a synchronizer token (e.g. Spring Security’s CSRF token) in forms or the `X-CSRF-TOKEN` header.
+  - **Demo**: to see CSRF in action, the app exposes a small form-style demo under `/api/v1/demo/`: `GET /api/v1/demo/csrf-token` returns a CSRF token (and creates a session); `POST /api/v1/demo/csrf-submit` accepts the request only if the token is sent (header `X-CSRF-TOKEN` or parameter `_csrf`). See [Testing the CSRF demo](#testing-the-csrf-demo) below.
+
+#### CORS vs CSRF
+
+| | CORS | CSRF |
+|---|------|------|
+| **Purpose** | Controls which *origins* (e.g. `https://myapp.com`) can call your API from the browser. | Protects against a *site* (e.g. evil.com) making the *user’s browser* send a request to your site using the user’s cookies/session. |
+| **Enforced by** | Browser (using response headers like `Access-Control-Allow-Origin`). | Server (validates a token that only your own pages know). |
+| **Relevant when** | Any cross-origin browser request (e.g. React on port 3000 calling API on 8080). | State-changing requests that use cookies/session (e.g. form POST with `JSESSIONID`). |
+| **Postman** | CORS does not apply (Postman is not a browser). | CSRF does not apply to our JWT API (no session). For the demo, use the same session cookie and `X-CSRF-TOKEN` header. |
+| **Browser** | Requests from a disallowed origin are blocked by the browser before they reach the server. | For session-based flows, the server rejects requests that lack a valid CSRF token. |
+
+**Practical tests**: (1) **CORS**: From a browser page on an allowed origin (e.g. `http://localhost:3000`), call `GET /api/v1/posts` with `Authorization: Bearer <token>` — request succeeds; from a disallowed origin or without the right headers, the browser blocks it. In Postman, CORS is not enforced. (2) **CSRF demo**: In Postman, `GET /api/v1/demo/csrf-token` (save session cookie and token), then `POST /api/v1/demo/csrf-submit` with header `X-CSRF-TOKEN: <token>` and the same cookie — request succeeds; without the token (or with wrong token), the server returns 403.
+
+#### Testing the CSRF demo
+
+1. **Get a CSRF token (and session)**  
+   `GET http://localhost:8080/api/v1/demo/csrf-token`  
+   - If using Postman: enable “Send cookies” and call the URL. Copy the `token` value from the JSON response.
+2. **Submit with the token**  
+   `POST http://localhost:8080/api/v1/demo/csrf-submit`  
+   - Header: `X-CSRF-TOKEN: <paste the token>`  
+   - Use the same session (in Postman, the cookie is sent automatically if you did step 1 in the same request collection/session).  
+   - Body (optional): `{"message": "hello"}`  
+   - You should get 200 and a success message.
+3. **Without the token**  
+   Repeat the POST without the `X-CSRF-TOKEN` header (or with a wrong value). The server responds with **403 Forbidden**.
 
 Interactive REST API documentation (including these response codes per endpoint) is available at `/swagger-ui.html` when the application is running.
 

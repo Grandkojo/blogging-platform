@@ -11,6 +11,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 
 /**
@@ -46,9 +47,11 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            // JWT-based APIs will be stateless; CSRF will be configured properly later.
-            .csrf(csrf -> csrf.disable())
+            // CSRF: required only for /demo/** (form-style demo). JWT API is stateless and does not use CSRF.
+            .csrf(csrf -> csrf.requireCsrfProtectionMatcher(csrfDemoRequestMatcher()))
+            // Global CORS uses CorsConfigurationSource bean from CorsConfig (allowed origins/methods/headers from security.cors.*)
             .cors(Customizer.withDefaults())
+            // STATELESS for JWT API. Session is still created on demand for /demo/** (CSRF token storage).
             .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 /*
@@ -56,6 +59,8 @@ public class SecurityConfig {
                  * Spring Security request matchers see the path *without* the context path,
                  * so external "/api/v1/auth/login" is matched here as "/auth/login".
                  */
+                // CSRF demo (session-based; no JWT required)
+                .requestMatchers("/demo/**").permitAll()
                 // Auth endpoints (JWT login/register)
                 .requestMatchers(HttpMethod.POST, "/auth/login", "/auth/register").permitAll()
                 .requestMatchers(HttpMethod.POST, "/auth/logout").authenticated()
@@ -77,6 +82,27 @@ public class SecurityConfig {
             .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter)));
 
         return http.build();
+    }
+
+    /**
+     * CSRF is required only for state-changing requests to /demo/** (CSRF demo endpoints).
+     * All other paths (JWT API) are not subject to CSRF checks.
+     */
+    private static RequestMatcher csrfDemoRequestMatcher() {
+        return request -> {
+            // requestURI includes the context path (e.g. "/api/v1/demo/csrf-submit"),
+            // but we want to match on the servlet path only ("/demo/...").
+            String contextPath = request.getContextPath() != null ? request.getContextPath() : "";
+            String path = request.getRequestURI().substring(contextPath.length());
+            if (!path.startsWith("/demo/")) {
+                return false;
+            }
+            String method = request.getMethod();
+            return !HttpMethod.GET.matches(method)
+                    && !HttpMethod.HEAD.matches(method)
+                    && !HttpMethod.OPTIONS.matches(method)
+                    && !"TRACE".equalsIgnoreCase(method);
+        };
     }
 }
 
