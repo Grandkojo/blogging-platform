@@ -2,11 +2,14 @@ package com.blogging_platform.security.auth;
 
 import java.time.Instant;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -31,6 +34,8 @@ import jakarta.validation.Valid;
 @RestController
 @Tag(name = "Auth", description = "JWT authentication endpoints")
 public class AuthController {
+
+    private static final Logger log = LoggerFactory.getLogger(AuthController.class);
 
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
@@ -58,6 +63,9 @@ public class AuthController {
         String token = jwtService.generateToken(auth);
         AuthDtos.AuthResponse payload = new AuthDtos.AuthResponse(token, "Bearer", jwtService.getExpiresInSeconds());
 
+        String principal = auth.getPrincipal() instanceof UserDetails ud ? ud.getUsername() : String.valueOf(auth.getPrincipal());
+        log.info("Authentication success for user '{}', authorities={}", principal, auth.getAuthorities());
+
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK, payload, "Login successful"));
     }
 
@@ -79,6 +87,7 @@ public class AuthController {
             Instant expiresAt = jwt.getExpiresAt();
             if (jti != null && expiresAt != null) {
                 tokenBlacklist.revoke(jti, expiresAt);
+                log.info("JWT revoked: jti='{}', subject='{}', expiresAt={}", jti, jwt.getSubject(), expiresAt);
             }
         }
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK, null, "Logout successful"));

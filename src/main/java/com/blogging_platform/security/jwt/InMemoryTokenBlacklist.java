@@ -4,6 +4,8 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 /**
@@ -14,6 +16,8 @@ import org.springframework.stereotype.Component;
 @Component
 public class InMemoryTokenBlacklist implements TokenBlacklist {
 
+    private static final Logger log = LoggerFactory.getLogger(InMemoryTokenBlacklist.class);
+
     private final Map<String, Instant> revoked = new ConcurrentHashMap<>();
 
     @Override
@@ -22,6 +26,7 @@ public class InMemoryTokenBlacklist implements TokenBlacklist {
             return;
         }
         revoked.put(jti, expiresAt);
+        log.debug("Token revoked: jti='{}', expiresAt={}", jti, expiresAt);
     }
 
     @Override
@@ -37,6 +42,7 @@ public class InMemoryTokenBlacklist implements TokenBlacklist {
             revoked.remove(jti);
             return false;
         }
+        log.trace("Token jti='{}' is currently revoked (expiresAt={})", jti, expiresAt);
         return true;
     }
 }

@@ -3,6 +3,8 @@ package com.blogging_platform.exceptions;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -14,6 +16,8 @@ import com.blogging_platform.ApiResponse;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ApiResponse<Object>> handleBinaryErrors(HttpMessageNotReadableException ex) {
@@ -33,6 +37,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity<ApiResponse<Object>> handleAuthenticationException(AuthenticationException ex) {
         // Invalid credentials
+        log.warn("Domain authentication failure: {}", ex.getMessage());
         return ResponseEntity
                 .status(HttpStatus.UNAUTHORIZED)
                 .body(ApiResponse.error(HttpStatus.UNAUTHORIZED, ex.getMessage()));
@@ -42,9 +47,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Object>> handleOAuth2AuthenticationException(
             org.springframework.security.oauth2.core.OAuth2AuthenticationException ex
     ) {
-        // Log OAuth2 errors for debugging
-        System.err.println("[OAuth2 Error] " + ex.getMessage());
-        ex.printStackTrace();
+        log.warn("OAuth2 authentication failure: {}", ex.getMessage());
         return ResponseEntity
                 .status(HttpStatus.UNAUTHORIZED)
                 .body(ApiResponse.error(HttpStatus.UNAUTHORIZED, "OAuth2 authentication failed: " + ex.getMessage()));
@@ -54,6 +57,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Object>> handleSpringSecurityAuthenticationException(
             org.springframework.security.core.AuthenticationException ex
     ) {
+        log.warn("Spring Security authentication failure: {}", ex.getMessage());
         return ResponseEntity
                 .status(HttpStatus.UNAUTHORIZED)
                 .body(ApiResponse.error(HttpStatus.UNAUTHORIZED, "Invalid credentials"));
