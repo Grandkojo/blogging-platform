@@ -64,4 +64,49 @@ class CorsConfigTest {
         // When no origins configured, we set an empty list so no origin gets Access-Control-Allow-Origin
         assertTrue(cors.getAllowedOrigins().isEmpty());
     }
+
+    @Test
+    void corsProperties_splitsMethodsAndHeaders() {
+        CorsProperties props = new CorsProperties();
+        props.setAllowedMethods("GET, POST, PUT, OPTIONS");
+        props.setAllowedHeaders("Authorization, Content-Type");
+
+        assertEquals(4, props.getAllowedMethodsList().size());
+        assertTrue(props.getAllowedMethodsList().contains("GET"));
+        assertTrue(props.getAllowedMethodsList().contains("OPTIONS"));
+        assertEquals(2, props.getAllowedHeadersList().size());
+        assertTrue(props.getAllowedHeadersList().contains("Authorization"));
+        assertTrue(props.getAllowedHeadersList().contains("Content-Type"));
+    }
+
+    @Test
+    void corsConfigurationSource_respectsMaxAge() {
+        CorsProperties props = new CorsProperties();
+        props.setAllowedOrigins("http://localhost:3000");
+        props.setMaxAge(7200L);
+
+        CorsConfig config = new CorsConfig();
+        UrlBasedCorsConfigurationSource source = (UrlBasedCorsConfigurationSource) config.corsConfigurationSource(props);
+
+        CorsConfiguration cors = source.getCorsConfiguration(
+            new org.springframework.mock.web.MockHttpServletRequest("GET", "/api/v1/posts"));
+        assertNotNull(cors);
+        assertEquals(Long.valueOf(7200L), cors.getMaxAge());
+    }
+
+    @Test
+    void corsConfigurationSource_exposedHeaders() {
+        CorsProperties props = new CorsProperties();
+        props.setAllowedOrigins("http://localhost:3000");
+        props.setExposedHeaders("X-Total-Count, X-Request-Id");
+
+        CorsConfig config = new CorsConfig();
+        UrlBasedCorsConfigurationSource source = (UrlBasedCorsConfigurationSource) config.corsConfigurationSource(props);
+
+        CorsConfiguration cors = source.getCorsConfiguration(
+            new org.springframework.mock.web.MockHttpServletRequest("GET", "/api/v1/posts"));
+        assertNotNull(cors);
+        assertTrue(cors.getExposedHeaders().contains("X-Total-Count"));
+        assertTrue(cors.getExposedHeaders().contains("X-Request-Id"));
+    }
 }

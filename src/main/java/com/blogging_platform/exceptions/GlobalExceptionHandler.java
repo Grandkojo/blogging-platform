@@ -38,6 +38,18 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error(HttpStatus.UNAUTHORIZED, ex.getMessage()));
     }
 
+    @ExceptionHandler(org.springframework.security.oauth2.core.OAuth2AuthenticationException.class)
+    public ResponseEntity<ApiResponse<Object>> handleOAuth2AuthenticationException(
+            org.springframework.security.oauth2.core.OAuth2AuthenticationException ex
+    ) {
+        // Log OAuth2 errors for debugging
+        System.err.println("[OAuth2 Error] " + ex.getMessage());
+        ex.printStackTrace();
+        return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(ApiResponse.error(HttpStatus.UNAUTHORIZED, "OAuth2 authentication failed: " + ex.getMessage()));
+    }
+
     @ExceptionHandler(org.springframework.security.core.AuthenticationException.class)
     public ResponseEntity<ApiResponse<Object>> handleSpringSecurityAuthenticationException(
             org.springframework.security.core.AuthenticationException ex

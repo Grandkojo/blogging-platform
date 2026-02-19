@@ -129,5 +129,41 @@ class JwtServiceTest {
 
         assertThrows(JwtValidationException.class, () -> decoder.decode(token));
     }
+
+    @Test
+    void generateToken_withMultipleRoles_includesAllInClaims() {
+        JwtProperties props = new JwtProperties();
+        props.setSecret("test-secret-test-secret-test-secret-test-secret");
+        props.setIssuer("https://blogging-platform");
+        props.setTtl(Duration.ofMinutes(10));
+
+        SecretKey key = new SecretKeySpec(props.getSecret().getBytes(StandardCharsets.UTF_8), "HmacSHA256");
+        JwtEncoder encoder = new NimbusJwtEncoder(new ImmutableSecret<>(key));
+
+        NimbusJwtDecoder decoder = NimbusJwtDecoder.withSecretKey(key)
+                .macAlgorithm(MacAlgorithm.HS256)
+                .build();
+        decoder.setJwtValidator(new DelegatingOAuth2TokenValidator<>(
+                JwtValidators.createDefaultWithIssuer(props.getIssuer())));
+
+        JwtService jwtService = new JwtService(encoder, props);
+        Authentication auth = new UsernamePasswordAuthenticationToken(
+                "admin@example.com",
+                "N/A",
+                List.of(
+                        new SimpleGrantedAuthority("ROLE_ADMIN"),
+                        new SimpleGrantedAuthority("ROLE_READER")
+                )
+        );
+
+        String token = jwtService.generateToken(auth);
+        Jwt jwt = decoder.decode(token);
+
+        assertEquals("admin@example.com", jwt.getSubject());
+        List<String> roles = jwt.getClaimAsStringList("roles");
+        assertTrue(roles.contains("ROLE_ADMIN"));
+        assertTrue(roles.contains("ROLE_READER"));
+        assertEquals(2, roles.size());
+    }
 }
 

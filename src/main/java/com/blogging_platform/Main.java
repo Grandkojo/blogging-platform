@@ -4,6 +4,8 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cache.annotation.EnableCaching;
 
+import com.blogging_platform.config.EnvFileLoader;
+
 /**
  * Application entry point for the Blogging Platform.
  */
@@ -17,6 +19,9 @@ public class Main {
      * @param args command-line arguments
      */
     public static void main(String[] args) {
-        SpringApplication.run(Main.class, args);
+        SpringApplication app = new SpringApplication(Main.class);
+        // Register listener to load .env file before Spring Boot reads properties
+        app.addListeners(new EnvFileLoader());
+        app.run(args);
     }
 }

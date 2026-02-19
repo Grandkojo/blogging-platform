@@ -78,7 +78,22 @@ cd blogging_platform
 
 ### 3. Configuration
 
-Database configuration is managed via Spring Boot `application.properties` (and profile-specific variants like `application-dev.properties`):
+#### Environment variables via `.env`
+
+Sensitive configuration (database credentials, JWT secret, Google OAuth2) is externalized to a `.env` file. The application loads `.env` on startup via `EnvFileLoader` before Spring Boot reads `application.properties`, so placeholders like `${SPRING_DATASOURCE_USERNAME}` resolve correctly.
+
+1. Copy the example file and fill in your values:
+   ```bash
+   cp .env.example .env
+   ```
+2. Edit `.env` with your MySQL credentials, JWT secret, and (optional) Google OAuth2 client ID/secret.
+3. Never commit `.env` — it is listed in `.gitignore`.
+
+Required variables for dev include: `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD`, `JWT_SECRET`. For Google login, add `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`.
+
+#### Database (alternative: direct properties)
+
+If you prefer not to use `.env`, database configuration can be set in `application.properties` (or profile-specific files like `application-dev.properties`):
 
 ```properties
 spring.datasource.url=jdbc:mysql://localhost:3306/blogging_platform?allowPublicKeyRetrieval=true&useSSL=false
@@ -156,6 +171,10 @@ mvn spring-boot:run
     - Claims include subject (email), issuer, issue/expiry times, `jti`, and `roles`.
   - `POST /api/v1/auth/logout` – revoke the current JWT (in‑memory blacklist by `jti` until expiry).
   - All protected endpoints (e.g. `GET /api/v1/posts`) require `Authorization: Bearer <token>`.
+- **Google OAuth2 Login**:
+  - `GET /api/v1/oauth2/authorization/google` – redirects to Google for sign-in. No prior registration required.
+  - After successful authentication, user details (email, name) are fetched from Google and persisted in the `users` table. New users receive the default `Regular` role; existing users keep their stored role.
+  - Requires `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` in `.env`. Configure the redirect URI `http://localhost:8080/api/v1/login/oauth2/code/google` (or your base URL + context path) in [Google Cloud Console](https://console.cloud.google.com/apis/credentials) for your OAuth2 client.
 - **Password Hashing**:
   - All stored passwords are hashed using `BCryptPasswordEncoder` from Spring Security.
 - **Error Handling**:
@@ -214,6 +233,13 @@ Interactive REST API documentation (including these response codes per endpoint)
    - Header: `Authorization: Bearer <accessToken>`
 4. Without the header (or with a tampered/expired token) the API responds with `401 Unauthorized`.
 
+#### Testing Google OAuth2 login
+
+1. Ensure `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are set in `.env`.
+2. In [Google Cloud Console](https://console.cloud.google.com/apis/credentials), add `http://localhost:8080/api/v1/login/oauth2/code/google` to your OAuth2 client's **Authorized redirect URIs**.
+3. Open `http://localhost:8080/api/v1/oauth2/authorization/google` in a browser. Sign in with Google.
+4. On success, you are redirected to Swagger UI, and the user is stored in the `users` table with role `Regular`.
+
 ## Testing
 
 ### Running Tests
@@ -238,7 +264,10 @@ blogging_platform/
 │   ├── graphql1.png                   # GraphQL schema / queries
 │   ├── graphql2.png                   # GraphQL mutations
 │   ├── custom_validation.png          # Bean validation & error handling
-│   └── aop_logging.png                # AOP logging and performance metrics
+│   ├── aop_logging.png                # AOP logging and performance metrics
+│   ├── coverage_overview_bem07.png    # Test coverage report (BEM‑07)
+│   ├── csrf_get_token_insomnia.png    # CSRF demo: GET token (Insomnia)
+│   └── csrf_submit_insomnia.png       # CSRF demo: POST with token (Insomnia)
 ├── src/
 │   ├── main/
 │   │   ├── java/com/blogging_platform/
@@ -292,7 +321,8 @@ blogging_platform/
 │       └── java/com/blogging_platform/            # Unit and integration tests
 ├── pom.xml                            # Maven configuration
 ├── README.md                          # This file
-└── .env                               # Optional environment configuration (legacy)
+├── .env                               # Environment variables (copy from .env.example)
+└── .env.example                       # Template for required env vars
 ```
 
 ## Architecture & Performance
