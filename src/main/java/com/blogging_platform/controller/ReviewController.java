@@ -55,7 +55,7 @@ public class ReviewController {
      * GraphQL mutation to create a new review for a post.
      */
     @MutationMapping(name = "createReview")
-    @PreAuthorize("hasAnyRole('ADMIN','READER')")
+    @PreAuthorize("hasAnyRole('ADMIN','AUTHOR','READER')")
     public Boolean createReviewMutation(
         @Argument String postId,
         @Argument String userId,
@@ -71,7 +71,7 @@ public class ReviewController {
      * GraphQL mutation to update an existing review.
      */
     @MutationMapping(name = "updateReview")
-    @PreAuthorize("hasAnyRole('ADMIN','READER')")
+    @PreAuthorize("hasAnyRole('ADMIN','AUTHOR','READER')")
     public Boolean updateReviewMutation(
         @Argument String id,
         @Argument String postId,
@@ -88,7 +88,7 @@ public class ReviewController {
      * GraphQL mutation to delete a review for a given user.
      */
     @MutationMapping(name = "deleteReview")
-    @PreAuthorize("hasAnyRole('ADMIN','READER')")
+    @PreAuthorize("hasAnyRole('ADMIN','AUTHOR','READER')")
     public Boolean deleteReviewMutation(
         @Argument String userId,
         @Argument String id
@@ -154,7 +154,7 @@ public class ReviewController {
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Unexpected server error")
     })
     @PostMapping("/reviews")
-    @PreAuthorize("hasAnyRole('ADMIN','READER')")
+    @PreAuthorize("hasAnyRole('ADMIN','AUTHOR','READER')")
     public ResponseEntity<ApiResponse<Object>> createReview(@Valid @RequestBody Review review) {
         reviewService.createReview(review);  
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.CREATED, null, "Review Added Successfully"));
@@ -173,7 +173,7 @@ public class ReviewController {
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Unexpected server error")
     })
     @PutMapping("reviews/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN','READER')")
+    @PreAuthorize("hasAnyRole('ADMIN','AUTHOR','READER')")
     public ResponseEntity<ApiResponse<Object>> editReview(@PathVariable String id, @RequestBody Review review) {
         review.setId(UUID.fromString(id));
         reviewService.updateReview(review);
@@ -191,7 +191,7 @@ public class ReviewController {
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Unexpected server error")
     })
     @DeleteMapping("/{userId}/reviews/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN','READER')")
+    @PreAuthorize("hasAnyRole('ADMIN','AUTHOR','READER')")
     public ResponseEntity<ApiResponse<Object>> deleteReview(@PathVariable String userId, @PathVariable String id) {
         reviewService.deleteReview(id, userId);
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.ACCEPTED, null, "Review Deleted Successfully"));

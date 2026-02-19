@@ -220,7 +220,7 @@ public class PostController {
         )
     })
     @PostMapping("/posts")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','AUTHOR')")
     public ResponseEntity<ApiResponse<Object>> createPost(@Valid @RequestBody Post post) {
         postService.createPost(post);  
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.CREATED, null, "Post Created Successfully"));
@@ -254,7 +254,7 @@ public class PostController {
         )
     })
     @PutMapping("posts/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','AUTHOR')")
     public ResponseEntity<ApiResponse<Object>> editPost(@PathVariable String id, @Valid @RequestBody Post post) {
         postService.updatePost(post, id);
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.CREATED, null, "Post Updated Successfully"));
@@ -284,7 +284,7 @@ public class PostController {
         )
     })
     @DeleteMapping("/{userId}/posts/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','AUTHOR')")
     public ResponseEntity<ApiResponse<Object>> deletePost(@PathVariable String userId, @PathVariable String id) {
         postService.deletePost(id, userId);
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.ACCEPTED, null, "Post Deleted Successfully"));
@@ -294,7 +294,7 @@ public class PostController {
      * GraphQL mutation to create a new post.
      */
     @MutationMapping(name = "createPost")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','AUTHOR')")
     public void createPostMutation(
         @Argument String userId,
         @Argument String title,
@@ -313,7 +313,7 @@ public class PostController {
      * GraphQL mutation to update an existing post.
      */
     @MutationMapping(name = "updatePost")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','AUTHOR')")
     public Boolean updatePostMutation(
         @Argument String id,
         @Argument String userId,
@@ -334,7 +334,7 @@ public class PostController {
      * GraphQL mutation to delete a post for a given user.
      */
     @MutationMapping(name = "deletePost")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','AUTHOR')")
     public Boolean deletePostMutation(
         @Argument String userId,
         @Argument String id

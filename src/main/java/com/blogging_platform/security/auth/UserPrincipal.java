@@ -87,6 +87,9 @@ public class UserPrincipal implements UserDetails {
         if ("Admin".equalsIgnoreCase(role)) {
             return "ADMIN";
         }
+        if ("Author".equalsIgnoreCase(role)) {
+            return "AUTHOR";
+        }
         if ("Regular".equalsIgnoreCase(role) || "User".equalsIgnoreCase(role)) {
             return "READER";
         }
