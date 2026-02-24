@@ -72,7 +72,6 @@ public class AuthController {
     @Operation(summary = "Register a user (READER/AUTHOR)")
     @PostMapping("/auth/register")
     public ResponseEntity<ApiResponse<Object>> register(@Valid @RequestBody AuthDtos.RegisterRequest request) {
-        // Keep using the existing domain model; validation + role enforcement will be tightened in RBAC epic.
         User user = new User(request.name(), request.email(), request.password(), request.role());
         userService.registerUser(user);
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.CREATED, null, "User registered successfully"));

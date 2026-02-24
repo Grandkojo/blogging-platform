@@ -10,8 +10,6 @@ import org.springframework.stereotype.Component;
 
 /**
  * In-memory blacklist for revoked JWT ids (jti).
- *
- * <p>This will be replaced/enhanced in the DSA epic (hashing + cleanup + caching policies).</p>
  */
 @Component
 public class InMemoryTokenBlacklist implements TokenBlacklist {

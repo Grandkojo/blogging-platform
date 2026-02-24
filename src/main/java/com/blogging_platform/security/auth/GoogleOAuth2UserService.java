@@ -62,8 +62,7 @@ public class GoogleOAuth2UserService extends OidcUserService {
                     .orElseGet(() -> {
                         System.out.println("[GoogleOAuth2UserService] User not found for email: " + email
                                 + ". Attempting to create.");
-                        // Double-check again within the same lock context would be better, but let's at
-                        // least keep this
+                
                         return userRepository.findByEmail(email)
                                 .orElseGet(() -> {
                                     System.out
@@ -98,13 +97,11 @@ public class GoogleOAuth2UserService extends OidcUserService {
 
     /**
      * Creates and persists a new user for OAuth2 login.
-     * Does not set ID manually – lets JPA generate it to avoid merge/optimistic
-     * locking issues.
      */
     private User createAndSaveOAuth2User(String email, String name) {
         User newUser = new User();
         newUser.setName(name != null ? name : email.split("@")[0]);
-        newUser.setEmail(email.toLowerCase()); // Ensure lowercase
+        newUser.setEmail(email.toLowerCase());
         String randomPassword = java.util.UUID.randomUUID().toString();
         newUser.setPassword(passwordEncoder.encode(randomPassword));
         newUser.setRole("Regular");
@@ -128,7 +125,6 @@ public class GoogleOAuth2UserService extends OidcUserService {
         if (role == null || role.isBlank()) {
             return "READER";
         }
-        // Back-compat with previous schema values
         if ("Admin".equalsIgnoreCase(role)) {
             return "ADMIN";
         }

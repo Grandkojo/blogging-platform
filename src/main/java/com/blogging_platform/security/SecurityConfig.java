@@ -17,10 +17,6 @@ import com.blogging_platform.security.auth.GoogleOAuth2UserService;
 
 /**
  * Spring Security baseline configuration.
- *
- * <p>This is intentionally minimal scaffolding for BEM-07. Subsequent feature
- * branches will add JWT authentication, OAuth2 login, RBAC, and stricter access
- * rules.</p>
  */
 @Configuration
 @EnableWebSecurity
