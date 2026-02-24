@@ -47,7 +47,7 @@ CREATE TABLE `reviews` (
 
 
 -- Indexes
-CREATE UNIQUE INDEX `users_index_0` ON `users` (`name`);
+-- CREATE UNIQUE INDEX `users_index_0` ON `users` (`name`); -- Removed because full names are not necessarily unique
 CREATE UNIQUE INDEX `posts_index_1` ON `posts` (`title`);
 CREATE INDEX `posts_index_2` ON `posts` (`user_id`);
 CREATE INDEX `posts_index_3` ON `posts` (`published_datetime`);

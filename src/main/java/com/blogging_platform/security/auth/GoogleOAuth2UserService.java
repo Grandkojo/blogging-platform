@@ -1,7 +1,6 @@
 package com.blogging_platform.security.auth;
 
 import java.util.Collection;
-import java.util.UUID;
 
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -20,12 +19,17 @@ import com.blogging_platform.repository.UserRepository;
 /**
  * Custom OAuth2 user service for Google login.
  * 
- * <p>Fetches user details from Google and persists them to the database.
+ * <p>
+ * Fetches user details from Google and persists them to the database.
  * If a user with the same email already exists, reuses the existing user.
- * New users are assigned the default READER role.</p>
+ * New users are assigned the default READER role.
+ * </p>
  * 
- * <p>This satisfies User Story 4.1: "User details fetched from Google API 
- * and persisted in the database. Roles automatically assigned post-authentication."</p>
+ * <p>
+ * This satisfies User Story 4.1: "User details fetched from Google API
+ * and persisted in the database. Roles automatically assigned
+ * post-authentication."
+ * </p>
  */
 @Service
 public class GoogleOAuth2UserService extends OidcUserService {
@@ -45,39 +49,46 @@ public class GoogleOAuth2UserService extends OidcUserService {
             OidcUser oidcUser = super.loadUser(userRequest);
 
             // Extract user information from Google
-            String email = oidcUser.getEmail();
+            String rawEmail = oidcUser.getEmail();
             String name = oidcUser.getFullName();
-            
-            if (email == null || email.isBlank()) {
+
+            if (rawEmail == null || rawEmail.isBlank()) {
                 throw new OAuth2AuthenticationException(
-                    new OAuth2Error("invalid_request", "Email not provided by Google", null)
-                );
+                        new OAuth2Error("invalid_request", "Email not provided by Google", null));
             }
 
-            System.out.println("[GoogleOAuth2UserService] Processing OAuth2 login for email: " + email);
+            // Normalize email to lowercase to prevent casing-related issues
+            String email = rawEmail.trim().toLowerCase();
+            System.out.println("[GoogleOAuth2UserService] Processing OAuth2 login for email: " + email + " (original: "
+                    + rawEmail + ")");
 
-            // Check if user already exists in database (handle race: two callbacks may run concurrently)
+            // Check if user already exists in database (handle race: two callbacks may run
+            // concurrently)
             User user = userRepository.findByEmail(email)
-                .orElseGet(() -> {
-                    // Double-check to avoid duplicate insert if two callbacks ran concurrently
-                    return userRepository.findByEmail(email)
-                        .orElseGet(() -> {
-                            System.out.println("[GoogleOAuth2UserService] Creating new user for email: " + email);
-                            return createAndSaveOAuth2User(email, name);
-                        });
-                });
+                    .orElseGet(() -> {
+                        System.out.println("[GoogleOAuth2UserService] User not found for email: " + email
+                                + ". Attempting to create.");
+                        // Double-check again within the same lock context would be better, but let's at
+                        // least keep this
+                        return userRepository.findByEmail(email)
+                                .orElseGet(() -> {
+                                    System.out
+                                            .println("[GoogleOAuth2UserService] Creating new user for email: " + email);
+                                    return createAndSaveOAuth2User(email, name);
+                                });
+                    });
 
-            System.out.println("[GoogleOAuth2UserService] User found/created: " + user.getEmail() + ", role: " + user.getRole());
+            System.out.println(
+                    "[GoogleOAuth2UserService] User resolved: " + user.getEmail() + ", role: " + user.getRole());
 
             // Build authorities from the user's role
             Collection<? extends GrantedAuthority> authorities = buildAuthorities(user.getRole());
 
             // Return OidcUser with normalized authorities
             return new DefaultOidcUser(
-                authorities,
-                oidcUser.getIdToken(),
-                oidcUser.getUserInfo()
-            );
+                    authorities,
+                    oidcUser.getIdToken(),
+                    oidcUser.getUserInfo());
         } catch (OAuth2AuthenticationException e) {
             System.err.println("[GoogleOAuth2UserService] OAuth2 error: " + e.getMessage());
             e.printStackTrace();
@@ -86,21 +97,21 @@ public class GoogleOAuth2UserService extends OidcUserService {
             System.err.println("[GoogleOAuth2UserService] Unexpected error: " + e.getMessage());
             e.printStackTrace();
             throw new OAuth2AuthenticationException(
-                new OAuth2Error("server_error", "Failed to process OAuth2 user: " + e.getMessage(), null),
-                e
-            );
+                    new OAuth2Error("server_error", "Failed to process OAuth2 user: " + e.getMessage(), null),
+                    e);
         }
     }
 
     /**
      * Creates and persists a new user for OAuth2 login.
-     * Does not set ID manually – lets JPA generate it to avoid merge/optimistic locking issues.
+     * Does not set ID manually – lets JPA generate it to avoid merge/optimistic
+     * locking issues.
      */
     private User createAndSaveOAuth2User(String email, String name) {
         User newUser = new User();
         newUser.setName(name != null ? name : email.split("@")[0]);
-        newUser.setEmail(email);
-        String randomPassword = UUID.randomUUID().toString();
+        newUser.setEmail(email.toLowerCase()); // Ensure lowercase
+        String randomPassword = java.util.UUID.randomUUID().toString();
         newUser.setPassword(passwordEncoder.encode(randomPassword));
         newUser.setRole("Regular");
         return userRepository.save(newUser);
