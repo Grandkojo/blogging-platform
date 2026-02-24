@@ -24,12 +24,6 @@ import com.blogging_platform.repository.UserRepository;
  * If a user with the same email already exists, reuses the existing user.
  * New users are assigned the default READER role.
  * </p>
- * 
- * <p>
- * This satisfies User Story 4.1: "User details fetched from Google API
- * and persisted in the database. Roles automatically assigned
- * post-authentication."
- * </p>
  */
 @Service
 public class GoogleOAuth2UserService extends OidcUserService {
