@@ -18,17 +18,21 @@ import com.blogging_platform.repository.CommentRepository;
 import jakarta.transaction.Transactional;
 
 /**
- * Application service for comments on posts. Uses JPA repositories and maps entities
+ * Application service for comments on posts. Uses JPA repositories and maps
+ * entities
  * to {@link CommentRecord} DTOs.
  */
 @Service
-@Transactional(rollbackOn = { DatabaseQueryException.class, CommentNotFoundException.class })
+@Transactional(rollbackOn = { com.blogging_platform.exceptions.DatabaseQueryException.class,
+        com.blogging_platform.exceptions.CommentNotFoundException.class })
 public class CommentService {
 
     private final CommentRepository commentRepository;
+    private final NotificationService notificationService;
 
-    public CommentService(CommentRepository commentRepository) {
+    public CommentService(CommentRepository commentRepository, NotificationService notificationService) {
         this.commentRepository = commentRepository;
+        this.notificationService = notificationService;
     }
 
     /**
@@ -42,6 +46,10 @@ public class CommentService {
             comment.setDatetime(LocalDateTime.now());
         }
         commentRepository.save(comment);
+
+        // Asynchronously notify the author (mock)
+        notificationService.sendNotification("post-author@example.com",
+                "New comment added to your post: " + comment.getComment());
     }
 
     /**
@@ -76,7 +84,7 @@ public class CommentService {
      * @param commentId comment id
      * @return the comment record
      * @throws CommentNotFoundException if the comment does not exist
-     * @throws DatabaseQueryException if the query fails
+     * @throws DatabaseQueryException   if the query fails
      */
     public CommentRecord getComment(String commentId) throws DatabaseQueryException, CommentNotFoundException {
         UUID id = UUID.fromString(commentId);
@@ -90,11 +98,13 @@ public class CommentService {
      *
      * @param comment the comment with updated content
      * @throws CommentNotFoundException if the comment does not exist
-     * @throws AuthorizationException if the user is not the author of the comment
-     * @throws ValidationException if postId in body does not match the comment's post
-     * @throws DatabaseQueryException if the update fails
+     * @throws AuthorizationException   if the user is not the author of the comment
+     * @throws ValidationException      if postId in body does not match the
+     *                                  comment's post
+     * @throws DatabaseQueryException   if the update fails
      */
-    public void editComment(Comment comment) throws DatabaseQueryException, CommentNotFoundException, AuthorizationException, ValidationException {
+    public void editComment(Comment comment)
+            throws DatabaseQueryException, CommentNotFoundException, AuthorizationException, ValidationException {
         if (comment.getId() == null || comment.getUserId() == null) {
             throw new ValidationException("Comment id and user id are required");
         }
@@ -117,8 +127,9 @@ public class CommentService {
      *
      * @param commentId comment id
      * @param userId    user id (must be the comment author)
-     * @throws CommentNotFoundException if the comment does not exist or user is not the author
-     * @throws DatabaseQueryException if the delete fails
+     * @throws CommentNotFoundException if the comment does not exist or user is not
+     *                                  the author
+     * @throws DatabaseQueryException   if the delete fails
      */
     public void deleteComment(String commentId, String userId) throws DatabaseQueryException, CommentNotFoundException {
         UUID id = UUID.fromString(commentId);

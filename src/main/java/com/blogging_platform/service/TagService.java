@@ -5,6 +5,7 @@ import java.util.UUID;
 
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
 import com.blogging_platform.classes.TagRecord;
@@ -18,10 +19,12 @@ import com.blogging_platform.repository.PostRepository;
 import jakarta.transaction.Transactional;
 
 /**
- * Application service for tags and post–tag associations. Delegates to {@link TagDAO}.
+ * Application service for tags and post–tag associations. Delegates to
+ * {@link TagDAO}.
  */
 @Service
-@Transactional(rollbackOn = { DatabaseQueryException.class, DuplicateResourceException.class })
+@Transactional(rollbackOn = { com.blogging_platform.exceptions.DatabaseQueryException.class,
+        com.blogging_platform.exceptions.DuplicateResourceException.class })
 public class TagService {
     private final TagRepository tagRepository;
     private final PostRepository postRepository;
@@ -37,13 +40,13 @@ public class TagService {
      *
      * @param tag the tag (name)
      * @throws DuplicateResourceException if a tag with the same name exists
-     * @throws DatabaseQueryException if the insert fails
+     * @throws DatabaseQueryException     if the insert fails
      */
     @CacheEvict(cacheNames = { "tags", "tagsByPost" }, allEntries = true)
     public void createTag(Tag tag) throws DatabaseQueryException, DuplicateResourceException {
         try {
             tagRepository.save(tag);
-        } catch (org.springframework.dao.DataIntegrityViolationException e) {
+        } catch (DataIntegrityViolationException e) {
             throw new DuplicateResourceException("Tag already exists: " + tag.getTag());
         }
     }

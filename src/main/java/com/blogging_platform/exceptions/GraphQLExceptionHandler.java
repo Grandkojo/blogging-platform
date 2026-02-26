@@ -18,46 +18,47 @@ import graphql.GraphqlErrorBuilder;
 @ControllerAdvice
 public class GraphQLExceptionHandler {
 
-    @GraphQlExceptionHandler(PostNotFoundException.class)
-    public GraphQLError handlePostNotFound(PostNotFoundException ex) {
+    @GraphQlExceptionHandler(com.blogging_platform.exceptions.PostNotFoundException.class)
+    public GraphQLError handlePostNotFound(com.blogging_platform.exceptions.PostNotFoundException ex) {
         return GraphqlErrorBuilder.newError()
                 .message(ex.getUserMessage())
                 .errorType(ErrorType.NOT_FOUND)
                 .build();
     }
 
-    @GraphQlExceptionHandler(DuplicateEmailException.class)
-    public GraphQLError handleDuplicateEmail(DuplicateEmailException ex) {
+    @GraphQlExceptionHandler(com.blogging_platform.exceptions.DuplicateEmailException.class)
+    public GraphQLError handleDuplicateEmail(com.blogging_platform.exceptions.DuplicateEmailException ex) {
         return GraphqlErrorBuilder.newError()
                 .message(ex.getUserMessage())
                 .errorType(ErrorType.BAD_REQUEST)
                 .build();
     }
 
-    @GraphQlExceptionHandler(DuplicateResourceException.class)
-    public GraphQLError handleDuplicateResource(DuplicateResourceException ex) {
+    @GraphQlExceptionHandler(com.blogging_platform.exceptions.DuplicateResourceException.class)
+    public GraphQLError handleDuplicateResource(com.blogging_platform.exceptions.DuplicateResourceException ex) {
         return GraphqlErrorBuilder.newError()
                 .message(ex.getUserMessage())
                 .errorType(ErrorType.BAD_REQUEST)
                 .build();
     }
 
-    @GraphQlExceptionHandler(DatabaseQueryException.class)
-    public GraphQLError handleDatabaseQuery(DatabaseQueryException ex) {
+    @GraphQlExceptionHandler(com.blogging_platform.exceptions.DatabaseQueryException.class)
+    public GraphQLError handleDatabaseQuery(com.blogging_platform.exceptions.DatabaseQueryException ex) {
         Map<String, Object> extensions = new HashMap<>();
         extensions.put("code", ex.getErrorCode());
         extensions.put("detail", ex.getMessage());
 
         return GraphqlErrorBuilder.newError()
-                // Include the error code prefix in the message, e.g. "[DB_QUERY_ERROR] Failed to create post ..."
+                // Include the error code prefix in the message, e.g. "[DB_QUERY_ERROR] Failed
+                // to create post ..."
                 .message(ex.toString())
                 .errorType(ErrorType.INTERNAL_ERROR)
                 .extensions(extensions)
                 .build();
     }
 
-    @GraphQlExceptionHandler(AuthenticationException.class)
-    public GraphQLError handleAuthentication(AuthenticationException ex) {
+    @GraphQlExceptionHandler(com.blogging_platform.exceptions.AuthenticationException.class)
+    public GraphQLError handleAuthentication(com.blogging_platform.exceptions.AuthenticationException ex) {
         return GraphqlErrorBuilder.newError()
                 .message(ex.getUserMessage())
                 .errorType(ErrorType.BAD_REQUEST)
@@ -75,4 +76,3 @@ public class GraphQLExceptionHandler {
                 .build();
     }
 }
-

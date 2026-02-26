@@ -12,7 +12,7 @@ import org.springframework.data.repository.query.Param;
 import com.blogging_platform.model.Post;
 
 public interface PostRepository extends JpaRepository<Post, UUID> {
-    
+
     Optional<Post> findByIdAndUser_Id(UUID id, UUID userId);
 
     /**
@@ -20,13 +20,16 @@ public interface PostRepository extends JpaRepository<Post, UUID> {
      * returning a paginated and sortable result set.
      */
     @Query("""
-        select distinct p from Post p
-        left join p.user u
-        left join p.tags t
-        where (:query is null or :query = '')
-           or lower(p.title) like lower(concat('%', :query, '%'))
-           or lower(u.name) like lower(concat('%', :query, '%'))
-           or lower(t.tag)  like lower(concat('%', :query, '%'))
-        """)
+            select distinct p from Post p
+            join fetch p.user u
+            left join fetch p.tags t
+            where (:query is null or :query = '')
+               or lower(p.title) like lower(concat('%', :query, '%'))
+               or lower(u.name) like lower(concat('%', :query, '%'))
+               or lower(t.tag)  like lower(concat('%', :query, '%'))
+            """)
     Page<Post> searchByTitleAuthorOrTag(@Param("query") String query, Pageable pageable);
+
+    @Query("select p from Post p join fetch p.user left join fetch p.tags where p.id = :id")
+    Optional<Post> findByIdWithDetails(@Param("id") UUID id);
 }

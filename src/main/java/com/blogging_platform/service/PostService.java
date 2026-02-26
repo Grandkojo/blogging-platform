@@ -1,8 +1,11 @@
 package com.blogging_platform.service;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
@@ -18,6 +21,7 @@ import com.blogging_platform.exceptions.PostNotFoundException;
 import com.blogging_platform.exceptions.UserNotFoundException;
 import com.blogging_platform.exceptions.ValidationException;
 import com.blogging_platform.model.Post;
+import com.blogging_platform.model.Tag;
 import com.blogging_platform.repository.CommentRepository;
 import com.blogging_platform.repository.PostRepository;
 import com.blogging_platform.repository.UserRepository;
@@ -30,7 +34,8 @@ import jakarta.transaction.Transactional;
  * publish status (PUBLISHED vs DRAFT) when creating or updating posts.
  */
 @Service
-@Transactional(rollbackOn = { DatabaseQueryException.class, PostNotFoundException.class })
+@Transactional(rollbackOn = { com.blogging_platform.exceptions.DatabaseQueryException.class,
+        com.blogging_platform.exceptions.PostNotFoundException.class })
 public class PostService {
 
     private final PostRepository postRepository;
@@ -38,6 +43,8 @@ public class PostService {
     private final CommentRepository commentRepository;
     @Autowired
     private TagService tagService;
+    @Autowired
+    private NotificationService notificationService;
 
     /** Creates a post service with the given DAO. */
     public PostService(PostRepository postRepository, UserRepository userRepository,
@@ -72,6 +79,9 @@ public class PostService {
             }
         }
         postRepository.save(post);
+
+        // Asynchronously notify subscribers (mock)
+        notificationService.sendNotification("subscribers@example.com", "New post created: " + post.getTitle());
     }
 
     /**
@@ -131,21 +141,34 @@ public class PostService {
             throw new ValidationException("postId is required");
         }
         UUID postUuid = Objects.requireNonNull(UUID.fromString(postId), "postId is required");
-        PostRecord post = postRepository.findById(postUuid)
-                .map(p -> new PostRecord(
-                        p.getId() != null ? p.getId().toString() : null,
-                        p.getTitle(),
-                        p.getContent(),
-                        p.getStatus(),
-                        p.getUser() != null ? p.getUser().getName() : null,
-                        p.getCreatedAt(),
-                        p.getPublishedDatetime(),
-                        (int) commentRepository.countByPost_Id(postUuid),
-                        p.getUser() != null && p.getUser().getId() != null ? p.getUser().getId().toString() : null,
-                        null))
+
+        Post p = postRepository.findByIdWithDetails(postUuid)
                 .orElseThrow(() -> new PostNotFoundException(postId));
 
-        return post;
+        // Use CompletableFuture to fetch data in parallel
+        CompletableFuture<Integer> commentCountFuture = CompletableFuture
+                .supplyAsync(
+                        () -> (int) commentRepository.countByPost_Id(postUuid), notificationService.taskExecutor());
+
+        CompletableFuture<List<String>> tagsFuture = CompletableFuture
+                .supplyAsync(
+                        () -> resolveTagsForPost(postId), notificationService.taskExecutor());
+
+        try {
+            return new PostRecord(
+                    p.getId() != null ? p.getId().toString() : null,
+                    p.getTitle(),
+                    p.getContent(),
+                    p.getStatus(),
+                    p.getUser() != null ? p.getUser().getName() : null,
+                    p.getCreatedAt(),
+                    p.getPublishedDatetime(),
+                    commentCountFuture.get(), // Wait for parallel tasks
+                    p.getUser() != null && p.getUser().getId() != null ? p.getUser().getId().toString() : null,
+                    tagsFuture.get());
+        } catch (Exception e) {
+            throw new DatabaseQueryException("Failed to fetch post details in parallel", e);
+        }
     }
 
     public boolean existsById(String postId) {
@@ -157,8 +180,9 @@ public class PostService {
 
     /**
      * Returns all published posts.
-     * @param pagination 
-     * @param query 
+     * 
+     * @param pagination
+     * @param query
      *
      * @return list of published post records
      * @throws DatabaseQueryException if the query fails
@@ -183,7 +207,9 @@ public class PostService {
     /**
      * Returns all published posts without pagination.
      *
-     * <p>This convenience overload exists for legacy call sites and tests.</p>
+     * <p>
+     * This convenience overload exists for legacy call sites and tests.
+     * </p>
      *
      * @return list of published post records
      * @throws DatabaseQueryException if the query fails
@@ -193,11 +219,12 @@ public class PostService {
     }
 
     /**
-     * Returns published posts paginated and optionally filtered by a free-text query
+     * Returns published posts paginated and optionally filtered by a free-text
+     * query
      * matching title, author name, or tag name.
      *
-     * @param query     optional search string; if null/blank all posts are returned
-     * @param pageable  pagination and sorting information
+     * @param query    optional search string; if null/blank all posts are returned
+     * @param pageable pagination and sorting information
      * @return list of published post records
      * @throws DatabaseQueryException if the query fails
      */
@@ -215,7 +242,8 @@ public class PostService {
      */
     @Transactional
     @CacheEvict(cacheNames = { "posts", "postsById" }, allEntries = true)
-    public void updatePost(Post post, String postId) throws DatabaseQueryException, PostNotFoundException, UserNotFoundException, AuthorizationException {
+    public void updatePost(Post post, String postId)
+            throws DatabaseQueryException, PostNotFoundException, UserNotFoundException, AuthorizationException {
         UUID userUuid = post.getUserId();
         if (postId == null) {
             throw new ValidationException("postId is required");
@@ -256,7 +284,8 @@ public class PostService {
      * @throws DatabaseQueryException if the delete fails
      */
     @CacheEvict(cacheNames = { "posts", "postsById" }, allEntries = true)
-    public void deletePost(String postId, String userId) throws DatabaseQueryException, PostNotFoundException, UserNotFoundException, AuthorizationException {
+    public void deletePost(String postId, String userId)
+            throws DatabaseQueryException, PostNotFoundException, UserNotFoundException, AuthorizationException {
         if (postId == null || userId == null) {
             throw new ValidationException("postId and userId are required");
         }
@@ -275,7 +304,6 @@ public class PostService {
         }
         postRepository.delete(post);
     }
-
 
     /**
      * Enriches a single post record with its tags.
@@ -316,13 +344,34 @@ public class PostService {
     }
 
     private List<PostRecord> mapToRecords(List<Post> posts) {
+        if (posts == null || posts.isEmpty()) {
+            return List.of();
+        }
+
+        // Collect all post IDs to fetch comment counts in bulk
+        List<UUID> postIds = posts.stream()
+                .filter(Objects::nonNull)
+                .map(Post::getId)
+                .filter(Objects::nonNull)
+                .toList();
+
+        // Fetch comment counts: List of Object[] {post_id, count}
+        Map<UUID, Long> countsMap = commentRepository.countByPostIds(postIds).stream()
+                .collect(Collectors.toMap(
+                        row -> (UUID) row[0],
+                        row -> (Long) row[1]));
+
         return posts.stream()
                 .filter(Objects::nonNull)
                 .map(p -> {
                     UUID postId = p.getId();
-                    int commentCount = postId != null
-                        ? (int) commentRepository.countByPost_Id(postId)
-                        : 0;
+                    int commentCount = postId != null ? countsMap.getOrDefault(postId, 0L).intValue() : 0;
+
+                    // Map tags directly from the entity (fetched via JOIN FETCH in repository)
+                    List<String> tagNames = p.getTags() != null
+                            ? p.getTags().stream().map(Tag::getTag).toList()
+                            : List.of();
+
                     return new PostRecord(
                             postId != null ? postId.toString() : null,
                             p.getTitle(),
@@ -333,7 +382,7 @@ public class PostService {
                             p.getPublishedDatetime(),
                             commentCount,
                             p.getUser() != null && p.getUser().getId() != null ? p.getUser().getId().toString() : null,
-                            null);
+                            tagNames);
                 })
                 .toList();
     }

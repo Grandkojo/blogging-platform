@@ -3,6 +3,7 @@ package com.blogging_platform.service;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
 import com.blogging_platform.classes.ReviewRecord;
@@ -17,11 +18,13 @@ import com.blogging_platform.repository.ReviewRepository;
 import jakarta.transaction.Transactional;
 
 /**
- * Application service for post reviews (ratings and messages). Delegates to {@link ReviewDAO}
+ * Application service for post reviews (ratings and messages). Delegates to
+ * {@link ReviewDAO}
  * and provides average rating calculation.
  */
 @Service
-@Transactional(rollbackOn = { DatabaseQueryException.class, DuplicateResourceException.class })
+@Transactional(rollbackOn = { com.blogging_platform.exceptions.DatabaseQueryException.class,
+        com.blogging_platform.exceptions.DuplicateResourceException.class })
 public class ReviewService {
     private final ReviewRepository reviewRepository;
 
@@ -35,13 +38,14 @@ public class ReviewService {
      *
      * @param review the review (post id, user id, rating, message)
      * @throws DuplicateResourceException if the user has already reviewed the post
-     * @throws DatabaseQueryException if the insert fails
+     * @throws DatabaseQueryException     if the insert fails
      */
     public void createReview(Review review) throws DatabaseQueryException, DuplicateResourceException {
         try {
             reviewRepository.save(review);
-        } catch (org.springframework.dao.DataIntegrityViolationException e) {
-            // Preserve existing behavior where duplicate review (one per user per post) throws DuplicateResourceException
+        } catch (DataIntegrityViolationException e) {
+            // Preserve existing behavior where duplicate review (one per user per post)
+            // throws DuplicateResourceException
             throw new DuplicateResourceException("User has already reviewed this post");
         }
     }
@@ -91,11 +95,13 @@ public class ReviewService {
      *
      * @param review the review with id, userId, and updated rating/message
      * @throws ReviewNotFoundException if the review does not exist
-     * @throws AuthorizationException if the user is not the author of the review
-     * @throws ValidationException if postId in body does not match the review's post
-     * @throws DatabaseQueryException if the update fails
+     * @throws AuthorizationException  if the user is not the author of the review
+     * @throws ValidationException     if postId in body does not match the review's
+     *                                 post
+     * @throws DatabaseQueryException  if the update fails
      */
-    public void updateReview(Review review) throws DatabaseQueryException, ReviewNotFoundException, AuthorizationException, ValidationException {
+    public void updateReview(Review review)
+            throws DatabaseQueryException, ReviewNotFoundException, AuthorizationException, ValidationException {
         if (review.getId() == null) {
             throw new ValidationException("Review id is required");
         }
@@ -103,7 +109,8 @@ public class ReviewService {
             throw new ValidationException("User id is required");
         }
         Review existing = reviewRepository.findById(review.getId())
-                .orElseThrow(() -> new ReviewNotFoundException("Review with id '" + review.getId() + "' not found.", null));
+                .orElseThrow(
+                        () -> new ReviewNotFoundException("Review with id '" + review.getId() + "' not found.", null));
         if (!existing.getUserId().equals(review.getUserId())) {
             throw new AuthorizationException("User is not the author of this review.");
         }
@@ -118,8 +125,10 @@ public class ReviewService {
     /**
      * Deletes a review by id for a given user.
      *
-     * <p>Only the author of the review may delete it; admins are expected to be
-     * enforced at a higher layer (e.g. method security).</p>
+     * <p>
+     * Only the author of the review may delete it; admins are expected to be
+     * enforced at a higher layer (e.g. method security).
+     * </p>
      *
      * @param reviewId review id
      * @param userId   user id requesting the delete
