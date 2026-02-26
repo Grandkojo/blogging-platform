@@ -29,6 +29,3 @@ This document summarizes the performance improvements achieved during the **Adva
 ### 4. Advanced Data Structures (DSA)
 - **Trie (Prefix Tree)**: Optimized tag search from linear scan to prefix-based lookup.
 - **Priority Queue (Min-Heap)**: Optimized the trending algorithm to efficiently maintain the top-K items without sorting the entire dataset.
-
----
-*For a detailed breakdown of the profiling methodology and architectural changes, please see the internal [walkthrough.md](file:///home/ernest-kojo-owusu-essien/.gemini/antigravity/brain/528677c0-7aa5-4649-a6c9-616f178212cb/walkthrough.md).*
