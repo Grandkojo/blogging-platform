@@ -87,7 +87,7 @@ class TagControllerTest {
     void createTag_rest_callsServiceAndReturnsCreated() {
         Tag tag = new Tag("Tech");
 
-        ResponseEntity<ApiResponse<Object>> response = controller.createPost(tag);
+        ResponseEntity<ApiResponse<Object>> response = controller.createTag(tag);
 
         verify(tagService).createTag(tag);
         assertEquals(HttpStatus.CREATED.value(), response.getBody().getStatus());
@@ -147,4 +147,3 @@ class TagControllerTest {
         assertEquals(true, result);
     }
 }
-

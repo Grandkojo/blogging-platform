@@ -24,7 +24,7 @@ public class CorsConfig {
         config.setAllowedOrigins(props.getAllowedOriginsList());
         if (!props.getAllowedMethodsList().isEmpty()) {
             config.setAllowedMethods(props.getAllowedMethodsList());
-        } else {
+    } else {
             config.setAllowedMethods(java.util.List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         }
         if (!props.getAllowedHeadersList().isEmpty()) {

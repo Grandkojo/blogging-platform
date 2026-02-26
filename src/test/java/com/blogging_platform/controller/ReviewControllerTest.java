@@ -34,8 +34,7 @@ class ReviewControllerTest {
     @Test
     void getReviews_rest_returnsAllReviews() {
         List<ReviewRecord> records = List.of(
-            new ReviewRecord("r1", "p1", "u1", "Author", 5, "Great", null)
-        );
+                new ReviewRecord("r1", "p1", "u1", "Author", 5, "Great", null));
         when(reviewService.getReviews()).thenReturn(records);
 
         ResponseEntity<ApiResponse<Object>> response = controller.getReviews();
@@ -62,8 +61,7 @@ class ReviewControllerTest {
     @Test
     void getPostReviews_rest_returnsReviewsForPost() {
         List<ReviewRecord> records = List.of(
-            new ReviewRecord("r1", "p1", "u1", "Author", 5, "Great", null)
-        );
+                new ReviewRecord("r1", "p1", "u1", "Author", 5, "Great", null));
         when(reviewService.getReviewsByPostId("p1")).thenReturn(records);
 
         ResponseEntity<ApiResponse<Object>> response = controller.getPostReviews("p1");
@@ -77,24 +75,32 @@ class ReviewControllerTest {
     @Test
     void createReview_rest_callsServiceAndReturnsCreated() {
         Review review = new Review();
+        String userId = java.util.UUID.randomUUID().toString();
+        String postId = java.util.UUID.randomUUID().toString();
 
-        ResponseEntity<ApiResponse<Object>> response = controller.createReview(review);
+        ResponseEntity<ApiResponse<Object>> response = controller.createReview(userId, postId, review);
 
         verify(reviewService).createReview(review);
         assertEquals(HttpStatus.CREATED.value(), response.getBody().getStatus());
         assertEquals("Review Added Successfully", response.getBody().getMessage());
+        assertEquals(java.util.UUID.fromString(userId), review.getUserId());
+        assertEquals(java.util.UUID.fromString(postId), review.getPostId());
     }
 
     @Test
     void editReview_rest_callsServiceAndReturnsUpdated() {
         Review review = new Review();
         String reviewId = java.util.UUID.randomUUID().toString();
+        String userId = java.util.UUID.randomUUID().toString();
+        String postId = java.util.UUID.randomUUID().toString();
 
-        ResponseEntity<ApiResponse<Object>> response = controller.editReview(reviewId, review);
+        ResponseEntity<ApiResponse<Object>> response = controller.editReview(reviewId, userId, postId, review);
 
         verify(reviewService).updateReview(review);
         assertEquals(HttpStatus.CREATED.value(), response.getBody().getStatus());
         assertEquals("Review Updated Successfully", response.getBody().getMessage());
+        assertEquals(java.util.UUID.fromString(userId), review.getUserId());
+        assertEquals(java.util.UUID.fromString(postId), review.getPostId());
     }
 
     @Test
@@ -109,8 +115,7 @@ class ReviewControllerTest {
     @Test
     void getReviews_graphql_delegatesToService() {
         List<ReviewRecord> records = List.of(
-            new ReviewRecord("r1", "p1", "u1", "Author", 5, "Great", null)
-        );
+                new ReviewRecord("r1", "p1", "u1", "Author", 5, "Great", null));
         when(reviewService.getReviews()).thenReturn(records);
 
         List<ReviewRecord> result = controller.getReviewss();
@@ -150,4 +155,3 @@ class ReviewControllerTest {
         assertEquals(true, result);
     }
 }
-

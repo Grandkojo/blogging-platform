@@ -29,7 +29,7 @@ import jakarta.validation.Valid;
  */
 @RestController
 public class TagController {
-    
+
     private final TagService tagService;
 
     /**
@@ -64,9 +64,8 @@ public class TagController {
     @MutationMapping(name = "linkTagToPost")
     @PreAuthorize("hasRole('ADMIN')")
     public Boolean linkTagToPostMutation(
-        @Argument String tagId,
-        @Argument String postId
-    ) {
+            @Argument String tagId,
+            @Argument String postId) {
         tagService.linkTagToPost(postId, tagId);
         return true;
     }
@@ -81,13 +80,10 @@ public class TagController {
         return true;
     }
 
-    @Operation(
-        summary = "List tags",
-        description = "Returns all tags."
-    )
+    @Operation(summary = "List tags", description = "Returns all tags.")
     @ApiResponses({
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Tags fetched successfully"),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Unexpected server error")
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Tags fetched successfully"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Unexpected server error")
     })
     @GetMapping("/tags")
     public ResponseEntity<ApiResponse<Object>> getTags() {
@@ -95,78 +91,62 @@ public class TagController {
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK, tags, "Tags Fetched Successfully"));
     }
 
-    @Operation(
-        summary = "Get tag by id",
-        description = "Fetches a single tag by its id."
-    )
+    @Operation(summary = "Get tag by id", description = "Fetches a single tag by its id.")
     @ApiResponses({
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Tag found"),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Tag not found"),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Unexpected server error")
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Tag found"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Tag not found"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Unexpected server error")
     })
     @GetMapping("/tags/{id}")
     public ResponseEntity<ApiResponse<Object>> getTag(@PathVariable String id) {
         TagRecord tag = tagService.getTagById(id);
-        return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK, tag , "Tag Found Successfully"));
+        return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK, tag, "Tag Found Successfully"));
     }
 
-    @Operation(
-        summary = "Get tag by name",
-        description = "Fetches a tag by its name using the 'name' query parameter."
-    )
+    @Operation(summary = "Get tag by name", description = "Fetches a tag by its name using the 'name' query parameter.")
     @ApiResponses({
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Tag found"),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Tag not found"),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Unexpected server error")
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Tag found"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Tag not found"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Unexpected server error")
     })
     @GetMapping(value = "/tags", params = "name")
     public ResponseEntity<ApiResponse<Object>> getTagByName(@RequestParam String name) {
         TagRecord tag = tagService.getTagByTagName(name);
-        return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK, tag , "Tag Found Successfully"));
+        return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK, tag, "Tag Found Successfully"));
     }
 
-    @Operation(
-        summary = "List tags for post",
-        description = "Returns all tags associated with a given post."
-    )
+    @Operation(summary = "List tags for post", description = "Returns all tags associated with a given post.")
     @ApiResponses({
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Post tags fetched successfully"),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Post not found"),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Unexpected server error")
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Post tags fetched successfully"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Post not found"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Unexpected server error")
     })
     @GetMapping("/posts/{postId}/tags")
     public ResponseEntity<ApiResponse<Object>> getPostTags(@PathVariable String postId) {
         List<TagRecord> tags = tagService.getTagsByPostId(postId);
-        return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK, tags , "Post Tags Found Successfully"));
+        return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK, tags, "Post Tags Found Successfully"));
     }
-    
 
-    @Operation(
-        summary = "Create tag",
-        description = "Creates a new tag. Tag names must be unique."
-    )
+    @Operation(summary = "Create tag", description = "Creates a new tag. Tag names must be unique.")
     @ApiResponses({
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Tag created successfully"),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409", description = "Tag already exists"),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Validation error"),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Unexpected server error")
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Tag created successfully"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409", description = "Tag already exists"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Validation error"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Unexpected server error")
     })
     @PostMapping("/tags")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<Object>> createPost(@Valid @RequestBody Tag tag) {
-        tagService.createTag(tag);  
+    public ResponseEntity<ApiResponse<Object>> createTag(@Valid @RequestBody Tag tag) {
+        tagService.createTag(tag);
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.CREATED, null, "Tag Created Successfully"));
-      
+
     }
 
-    @Operation(
-        summary = "Link tag to post",
-        description = "Links an existing tag to a post."
-    )
+    @Operation(summary = "Link tag to post", description = "Links an existing tag to a post.")
     @ApiResponses({
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "202", description = "Tag linked to post successfully"),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Tag or post not found"),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Unexpected server error")
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "202", description = "Tag linked to post successfully"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Tag or post not found"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Unexpected server error")
     })
     @GetMapping("tags/{tagId}/link-to-post/{postId}")
     @PreAuthorize("hasRole('ADMIN')")
@@ -175,19 +155,17 @@ public class TagController {
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.ACCEPTED, null, "Tag Linked to Post Successfully"));
     }
 
-    @Operation(
-        summary = "Unlink all tags from post",
-        description = "Removes all tag associations from a post."
-    )
+    @Operation(summary = "Unlink all tags from post", description = "Removes all tag associations from a post.")
     @ApiResponses({
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "202", description = "All tags unlinked from post successfully"),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Post not found"),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Unexpected server error")
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "202", description = "All tags unlinked from post successfully"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Post not found"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Unexpected server error")
     })
     @GetMapping("tags/unlink-from-post/{postId}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Object>> unlinkTagsFromPost(@PathVariable String postId) {
         tagService.unlinkAllTagsFromPost(postId);
-        return ResponseEntity.ok(ApiResponse.success(HttpStatus.ACCEPTED, null, "All Tags Unlinked from Post Successfully"));
+        return ResponseEntity
+                .ok(ApiResponse.success(HttpStatus.ACCEPTED, null, "All Tags Unlinked from Post Successfully"));
     }
 }

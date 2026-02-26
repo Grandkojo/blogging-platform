@@ -33,10 +33,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
-
-
-
-
 /**
  * REST and GraphQL controller for blog posts.
  */
@@ -54,16 +50,17 @@ public class PostController {
     }
 
     /**
-     * GraphQL query that returns published posts, optionally filtered and paginated.
+     * GraphQL query that returns published posts, optionally filtered and
+     * paginated.
      * Mirrors the REST /posts endpoint behaviour (including tag search).
      */
     @QueryMapping
     public List<PostRecord> getPosts(
-        @Argument String query,
-        @Argument Integer page,
-        @Argument Integer size,
-        @Argument String sortBy,
-        @Argument String dir
+            @Argument String query,
+            @Argument Integer page,
+            @Argument Integer size,
+            @Argument String sortBy,
+            @Argument String dir
 
     ) {
         int p = page != null ? page : 0;
@@ -71,26 +68,24 @@ public class PostController {
         String direction = dir != null ? dir : "DESC";
 
         Sort sort = Sort.by(
-            Sort.Direction.fromString(direction),
-            sortBy != null ? sortBy : "createdAt"
-        );
+                Sort.Direction.fromString(direction),
+                sortBy != null ? sortBy : "createdAt");
         Pageable pagination = PageRequest.of(p, s, sort);
         List<PostRecord> posts = (query == null || query.isBlank())
-            ? postService.getPosts(pagination)
-            : postService.getPosts(query, pagination);
+                ? postService.getPosts(pagination)
+                : postService.getPosts(query, pagination);
         List<PostRecord> dto = posts.stream()
-            .map(postService::toPostWithTags)
-            .toList();
+                .map(postService::toPostWithTags)
+                .toList();
         return dto;
     }
 
     @QueryMapping
-    public List<PostRecord> getPostss(
-    ) {
+    public List<PostRecord> getPostss() {
         List<PostRecord> posts = postService.getPosts();
         List<PostRecord> dto = posts.stream()
-            .map(postService::toPostWithTags)
-            .toList();
+                .map(postService::toPostWithTags)
+                .toList();
         return dto;
     }
 
@@ -99,189 +94,97 @@ public class PostController {
      *
      * @param id post identifier (UUID as string)
      */
-    // @QueryMapping(name = "getPost")
-    // public PostRecord getPostById(@Argument String id) {
-    //     return postService.toPostWithTags(postService.getPost(id));
-    // }
-
-    // @Operation(
-    //     summary = "List posts (paginated)",
-    //     description = "Returns a paginated list of published posts, optionally filtered by search query (title, author, or tag) and sorted."
-    // )
-    // @ApiResponses({
-    //     @io.swagger.v3.oas.annotations.responses.ApiResponse(
-    //         responseCode = "200",
-    //         description = "Posts fetched successfully",
-    //         content = @Content(schema = @Schema(implementation = ApiResponse.class))
-    //     ),
-    //     @io.swagger.v3.oas.annotations.responses.ApiResponse(
-    //         responseCode = "400",
-    //         description = "Invalid pagination parameters"
-    //     ),
-    //     @io.swagger.v3.oas.annotations.responses.ApiResponse(
-    //         responseCode = "500",
-    //         description = "Unexpected server error"
-    //     )
-    // })
     @GetMapping("/posts")
     public ResponseEntity<ApiResponse<List<PostRecord>>> getPosts(
-        @RequestParam(defaultValue = "0") int page,
-        @RequestParam(defaultValue = "10") int size,
-        @RequestParam(required = false) String query,
-        @RequestParam(required = false, defaultValue = "createdAt") String sortBy,
-        @RequestParam(required = false, defaultValue = "DESC") String dir
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String query,
+            @RequestParam(required = false, defaultValue = "createdAt") String sortBy,
+            @RequestParam(required = false, defaultValue = "DESC") String dir
 
     ) {
         String safeDir = dir != null ? dir : "DESC";
         String safeSortBy = sortBy != null ? sortBy : "createdAt";
         Sort sort = Sort.by(
-            Sort.Direction.fromString(safeDir),
-            safeSortBy
-        );
+                Sort.Direction.fromString(safeDir),
+                safeSortBy);
         Pageable pagination = PageRequest.of(page, size, sort);
         List<PostRecord> posts = (query == null || query.isBlank())
-            ? postService.getPosts(pagination)
-            : postService.getPosts(query, pagination);
+                ? postService.getPosts(pagination)
+                : postService.getPosts(query, pagination);
         List<PostRecord> dto = posts.stream()
-            .map(postService::toPostWithTags)
-            .toList();
+                .map(postService::toPostWithTags)
+                .toList();
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK, dto, "Posts Fetched Successfully"));
     }
 
-    @Operation(
-        summary = "List all posts",
-        description = "Returns the full list of published posts without pagination."
-    )
+    @Operation(summary = "List all posts", description = "Returns the full list of published posts without pagination.")
     @ApiResponses({
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(
-            responseCode = "200",
-            description = "Posts fetched successfully"
-        ),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(
-            responseCode = "500",
-            description = "Unexpected server error"
-        )
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Posts fetched successfully"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Unexpected server error")
     })
     @GetMapping("/postss")
     public ResponseEntity<ApiResponse<List<PostRecord>>> getPostsFull() {
         List<PostRecord> posts = postService.getPosts();
         List<PostRecord> dto = posts.stream()
-            .map(postService::toPostWithTags)
-            .toList();
+                .map(postService::toPostWithTags)
+                .toList();
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK, dto, "Posts Fetched Successfully"));
     }
 
-    @Operation(
-        summary = "Get post by id",
-        description = "Fetches a single published post by its id, including tags and comment count."
-    )
+    @Operation(summary = "Get post by id", description = "Fetches a single published post by its id, including tags and comment count.")
     @ApiResponses({
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(
-            responseCode = "200",
-            description = "Post found"
-        ),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(
-            responseCode = "404",
-            description = "Post not found"
-        ),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(
-            responseCode = "500",
-            description = "Unexpected server error"
-        )
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Post found"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Post not found"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Unexpected server error")
     })
     @GetMapping("/posts/{id}")
     public ResponseEntity<ApiResponse<Object>> getPost(@PathVariable String id) {
         PostRecord post = postService.getPost(id);
         PostRecord dto = postService.toPostWithTags(post);
-        return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK, dto , "Post Found Successfully"));
+        return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK, dto, "Post Found Successfully"));
     }
-    
 
-    @Operation(
-        summary = "Create post",
-        description = "Creates a new post for a user. The status determines whether the post is published or saved as draft."
-    )
+    @Operation(summary = "Create post", description = "Creates a new post for a user. The status determines whether the post is published or saved as draft.")
     @ApiResponses({
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(
-            responseCode = "201",
-            description = "Post created successfully"
-        ),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(
-            responseCode = "400",
-            description = "Validation error"
-        ),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(
-            responseCode = "404",
-            description = "User not found"
-        ),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(
-            responseCode = "500",
-            description = "Unexpected server error"
-        )
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Post created successfully"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Validation error"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "User not found"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Unexpected server error")
     })
     @PostMapping("/posts")
     @PreAuthorize("hasAnyRole('ADMIN','AUTHOR')")
-    public ResponseEntity<ApiResponse<Object>> createPost(@Valid @RequestBody Post post) {
-        postService.createPost(post);  
+    public ResponseEntity<ApiResponse<Object>> createPost(@RequestParam String userId, @Valid @RequestBody Post post) {
+        post.setUserId(UUID.fromString(userId));
+        postService.createPost(post);
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.CREATED, null, "Post Created Successfully"));
-      
+
     }
 
-    @Operation(
-        summary = "Update post",
-        description = "Updates an existing post owned by the given user."
-    )
+    @Operation(summary = "Update post", description = "Updates an existing post owned by the given user.")
     @ApiResponses({
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(
-            responseCode = "201",
-            description = "Post updated successfully"
-        ),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(
-            responseCode = "400",
-            description = "Validation error"
-        ),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(
-            responseCode = "403",
-            description = "User is not the author of this post"
-        ),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(
-            responseCode = "404",
-            description = "Post with id not found, or user with id not found"
-        ),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(
-            responseCode = "500",
-            description = "Unexpected server error"
-        )
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Post updated successfully"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Validation error"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "User is not the author of this post"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Post with id not found, or user with id not found"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Unexpected server error")
     })
     @PutMapping("posts/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','AUTHOR')")
-    public ResponseEntity<ApiResponse<Object>> editPost(@PathVariable String id, @Valid @RequestBody Post post) {
+    public ResponseEntity<ApiResponse<Object>> editPost(@PathVariable String id, @RequestParam String userId,
+            @Valid @RequestBody Post post) {
+        post.setUserId(UUID.fromString(userId));
         postService.updatePost(post, id);
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.CREATED, null, "Post Updated Successfully"));
 
     }
 
-    @Operation(
-        summary = "Delete post",
-        description = "Deletes a post owned by the given user."
-    )
+    @Operation(summary = "Delete post", description = "Deletes a post owned by the given user.")
     @ApiResponses({
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(
-            responseCode = "202",
-            description = "Post deleted successfully"
-        ),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(
-            responseCode = "403",
-            description = "User is not the author of this post"
-        ),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(
-            responseCode = "404",
-            description = "Post with id not found, or user with id not found"
-        ),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(
-            responseCode = "500",
-            description = "Unexpected server error"
-        )
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "202", description = "Post deleted successfully"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "User is not the author of this post"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Post with id not found, or user with id not found"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Unexpected server error")
     })
     @DeleteMapping("/{userId}/posts/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','AUTHOR')")
@@ -296,11 +199,10 @@ public class PostController {
     @MutationMapping(name = "createPost")
     @PreAuthorize("hasAnyRole('ADMIN','AUTHOR')")
     public void createPostMutation(
-        @Argument String userId,
-        @Argument String title,
-        @Argument String content,
-        @Argument String status
-    ) {
+            @Argument String userId,
+            @Argument String title,
+            @Argument String content,
+            @Argument String status) {
         Post post = new Post();
         post.setUserId(UUID.fromString(userId));
         post.setTitle(title);
@@ -315,12 +217,11 @@ public class PostController {
     @MutationMapping(name = "updatePost")
     @PreAuthorize("hasAnyRole('ADMIN','AUTHOR')")
     public Boolean updatePostMutation(
-        @Argument String id,
-        @Argument String userId,
-        @Argument String title,
-        @Argument String content,
-        @Argument String status
-    ) {
+            @Argument String id,
+            @Argument String userId,
+            @Argument String title,
+            @Argument String content,
+            @Argument String status) {
         Post post = new Post();
         post.setUserId(UUID.fromString(userId));
         post.setTitle(title);
@@ -336,9 +237,8 @@ public class PostController {
     @MutationMapping(name = "deletePost")
     @PreAuthorize("hasAnyRole('ADMIN','AUTHOR')")
     public Boolean deletePostMutation(
-        @Argument String userId,
-        @Argument String id
-    ) {
+            @Argument String userId,
+            @Argument String id) {
         postService.deletePost(id, userId);
         return true;
     }

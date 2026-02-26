@@ -34,13 +34,14 @@ import org.springframework.security.access.prepost.PreAuthorize;
 /**
  * REST and GraphQL controller for comments on posts.
  * <p>
- * Supports listing, creating, updating and deleting comments as both REST endpoints
+ * Supports listing, creating, updating and deleting comments as both REST
+ * endpoints
  * and GraphQL mutations/queries.
  */
 @RestController
 @Tag(name = "Comments", description = "APIs for managing comments on posts")
 public class CommentController {
-    
+
     private final CommentService commentService;
 
     /**
@@ -55,61 +56,52 @@ public class CommentController {
      */
     @QueryMapping
     public List<CommentRecord> getCommentss(
-        @Argument Integer page,
-        @Argument Integer size,
-        @Argument String sortBy,
-        @Argument String dir
-    ) {
+            @Argument Integer page,
+            @Argument Integer size,
+            @Argument String sortBy,
+            @Argument String dir) {
         int p = page != null ? page : 0;
         int s = size != null ? size : 10;
         String direction = dir != null ? dir : "DESC";
 
         Sort sort = Sort.by(
-            Sort.Direction.fromString(direction),
-            sortBy
-        );
+                Sort.Direction.fromString(direction),
+                sortBy);
         Pageable pagination = PageRequest.of(p, s, sort);
         return commentService.getComments(pagination);
     }
 
-    @Operation(
-        summary = "List comments",
-        description = "Returns all comments across all posts."
-    )
+    @Operation(summary = "List comments", description = "Returns all comments across all posts.")
     @ApiResponses({
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Comments fetched successfully"),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Unexpected server error")
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Comments fetched successfully"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Unexpected server error")
     })
     @GetMapping("/comments")
     public ResponseEntity<ApiResponse<Object>> getComments(
-        @RequestParam(defaultValue = "0") int page,
-        @RequestParam(defaultValue = "10") int size,
-        @RequestParam(required = false, defaultValue = "datetime") String sortBy,
-        @RequestParam(required = false, defaultValue = "DESC") String dir
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false, defaultValue = "datetime") String sortBy,
+            @RequestParam(required = false, defaultValue = "DESC") String dir
 
     ) {
         Sort sort = Sort.by(
-            Sort.Direction.fromString(dir),
-            sortBy
-        );
+                Sort.Direction.fromString(dir),
+                sortBy);
         Pageable pagination = PageRequest.of(page, size, sort);
         List<CommentRecord> comments = commentService.getComments(pagination);
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK, comments, "Comments Fetched Successfully"));
     }
 
-    @Operation(
-        summary = "Get comment by id",
-        description = "Fetches a single comment by its id."
-    )
+    @Operation(summary = "Get comment by id", description = "Fetches a single comment by its id.")
     @ApiResponses({
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Comment found"),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Comment not found"),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Unexpected server error")
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Comment found"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Comment not found"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Unexpected server error")
     })
     @GetMapping("/comments/{id}")
     public ResponseEntity<ApiResponse<Object>> getComment(@PathVariable String id) {
         CommentRecord comment = commentService.getComment(id);
-        return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK, comment , "Comment Found Successfully"));
+        return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK, comment, "Comment Found Successfully"));
     }
 
     /**
@@ -118,21 +110,18 @@ public class CommentController {
     @QueryMapping
     public CommentRecord getCommentt(@Argument String id) {
         return commentService.getComment(id);
-    }    
+    }
 
-    @Operation(
-        summary = "List comments for post",
-        description = "Returns all comments for the specified post."
-    )
+    @Operation(summary = "List comments for post", description = "Returns all comments for the specified post.")
     @ApiResponses({
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Post comments fetched successfully"),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Post not found"),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Unexpected server error")
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Post comments fetched successfully"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Post not found"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Unexpected server error")
     })
     @GetMapping("/posts/{postId}/comments")
     public ResponseEntity<ApiResponse<Object>> getPostComments(@PathVariable String postId) {
         List<CommentRecord> comments = commentService.getComments(postId);
-        return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK, comments , "Post Comments Found Successfully"));
+        return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK, comments, "Post Comments Found Successfully"));
     }
 
     /**
@@ -141,18 +130,17 @@ public class CommentController {
     @QueryMapping
     public List<CommentRecord> getPostCommentss(@Argument String postId) {
         return commentService.getComments(postId);
-    } 
-    
+    }
+
     /**
      * GraphQL mutation to create a new comment on a post.
      */
     @MutationMapping(name = "createComment")
     @PreAuthorize("hasAnyRole('ADMIN','AUTHOR','READER')")
     public Boolean createCommentMutation(
-        @Argument String userId,
-        @Argument String postId,
-        @Argument String content
-    ) {
+            @Argument String userId,
+            @Argument String postId,
+            @Argument String content) {
         Comment comment = Comment.forCreate(content, userId, postId);
         commentService.addComment(comment);
         return true;
@@ -164,10 +152,9 @@ public class CommentController {
     @MutationMapping(name = "updateComment")
     @PreAuthorize("hasAnyRole('ADMIN','AUTHOR','READER')")
     public Boolean updateCommentMutation(
-        @Argument String id,
-        @Argument String userId,
-        @Argument String content
-    ) {
+            @Argument String id,
+            @Argument String userId,
+            @Argument String content) {
         Comment comment = Comment.forEdit(id, userId, content);
         commentService.editComment(comment);
         return true;
@@ -179,60 +166,55 @@ public class CommentController {
     @MutationMapping(name = "deleteComment")
     @PreAuthorize("hasAnyRole('ADMIN','AUTHOR','READER')")
     public Boolean deleteCommentMutation(
-        @Argument String userId,
-        @Argument String id
-    ) {
+            @Argument String userId,
+            @Argument String id) {
         commentService.deleteComment(id, userId);
         return true;
     }
 
-    @Operation(
-        summary = "Create comment",
-        description = "Creates a new comment on a post."
-    )
+    @Operation(summary = "Create comment", description = "Creates a new comment on a post.")
     @ApiResponses({
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Comment created successfully"),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Validation error"),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Post or user not found"),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Unexpected server error")
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Comment created successfully"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Validation error"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Post or user not found"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Unexpected server error")
     })
     @PostMapping("/comments")
     @PreAuthorize("hasAnyRole('ADMIN','AUTHOR','READER')")
-    public ResponseEntity<ApiResponse<Object>> createComment(@Valid @RequestBody Comment comment) {
-        commentService.addComment(comment);  
+    public ResponseEntity<ApiResponse<Object>> createComment(@RequestParam String userId, @RequestParam String postId,
+            @Valid @RequestBody Comment comment) {
+        comment.setUserId(UUID.fromString(userId));
+        comment.setPostId(UUID.fromString(postId));
+        commentService.addComment(comment);
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.CREATED, null, "Comment Added Successfully"));
-      
+
     }
 
-    @Operation(
-        summary = "Update comment",
-        description = "Updates an existing comment. Only the author may update."
-    )
+    @Operation(summary = "Update comment", description = "Updates an existing comment. Only the author may update.")
     @ApiResponses({
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Comment updated successfully"),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Post does not match comment or missing required fields"),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "User is not the author of this comment"),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Comment with id not found"),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Unexpected server error")
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Comment updated successfully"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Post does not match comment or missing required fields"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "User is not the author of this comment"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Comment with id not found"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Unexpected server error")
     })
     @PutMapping("comments/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','AUTHOR','READER')")
-    public ResponseEntity<ApiResponse<Object>> editPost(@PathVariable String id, @RequestBody Comment comment) {
+    public ResponseEntity<ApiResponse<Object>> editComment(@PathVariable String id, @RequestParam String userId,
+            @RequestBody Comment comment) {
         comment.setId(UUID.fromString(id));
+        comment.setUserId(UUID.fromString(userId));
         commentService.editComment(comment);
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.CREATED, null, "Comment Updated Successfully"));
 
     }
 
-    @Operation(
-        summary = "Delete comment",
-        description = "Deletes a comment for a given user. Only the author may delete."
-    )
+    @Operation(summary = "Delete comment", description = "Deletes a comment for a given user. Only the author may delete.")
     @ApiResponses({
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "202", description = "Comment deleted successfully"),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "User is not the author of this comment"),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Comment with id not found"),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Unexpected server error")
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "202", description = "Comment deleted successfully"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "User is not the author of this comment"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Comment with id not found"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Unexpected server error")
     })
     @DeleteMapping("/{userId}/comments/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','AUTHOR','READER')")

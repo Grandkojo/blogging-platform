@@ -42,17 +42,16 @@ class PostControllerTest {
     void setUp() {
         MockitoAnnotations.openMocks(this);
         samplePost = new PostRecord(
-            UUID.randomUUID().toString(),
-            "Title",
-            "Content",
-            "PUBLISHED",
-            "Author",
-            LocalDateTime.now().minusDays(1),
-            LocalDateTime.now(),
-            2,
-            UUID.randomUUID().toString(),
-            List.of("tag1", "tag2")
-        );
+                UUID.randomUUID().toString(),
+                "Title",
+                "Content",
+                "PUBLISHED",
+                "Author",
+                LocalDateTime.now().minusDays(1),
+                LocalDateTime.now(),
+                2,
+                UUID.randomUUID().toString(),
+                List.of("tag1", "tag2"));
     }
 
     @Test
@@ -60,8 +59,7 @@ class PostControllerTest {
         Pageable pageable = PageRequest.of(0, 10);
         when(postService.getPosts(any(Pageable.class))).thenReturn(List.of(samplePost));
 
-        ResponseEntity<ApiResponse<List<PostRecord>>> response =
-            controller.getPosts(0, 10, null, "createdAt", "DESC");
+        ResponseEntity<ApiResponse<List<PostRecord>>> response = controller.getPosts(0, 10, null, "createdAt", "DESC");
 
         assertEquals(HttpStatus.OK.value(), response.getBody().getStatus());
         assertEquals("Posts Fetched Successfully", response.getBody().getMessage());
@@ -93,21 +91,25 @@ class PostControllerTest {
     @Test
     void createPost_rest_callsService() {
         Post post = new Post();
+        String userId = UUID.randomUUID().toString();
 
-        ResponseEntity<ApiResponse<Object>> response = controller.createPost(post);
+        ResponseEntity<ApiResponse<Object>> response = controller.createPost(userId, post);
 
         verify(postService).createPost(post);
         assertEquals(HttpStatus.CREATED.value(), response.getBody().getStatus());
+        assertEquals(UUID.fromString(userId), post.getUserId());
     }
 
     @Test
     void editPost_rest_callsService() {
         Post post = new Post();
+        String userId = UUID.randomUUID().toString();
 
-        ResponseEntity<ApiResponse<Object>> response = controller.editPost("id", post);
+        ResponseEntity<ApiResponse<Object>> response = controller.editPost("id", userId, post);
 
         verify(postService).updatePost(post, "id");
         assertEquals(HttpStatus.CREATED.value(), response.getBody().getStatus());
+        assertEquals(UUID.fromString(userId), post.getUserId());
     }
 
     @Test
@@ -118,4 +120,3 @@ class PostControllerTest {
         assertEquals(HttpStatus.ACCEPTED.value(), response.getBody().getStatus());
     }
 }
-
