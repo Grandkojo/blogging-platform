@@ -177,14 +177,6 @@ public class GlobalExceptionHandler {
                                 .body(ApiResponse.error(HttpStatus.BAD_REQUEST, ex.getMessage()));
         }
 
-        @ExceptionHandler(com.blogging_platform.exceptions.SessionException.class)
-        public ResponseEntity<ApiResponse<Object>> handleSessionException(
-                        com.blogging_platform.exceptions.SessionException ex) {
-                return ResponseEntity
-                                .status(HttpStatus.UNAUTHORIZED)
-                                .body(ApiResponse.error(HttpStatus.UNAUTHORIZED, ex.getMessage()));
-        }
-
         @ExceptionHandler(com.blogging_platform.exceptions.ConfigurationException.class)
         public ResponseEntity<ApiResponse<Object>> handleConfigurationException(
                         com.blogging_platform.exceptions.ConfigurationException ex) {

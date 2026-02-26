@@ -16,8 +16,9 @@ import com.blogging_platform.model.User;
 import com.blogging_platform.repository.UserRepository;
 
 /**
- * Application service for user registration and authentication. Hashes passwords
- * and delegates persistence to {@link UserDAO}; updates {@link SessionManager} on login.
+ * Application service for user registration and authentication. Hashes
+ * passwords
+ * and delegates persistence to {@link UserRepository}.
  */
 @Service
 public class UserService {
@@ -39,7 +40,7 @@ public class UserService {
      */
     @CacheEvict(cacheNames = "users", allEntries = true)
     public void registerUser(User user) throws DuplicateEmailException {
-        if(userRepository.existsByEmail(user.getEmail())){
+        if (userRepository.existsByEmail(user.getEmail())) {
             throw new DuplicateEmailException("An account with this email already exists");
         }
 
@@ -61,33 +62,22 @@ public class UserService {
         Optional<User> userEntity = userRepository.findByEmail(email);
         if (userEntity.isPresent()) {
             User user = userEntity.get();
-            if(passwordEncoder.matches(password, user.getPassword())){
-                return Optional.of(new UserRecord(user.getId().toString(), user.getName(), user.getEmail(), user.getRole()));
+            if (passwordEncoder.matches(password, user.getPassword())) {
+                return Optional
+                        .of(new UserRecord(user.getId().toString(), user.getName(), user.getEmail(), user.getRole()));
             }
-        } 
+        }
         throw new AuthenticationException("Invalid email or password");
     }
 
     @Cacheable(cacheNames = "users")
     public List<UserRecord> getUsers() {
         return userRepository.findAll().stream()
-        .map(u -> new UserRecord(
-            u.getId() != null ? u.getId().toString() : null,
-            u.getName(),
-            u.getEmail(),
-            u.getRole()
-        ))
-        .toList();
+                .map(u -> new UserRecord(
+                        u.getId() != null ? u.getId().toString() : null,
+                        u.getName(),
+                        u.getEmail(),
+                        u.getRole()))
+                .toList();
     }
-
-    // public boolean loginUser(String email, String password) throws AuthenticationException {
-
-    //     Optional<UserRecord> user = userRepository.findByEmail(email);
-    //     if (user.isEmpty()) {
-    //         throw new AuthenticationException("Invalid email or password");
-    //     } else {
-    //         // SessionManager.getInstance().login(user);
-    //         return true;
-    //     }
-    // }
 }
