@@ -267,7 +267,14 @@ blogging_platform/
 │   ├── aop_logging.png                # AOP logging and performance metrics
 │   ├── coverage_overview_bem07.png    # Test coverage report (BEM‑07)
 │   ├── csrf_get_token_insomnia.png    # CSRF demo: GET token (Insomnia)
-│   └── csrf_submit_insomnia.png       # CSRF demo: POST with token (Insomnia)
+│   ├── csrf_submit_insomnia.png       # CSRF demo: POST with token (Insomnia)
+│   ├── profiling_cpu_hotpath.png      # JFR: CPU hot frames after optimisation
+│   ├── profiling_gc_events.png        # JFR: GC event list
+│   ├── profiling_gc_heap_before.png   # JFR: heap before/after GC cycles
+│   ├── profiling_gc_heap_after.png    # JFR: heap after final GC
+│   ├── profiling_thread_sleep.png     # JFR: thread sleep events
+│   ├── profiling_thread_sleep2.png    # JFR: thread sleep events (continued)
+│   └── profiling_cpu_load.png         # JFR: JVM CPU load over recording window
 ├── src/
 │   ├── main/
 │   │   ├── java/com/blogging_platform/
@@ -375,6 +382,83 @@ The service layer is instrumented with Spring AOP to provide centralized logging
 - **BEM‑06 Caching & Performance**:
   - Replaced the custom in‑memory `CacheManager` with Spring Cache.
   - Added caches for popular posts, users, and tags, with automatic eviction on writes.
+
+## Performance Profiling (JFR)
+
+The application was profiled using **Java Flight Recorder (JFR)** — a built-in, zero-agent JDK profiler — while under load.  
+Recording: `profiling_data_v2.jfr` · Duration: 120 s · JVM: OpenJDK 21.0.10 (G1GC)
+
+### How to reproduce
+
+```bash
+# 1. Start the app
+mvn spring-boot:run
+
+# 2. Attach JFR to the live process
+jps -l                                                        # find the PID
+jcmd <PID> JFR.start duration=120s filename=profiling_data_v2.jfr settings=profile
+
+# 3. Analyse
+jfr summary profiling_data_v2.jfr
+jfr print --events jdk.ExecutionSample profiling_data_v2.jfr | grep -oP '\w[\w.$]+\.\w[\w.$]+\(' | sort | uniq -c | sort -rn | head -20
+```
+
+---
+
+### Finding 1 — CPU Hot Path (N+1 eliminated, BCrypt is sole hotspot)
+
+![CPU hot path](docs/profiling_cpu_hotpath.png)
+
+**Before optimisation:** `ClientPreparedStatement.<init>` was the #1 CPU frame (24/258 samples ≈ 9%) — the MySQL JDBC driver was parsing SQL from scratch for every lazy-loaded `user` and `tags` relation per post (N+1 query storm).
+
+**After optimisation:** `ClientPreparedStatement` and `StringInspector` are completely absent. The only CPU hotspot is `BCrypt.hashpw()` (102 samples) — intentional, security-correct password hashing. `CacheInterceptor.invoke()` appears just once, confirming the Caffeine cache is active and short-circuiting DB access on read paths.
+
+---
+
+### Finding 2 — Garbage Collection (storm eliminated)
+
+![GC events](docs/profiling_gc_events.png)
+
+| | Before optimisation | After optimisation |
+|---|---|---|
+| GC events in 120 s | **5** (4× Young + 1× Mixed) | **2** (1× Young + 1× CodeCache) |
+| Heap churn per cycle | **~117 MB** | **~39 MB** |
+| Worst pause | **210 ms** (G1Old mixed) | **16.2 ms** (CodeCache, not app load) |
+
+---
+
+### Finding 3 — Heap Usage Before / After GC
+
+![GC heap before](docs/profiling_gc_heap_before.png)
+![GC heap after](docs/profiling_gc_heap_after.png)
+
+**Before:** heap oscillated between ~179 MB → ~62 MB on every cycle, driven by per-request `byte[]`, `ArrayList`, and `ResultSet` objects created by N+1 queries.  
+**After:** heap drops from 102 MB → 62.9 MB (GC#24) and then holds flat at 62.9 MB for the remainder of the recording — no further churn.
+
+---
+
+### Finding 4 — Thread Sleeps (async notifications confirmed)
+
+![Thread sleeps](docs/profiling_thread_sleep.png)
+![Thread sleeps 2](docs/profiling_thread_sleep2.png)
+
+Every sleep event belongs to `File Watcher` (Spring DevTools) or `container-0` (Tomcat internal).  
+**Zero `http-nio-8080-exec-*` HTTP worker threads appear in the sleep log.**  
+Before `@Async` was applied, `NotificationService.sendNotification()` ran a ~2-second `Thread.sleep` on the HTTP worker thread — it would have appeared here. Its absence proves the async offloading is working correctly.
+
+---
+
+### Finding 5 — JVM CPU Load (78% reduction)
+
+![CPU load](docs/profiling_cpu_load.png)
+
+| | Before | After |
+|---|---|---|
+| Peak JVM CPU (user-space) | **47.95%** | **10.32%** |
+
+The original spike was caused by the N+1 query storm flooding the JDBC driver with statement parse work. With `JOIN FETCH`, `@EntityGraph`, and `@Cacheable` in place, the same request volume generates a fraction of the CPU work.
+
+---
 
 ## Documentation
 
