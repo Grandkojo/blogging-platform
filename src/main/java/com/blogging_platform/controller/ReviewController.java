@@ -27,6 +27,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+
+import com.blogging_platform.security.SecurityUtils;
 
 /**
  * REST and GraphQL controller for reviews (ratings and messages) on posts.
@@ -58,11 +61,12 @@ public class ReviewController {
     @MutationMapping(name = "createReview")
     @PreAuthorize("hasAnyRole('ADMIN','AUTHOR','READER')")
     public Boolean createReviewMutation(
+            Authentication authentication,
             @Argument String postId,
-            @Argument String userId,
             @Argument Integer rating,
             @Argument String message) {
-        Review review = new Review(UUID.fromString(postId), UUID.fromString(userId), rating, message);
+        UUID userId = SecurityUtils.getCurrentUserId(authentication);
+        Review review = new Review(UUID.fromString(postId), userId, rating, message);
         reviewService.createReview(review);
         return true;
     }
@@ -73,12 +77,13 @@ public class ReviewController {
     @MutationMapping(name = "updateReview")
     @PreAuthorize("hasAnyRole('ADMIN','AUTHOR','READER')")
     public Boolean updateReviewMutation(
+            Authentication authentication,
             @Argument String id,
             @Argument String postId,
-            @Argument String userId,
             @Argument Integer rating,
             @Argument String message) {
-        Review review = new Review(id, UUID.fromString(postId), UUID.fromString(userId), rating, message);
+        UUID userId = SecurityUtils.getCurrentUserId(authentication);
+        Review review = new Review(id, UUID.fromString(postId), userId, rating, message);
         reviewService.updateReview(review);
         return true;
     }
@@ -89,9 +94,9 @@ public class ReviewController {
     @MutationMapping(name = "deleteReview")
     @PreAuthorize("hasAnyRole('ADMIN','AUTHOR','READER')")
     public Boolean deleteReviewMutation(
-            @Argument String userId,
+            Authentication authentication,
             @Argument String id) {
-        reviewService.deleteReview(id, userId);
+        reviewService.deleteReview(id, SecurityUtils.getCurrentUserId(authentication).toString());
         return true;
     }
 
@@ -140,9 +145,9 @@ public class ReviewController {
     })
     @PostMapping("/reviews")
     @PreAuthorize("hasAnyRole('ADMIN','AUTHOR','READER')")
-    public ResponseEntity<ApiResponse<Object>> createReview(@RequestParam String userId, @RequestParam String postId,
-            @Valid @RequestBody Review review) {
-        review.setUserId(UUID.fromString(userId));
+    public ResponseEntity<ApiResponse<Object>> createReview(Authentication authentication,
+            @RequestParam String postId, @Valid @RequestBody Review review) {
+        review.setUserId(SecurityUtils.getCurrentUserId(authentication));
         review.setPostId(UUID.fromString(postId));
         reviewService.createReview(review);
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.CREATED, null, "Review Added Successfully"));
@@ -159,10 +164,10 @@ public class ReviewController {
     })
     @PutMapping("reviews/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','AUTHOR','READER')")
-    public ResponseEntity<ApiResponse<Object>> editReview(@PathVariable String id, @RequestParam String userId,
-            @RequestParam String postId, @RequestBody Review review) {
+    public ResponseEntity<ApiResponse<Object>> editReview(Authentication authentication,
+            @PathVariable String id, @RequestParam String postId, @RequestBody Review review) {
         review.setId(UUID.fromString(id));
-        review.setUserId(UUID.fromString(userId));
+        review.setUserId(SecurityUtils.getCurrentUserId(authentication));
         review.setPostId(UUID.fromString(postId));
         reviewService.updateReview(review);
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.CREATED, null, "Review Updated Successfully"));
@@ -175,10 +180,10 @@ public class ReviewController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Review not found"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Unexpected server error")
     })
-    @DeleteMapping("/{userId}/reviews/{id}")
+    @DeleteMapping("/reviews/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','AUTHOR','READER')")
-    public ResponseEntity<ApiResponse<Object>> deleteReview(@PathVariable String userId, @PathVariable String id) {
-        reviewService.deleteReview(id, userId);
+    public ResponseEntity<ApiResponse<Object>> deleteReview(Authentication authentication, @PathVariable String id) {
+        reviewService.deleteReview(id, SecurityUtils.getCurrentUserId(authentication).toString());
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.ACCEPTED, null, "Review Deleted Successfully"));
     }
 

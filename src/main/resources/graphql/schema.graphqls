@@ -51,9 +51,8 @@ type Query {
 }
 
 type Mutation {
-    # Post mutations
+    # Post mutations — userId is derived from the authenticated JWT; do not pass it.
     createPost(
-        userId: ID!,
         title: String!,
         content: String!,
         status: String!
@@ -61,39 +60,33 @@ type Mutation {
 
     updatePost(
         id: ID!,
-        userId: ID!,
         title: String!,
         content: String!,
         status: String!
     ): Boolean
 
     deletePost(
-        userId: ID!,
         id: ID!
     ): Boolean
 
     # Comment mutations
     createComment(
-        userId: ID!,
         postId: ID!,
         content: String!
     ): Boolean
 
     updateComment(
         id: ID!,
-        userId: ID!,
         content: String!
     ): Boolean
 
     deleteComment(
-        userId: ID!,
         id: ID!
     ): Boolean
 
     # Review mutations
     createReview(
         postId: ID!,
-        userId: ID!,
         rating: Int!,
         message: String!
     ): Boolean
@@ -101,13 +94,11 @@ type Mutation {
     updateReview(
         id: ID!,
         postId: ID!,
-        userId: ID!,
         rating: Int!,
         message: String!
     ): Boolean
 
     deleteReview(
-        userId: ID!,
         id: ID!
     ): Boolean
 

@@ -10,6 +10,8 @@ import org.hibernate.annotations.JdbcTypeCode;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -17,6 +19,7 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 /**
@@ -45,9 +48,10 @@ public class User {
     @Schema(description = "User password (write-only in API)", accessMode = Schema.AccessMode.WRITE_ONLY)
     private String password;
 
-    @NotBlank(message = "Role is required")
-    @Schema(description = "User role (e.g. ADMIN, USER)")
-    private String role;
+    @NotNull(message = "Role is required")
+    @Enumerated(EnumType.STRING)
+    @Schema(description = "User role", allowableValues = {"ADMIN", "AUTHOR", "READER"})
+    private Role role;
 
     @OneToMany(mappedBy = "user")
     private Set<Post> posts = new HashSet<>();
@@ -61,7 +65,7 @@ public class User {
     public User(){}
 
     
-    public User(String name, String email, String password, String role) {
+    public User(String name, String email, String password, Role role) {
         this.name = name;
         this.email = email;
         this.password = password;
@@ -92,10 +96,10 @@ public class User {
     public void setPassword(String password) {
         this.password = password;
     }
-    public String getRole() {
+    public Role getRole() {
         return role;
     }
-    public void setRole(String role) {
+    public void setRole(Role role) {
         this.role = role;
     }
 

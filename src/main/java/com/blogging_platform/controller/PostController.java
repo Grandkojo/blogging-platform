@@ -14,7 +14,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
 import java.util.List;
-import java.util.UUID;
+
+import org.springframework.security.core.Authentication;
 
 import org.springframework.graphql.data.method.annotation.QueryMapping;
 import org.springframework.graphql.data.method.annotation.MutationMapping;
@@ -32,6 +33,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+
+import com.blogging_platform.security.SecurityUtils;
 
 /**
  * REST and GraphQL controller for blog posts.
@@ -154,8 +157,8 @@ public class PostController {
     })
     @PostMapping("/posts")
     @PreAuthorize("hasAnyRole('ADMIN','AUTHOR')")
-    public ResponseEntity<ApiResponse<Object>> createPost(@RequestParam String userId, @Valid @RequestBody Post post) {
-        post.setUserId(UUID.fromString(userId));
+    public ResponseEntity<ApiResponse<Object>> createPost(Authentication authentication, @Valid @RequestBody Post post) {
+        post.setUserId(SecurityUtils.getCurrentUserId(authentication));
         postService.createPost(post);
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.CREATED, null, "Post Created Successfully"));
 
@@ -171,9 +174,9 @@ public class PostController {
     })
     @PutMapping("posts/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','AUTHOR')")
-    public ResponseEntity<ApiResponse<Object>> editPost(@PathVariable String id, @RequestParam String userId,
+    public ResponseEntity<ApiResponse<Object>> editPost(Authentication authentication, @PathVariable String id,
             @Valid @RequestBody Post post) {
-        post.setUserId(UUID.fromString(userId));
+        post.setUserId(SecurityUtils.getCurrentUserId(authentication));
         postService.updatePost(post, id);
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.CREATED, null, "Post Updated Successfully"));
 
@@ -186,10 +189,10 @@ public class PostController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Post with id not found, or user with id not found"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Unexpected server error")
     })
-    @DeleteMapping("/{userId}/posts/{id}")
+    @DeleteMapping("/posts/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','AUTHOR')")
-    public ResponseEntity<ApiResponse<Object>> deletePost(@PathVariable String userId, @PathVariable String id) {
-        postService.deletePost(id, userId);
+    public ResponseEntity<ApiResponse<Object>> deletePost(Authentication authentication, @PathVariable String id) {
+        postService.deletePost(id, SecurityUtils.getCurrentUserId(authentication).toString());
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.ACCEPTED, null, "Post Deleted Successfully"));
     }
 
@@ -199,12 +202,12 @@ public class PostController {
     @MutationMapping(name = "createPost")
     @PreAuthorize("hasAnyRole('ADMIN','AUTHOR')")
     public void createPostMutation(
-            @Argument String userId,
+            Authentication authentication,
             @Argument String title,
             @Argument String content,
             @Argument String status) {
         Post post = new Post();
-        post.setUserId(UUID.fromString(userId));
+        post.setUserId(SecurityUtils.getCurrentUserId(authentication));
         post.setTitle(title);
         post.setContent(content);
         post.setStatus(status);
@@ -217,13 +220,13 @@ public class PostController {
     @MutationMapping(name = "updatePost")
     @PreAuthorize("hasAnyRole('ADMIN','AUTHOR')")
     public Boolean updatePostMutation(
+            Authentication authentication,
             @Argument String id,
-            @Argument String userId,
             @Argument String title,
             @Argument String content,
             @Argument String status) {
         Post post = new Post();
-        post.setUserId(UUID.fromString(userId));
+        post.setUserId(SecurityUtils.getCurrentUserId(authentication));
         post.setTitle(title);
         post.setContent(content);
         post.setStatus(status);
@@ -237,9 +240,9 @@ public class PostController {
     @MutationMapping(name = "deletePost")
     @PreAuthorize("hasAnyRole('ADMIN','AUTHOR')")
     public Boolean deletePostMutation(
-            @Argument String userId,
+            Authentication authentication,
             @Argument String id) {
-        postService.deletePost(id, userId);
+        postService.deletePost(id, SecurityUtils.getCurrentUserId(authentication).toString());
         return true;
     }
 

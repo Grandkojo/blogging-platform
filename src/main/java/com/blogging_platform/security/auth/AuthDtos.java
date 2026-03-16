@@ -1,8 +1,10 @@
 package com.blogging_platform.security.auth;
 
+import com.blogging_platform.model.Role;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 /**
@@ -21,7 +23,7 @@ public final class AuthDtos {
             @NotBlank @Schema(example = "Jane Doe") String name,
             @NotBlank @Email @Schema(example = "jane@example.com") String email,
             @NotBlank @Size(min = 8) @Schema(example = "password123") String password,
-            @NotBlank @Schema(example = "READER") String role
+            @NotNull @Schema(example = "READER", allowableValues = {"ADMIN", "AUTHOR", "READER"}) Role role
     ) {}
 
     public record AuthResponse(

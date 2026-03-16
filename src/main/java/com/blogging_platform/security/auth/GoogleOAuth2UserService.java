@@ -104,7 +104,7 @@ public class GoogleOAuth2UserService extends OidcUserService {
         newUser.setEmail(email.toLowerCase());
         String randomPassword = java.util.UUID.randomUUID().toString();
         newUser.setPassword(passwordEncoder.encode(randomPassword));
-        newUser.setRole("Regular");
+        newUser.setRole(com.blogging_platform.model.Role.READER);
         return userRepository.save(newUser);
     }
 
@@ -112,28 +112,8 @@ public class GoogleOAuth2UserService extends OidcUserService {
      * Builds Spring Security authorities from the user's role.
      * Normalizes role to ROLE_* format expected by Spring Security.
      */
-    private Collection<? extends GrantedAuthority> buildAuthorities(String role) {
-        String normalizedRole = normalizeRole(role);
-        return java.util.List.of(new SimpleGrantedAuthority("ROLE_" + normalizedRole));
-    }
-
-    /**
-     * Normalizes role string to uppercase format.
-     * Defaults to READER if role is null or unrecognized.
-     */
-    private String normalizeRole(String role) {
-        if (role == null || role.isBlank()) {
-            return "READER";
-        }
-        if ("Admin".equalsIgnoreCase(role)) {
-            return "ADMIN";
-        }
-        if ("Author".equalsIgnoreCase(role)) {
-            return "AUTHOR";
-        }
-        if ("Regular".equalsIgnoreCase(role) || "User".equalsIgnoreCase(role)) {
-            return "READER";
-        }
-        return role.trim().toUpperCase();
+    private Collection<? extends GrantedAuthority> buildAuthorities(com.blogging_platform.model.Role role) {
+        com.blogging_platform.model.Role effective = role != null ? role : com.blogging_platform.model.Role.READER;
+        return java.util.List.of(new SimpleGrantedAuthority("ROLE_" + effective.name()));
     }
 }

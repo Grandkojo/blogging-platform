@@ -8,6 +8,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import com.blogging_platform.model.Role;
 import com.blogging_platform.model.User;
 
 /**
@@ -19,7 +20,7 @@ public class UserPrincipal implements UserDetails {
     private final String name;
     private final String email;
     private final String passwordHash;
-    private final String role;
+    private final Role role;
 
     public UserPrincipal(User user) {
         this.id = user.getId();
@@ -37,15 +38,13 @@ public class UserPrincipal implements UserDetails {
         return name;
     }
 
-    public String getRole() {
+    public Role getRole() {
         return role;
     }
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        // Normalize to ROLE_* convention expected by Spring Security.
-        String normalized = normalizeRole(role);
-        return List.of(new SimpleGrantedAuthority("ROLE_" + normalized));
+        return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
     }
 
     @Override
@@ -79,21 +78,5 @@ public class UserPrincipal implements UserDetails {
         return true;
     }
 
-    private static String normalizeRole(String role) {
-        if (role == null) {
-            return "READER";
-        }
-        // Back-compat with previous schema values
-        if ("Admin".equalsIgnoreCase(role)) {
-            return "ADMIN";
-        }
-        if ("Author".equalsIgnoreCase(role)) {
-            return "AUTHOR";
-        }
-        if ("Regular".equalsIgnoreCase(role) || "User".equalsIgnoreCase(role)) {
-            return "READER";
-        }
-        return role.trim().toUpperCase();
-    }
 }
 

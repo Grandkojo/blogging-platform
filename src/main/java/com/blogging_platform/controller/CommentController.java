@@ -30,6 +30,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+
+import com.blogging_platform.security.SecurityUtils;
 
 /**
  * REST and GraphQL controller for comments on posts.
@@ -138,9 +141,10 @@ public class CommentController {
     @MutationMapping(name = "createComment")
     @PreAuthorize("hasAnyRole('ADMIN','AUTHOR','READER')")
     public Boolean createCommentMutation(
-            @Argument String userId,
+            Authentication authentication,
             @Argument String postId,
             @Argument String content) {
+        String userId = SecurityUtils.getCurrentUserId(authentication).toString();
         Comment comment = Comment.forCreate(content, userId, postId);
         commentService.addComment(comment);
         return true;
@@ -152,9 +156,10 @@ public class CommentController {
     @MutationMapping(name = "updateComment")
     @PreAuthorize("hasAnyRole('ADMIN','AUTHOR','READER')")
     public Boolean updateCommentMutation(
+            Authentication authentication,
             @Argument String id,
-            @Argument String userId,
             @Argument String content) {
+        String userId = SecurityUtils.getCurrentUserId(authentication).toString();
         Comment comment = Comment.forEdit(id, userId, content);
         commentService.editComment(comment);
         return true;
@@ -166,9 +171,9 @@ public class CommentController {
     @MutationMapping(name = "deleteComment")
     @PreAuthorize("hasAnyRole('ADMIN','AUTHOR','READER')")
     public Boolean deleteCommentMutation(
-            @Argument String userId,
+            Authentication authentication,
             @Argument String id) {
-        commentService.deleteComment(id, userId);
+        commentService.deleteComment(id, SecurityUtils.getCurrentUserId(authentication).toString());
         return true;
     }
 
@@ -181,9 +186,9 @@ public class CommentController {
     })
     @PostMapping("/comments")
     @PreAuthorize("hasAnyRole('ADMIN','AUTHOR','READER')")
-    public ResponseEntity<ApiResponse<Object>> createComment(@RequestParam String userId, @RequestParam String postId,
-            @Valid @RequestBody Comment comment) {
-        comment.setUserId(UUID.fromString(userId));
+    public ResponseEntity<ApiResponse<Object>> createComment(Authentication authentication,
+            @RequestParam String postId, @Valid @RequestBody Comment comment) {
+        comment.setUserId(SecurityUtils.getCurrentUserId(authentication));
         comment.setPostId(UUID.fromString(postId));
         commentService.addComment(comment);
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.CREATED, null, "Comment Added Successfully"));
@@ -200,10 +205,10 @@ public class CommentController {
     })
     @PutMapping("comments/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','AUTHOR','READER')")
-    public ResponseEntity<ApiResponse<Object>> editComment(@PathVariable String id, @RequestParam String userId,
-            @RequestBody Comment comment) {
+    public ResponseEntity<ApiResponse<Object>> editComment(Authentication authentication,
+            @PathVariable String id, @RequestBody Comment comment) {
         comment.setId(UUID.fromString(id));
-        comment.setUserId(UUID.fromString(userId));
+        comment.setUserId(SecurityUtils.getCurrentUserId(authentication));
         commentService.editComment(comment);
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.CREATED, null, "Comment Updated Successfully"));
 
@@ -216,10 +221,10 @@ public class CommentController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Comment with id not found"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Unexpected server error")
     })
-    @DeleteMapping("/{userId}/comments/{id}")
+    @DeleteMapping("/comments/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','AUTHOR','READER')")
-    public ResponseEntity<ApiResponse<Object>> deletePost(@PathVariable String userId, @PathVariable String id) {
-        commentService.deleteComment(id, userId);
+    public ResponseEntity<ApiResponse<Object>> deleteComment(Authentication authentication, @PathVariable String id) {
+        commentService.deleteComment(id, SecurityUtils.getCurrentUserId(authentication).toString());
         return ResponseEntity.ok(ApiResponse.success(HttpStatus.ACCEPTED, null, "Comment Deleted Successfully"));
     }
 }

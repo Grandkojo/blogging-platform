@@ -37,14 +37,21 @@ public class JwtService {
                 .map(GrantedAuthority::getAuthority)
                 .toList();
 
-        JwtClaimsSet claims = JwtClaimsSet.builder()
+        JwtClaimsSet.Builder claimsBuilder = JwtClaimsSet.builder()
                 .issuer(props.getIssuer())
                 .issuedAt(now)
                 .expiresAt(expiry)
                 .subject(authentication.getName())
                 .id(UUID.randomUUID().toString()) // jti
-                .claim("roles", roles)
-                .build();
+                .claim("roles", roles);
+
+        // Embed the user's UUID so controllers can derive it from the token
+        // instead of accepting it from untrusted request input.
+        if (authentication.getPrincipal() instanceof UserPrincipal up) {
+            claimsBuilder.claim("userId", up.getId().toString());
+        }
+
+        JwtClaimsSet claims = claimsBuilder.build();
 
         JwsHeader header = JwsHeader.with(MacAlgorithm.HS256).type("JWT").build();
         return jwtEncoder.encode(JwtEncoderParameters.from(header, claims)).getTokenValue();

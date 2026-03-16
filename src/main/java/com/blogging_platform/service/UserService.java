@@ -62,7 +62,7 @@ public class UserService {
         if (userEntity.isPresent()) {
             User user = userEntity.get();
             if(passwordEncoder.matches(password, user.getPassword())){
-                return Optional.of(new UserRecord(user.getId().toString(), user.getName(), user.getEmail(), user.getRole()));
+                return Optional.of(new UserRecord(user.getId().toString(), user.getName(), user.getEmail(), user.getRole().name()));
             }
         } 
         throw new AuthenticationException("Invalid email or password");
@@ -75,7 +75,7 @@ public class UserService {
             u.getId() != null ? u.getId().toString() : null,
             u.getName(),
             u.getEmail(),
-            u.getRole()
+            u.getRole() != null ? u.getRole().name() : null
         ))
         .toList();
     }
